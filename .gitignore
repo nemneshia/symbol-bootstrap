@@ -2,7 +2,6 @@
 *-error.log
 /.nyc_output
 /dist
-/lib
 /tmp
 /yarn.lock
 node_modules
@@ -13,7 +12,6 @@ symbol-bootstrap-*.tgz
 /.eslintcache
 coverage
 /ts-docs/
-/oclif.manifest.json
 /ngrok-testnet.yml
 /boat.png
 /agent-linux.bin
