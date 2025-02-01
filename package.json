@@ -116,6 +116,7 @@
         "e2e": "nyc --reporter=lcov --extension .ts mocha -r ts-node/register --timeout 900000 --forbid-only \"test/**/*.e2e.ts\"",
         "coveralls-report": "cat ./coverage/lcov.info | coveralls",
         "version": "echo $npm_package_version",
+        "install": "npm run prepack",
         "install-cli": "npm pack && npm i -g",
         "clean-network": "symbol-bootstrap clean -t target/bootstrap-test",
         "start-network": "symbol-bootstrap start -t target/bootstrap-test -u 'current'"
