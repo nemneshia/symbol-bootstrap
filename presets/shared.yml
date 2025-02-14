@@ -210,7 +210,6 @@ blockCacheSize: 0MB
 memtableMemoryBudget: 0MB
 maxLogFileSize: 100MB
 
-
 #Rest
 throttlingBurst: 80
 throttlingRate: 60
@@ -235,7 +234,9 @@ restSSLPath: '/symbol-workdir'
 restSSLKeyFileName: 'restSSL.key'
 restSSLCertificateFileName: 'restSSL.crt'
 restNodeMetadata:
-  _info: "Node metadata"
+    _info: 'Node metadata'
+restMetalCacheTtl: 300
+restMetalSizeLimit: 10000000
 statisticsServicePeerFilter: ''
 statisticsServicePeerLimit: 50
 statisticsServiceRestFilter: suggested
@@ -245,4 +246,3 @@ treasuryReissuanceTransactionSignatures_has_items: false
 corruptAggregateTransactionHashes_has_items: false
 treasuryReissuanceTransactionSignatures: []
 corruptAggregateTransactionHashes: []
-
