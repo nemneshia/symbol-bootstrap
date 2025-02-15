@@ -7,4 +7,4 @@ nodes:
 explorers:
   - name: 'explorer'
     excludeDockerService: true
-    openPort: true
+    openPort: 90
