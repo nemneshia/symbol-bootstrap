@@ -65,4 +65,4 @@ EXAMPLES
   $ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap config -p testnet -a dual
 ```
 
-_See code: [src/commands/config.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.12/src/commands/config.ts)_
+_See code: [src/commands/config.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.13/src/commands/config.ts)_

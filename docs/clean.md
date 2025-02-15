@@ -24,4 +24,4 @@ EXAMPLE
   $ symbol-bootstrap clean
 ```
 
-_See code: [src/commands/clean.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.12/src/commands/clean.ts)_
+_See code: [src/commands/clean.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.13/src/commands/clean.ts)_
