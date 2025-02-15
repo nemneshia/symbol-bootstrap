@@ -110,7 +110,7 @@ peersApiListLimit: 10
 
 # config finalization
 shortLivedCacheMessageDuration: 10m
-messageSynchronizationMaxResponseSize: 20MB
+messageSynchronizationMaxResponseSize: 5MB
 finalizationSize: 10000
 finalizationThreshold: 6700
 maxHashesPerPoint: 256
@@ -144,7 +144,7 @@ enableTransactionSpamThrottling: true
 transactionSpamThrottlingMaxBoostFee: 10000000
 maxHashesPerSyncAttempt: 370
 maxBlocksPerSyncAttempt: 360
-maxChainBytesPerSyncAttempt: 100MB
+maxChainBytesPerSyncAttempt: 50MB
 shortLivedCacheTransactionDuration: 10m
 shortLivedCacheBlockDuration: 100m
 shortLivedCachePruneInterval: 90s
@@ -160,7 +160,7 @@ socketWorkingBufferSize: 16KB
 socketWorkingBufferSensitivity: 1
 maxPacketDataSize: 150MB
 blockDisruptorSlotCount: 4096
-blockDisruptorMaxMemorySize: 300MB
+blockDisruptorMaxMemorySize: 1000MB
 blockElementTraceInterval: 1
 transactionDisruptorSlotCount: 8192
 transactionDisruptorMaxMemorySize: 20MB

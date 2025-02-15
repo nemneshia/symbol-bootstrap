@@ -69,7 +69,7 @@ size; 10'000
 threshold; 6'700
 stepDuration; 5m
 shortLivedCacheMessageDuration; 10m
-messageSynchronizationMaxResponseSize; 20MB
+messageSynchronizationMaxResponseSize; 5MB
 maxHashesPerPoint; 256
 prevoteBlocksMultiple; 4
 unfinalizedBlocksDuration; 10m
@@ -791,7 +791,7 @@ enableTransactionSpamThrottling; true; bool; Set to true if transaction spam thr
 transactionSpamThrottlingMaxBoostFee; 10'000'000; Amount; Maximum fee that will boost a transaction through the spam throttle when spam throttling is enabled.
 maxHashesPerSyncAttempt; 370; ;
 maxBlocksPerSyncAttempt; 360; uint32_t; Maximum number of blocks per sync attempt.
-maxChainBytesPerSyncAttempt; 100MB; utils::FileSize; Maximum chain bytes per sync attempt.
+maxChainBytesPerSyncAttempt; 50MB; utils::FileSize; Maximum chain bytes per sync attempt.
 shortLivedCacheTransactionDuration; 10m; utils::TimeSpan; Duration of a transaction in the short lived cache.
 shortLivedCacheBlockDuration; 100m; utils::TimeSpan; Duration of a block in the short lived cache.
 shortLivedCachePruneInterval; 90s; utils::TimeSpan; Time between short lived cache pruning.
@@ -808,7 +808,7 @@ socketWorkingBufferSensitivity; 1; uint32_t; Socket working buffer sensitivity (
 maxPacketDataSize; 150MB; utils::FileSize; Maximum packet data size.
 blockDisruptorSlotCount; 4096; uint32_t; Size of the block disruptor circular buffer.
 blockElementTraceInterval; 1; uint32_t; Multiple of elements at which a block element should be traced through queue and completion.
-blockDisruptorMaxMemorySize; 300MB; ;
+blockDisruptorMaxMemorySize; 1000MB; ;
 transactionDisruptorSlotCount; 8192; uint32_t; Size of the transaction disruptor circular buffer.
 transactionElementTraceInterval; 10; uint32_t; Multiple of elements at which a transaction element should be traced through queue and completion.
 transactionDisruptorMaxMemorySize; 20MB; ;
