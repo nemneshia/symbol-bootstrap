@@ -1,12 +1,12 @@
 {
-    "name": "symbol-bootstrap",
+    "name": "@nemneshia/symbol-bootstrap",
     "description": "Symbol tool that allows you creating, configuring and running Symbol's networks",
     "version": "1.1.11",
-    "author": "Fernando Boucquez <fboucquez@gmail.com>",
+    "author": "Nemneshia <@nemneshia>",
     "bin": {
         "symbol-bootstrap": "bin/run"
     },
-    "bugs": "https://github.com/fboucquez/symbol-bootstrap/issues",
+    "bugs": "https://github.com/nemneshia/symbol-bootstrap/issues",
     "dependencies": {
         "@noble/ed25519": "^1.5.3",
         "@oclif/command": "^1.8.16",
@@ -81,7 +81,7 @@
         "/npm-shrinkwrap.json",
         "/oclif.manifest.json"
     ],
-    "homepage": "https://github.com/fboucquez/symbol-bootstrap",
+    "homepage": "https://github.com/nemneshia/symbol-bootstrap",
     "keywords": [
         "oclif"
     ],
