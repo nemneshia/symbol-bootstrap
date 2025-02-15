@@ -22,87 +22,87 @@ import { RuntimeService } from './RuntimeService';
 import { VotingUtils } from './VotingUtils';
 
 export interface VotingKeyParams {
-    presetData: ConfigPreset;
-    nodeAccount: NodeAccount;
-    nodePreset: NodePreset;
-    votingKeysFolder: string;
-    privateKeyTreeFileName: string;
-    votingKeyStartEpoch: number;
-    votingKeyEndEpoch: number;
+  presetData: ConfigPreset;
+  nodeAccount: NodeAccount;
+  nodePreset: NodePreset;
+  votingKeysFolder: string;
+  privateKeyTreeFileName: string;
+  votingKeyStartEpoch: number;
+  votingKeyEndEpoch: number;
 }
 
 export interface VotingKeyCreationResult {
-    publicKey: string;
+  publicKey: string;
 }
 
 export interface VotingKeyFileProvider {
-    createVotingFile(params: VotingKeyParams): Promise<VotingKeyCreationResult>;
+  createVotingFile(params: VotingKeyParams): Promise<VotingKeyCreationResult>;
 }
 
 export class NativeVotingKeyFileProvider implements VotingKeyFileProvider {
-    private readonly runtimeService: RuntimeService;
-    constructor(private readonly logger: Logger) {
-        this.runtimeService = new RuntimeService(logger);
-    }
-    public async createVotingFile({
-        presetData,
-        votingKeysFolder,
-        privateKeyTreeFileName,
-        votingKeyStartEpoch,
-        votingKeyEndEpoch,
-    }: VotingKeyParams): Promise<VotingKeyCreationResult> {
-        const votingAccount = Account.generateNewAccount(presetData.networkType);
-        const votingPrivateKey = votingAccount.privateKey;
-        const votingUtils = new VotingUtils();
-        this.logger.info('Voting file is created using the native typescript voting key file generator!');
-        const votingFile = await votingUtils.createVotingFile(votingPrivateKey, votingKeyStartEpoch, votingKeyEndEpoch);
-        writeFileSync(join(votingKeysFolder, privateKeyTreeFileName), votingFile);
-        return {
-            publicKey: votingAccount.publicKey,
-        };
-    }
+  private readonly runtimeService: RuntimeService;
+  constructor(private readonly logger: Logger) {
+    this.runtimeService = new RuntimeService(logger);
+  }
+  public async createVotingFile({
+    presetData,
+    votingKeysFolder,
+    privateKeyTreeFileName,
+    votingKeyStartEpoch,
+    votingKeyEndEpoch,
+  }: VotingKeyParams): Promise<VotingKeyCreationResult> {
+    const votingAccount = Account.generateNewAccount(presetData.networkType);
+    const votingPrivateKey = votingAccount.privateKey;
+    const votingUtils = new VotingUtils();
+    this.logger.info('Voting file is created using the native typescript voting key file generator!');
+    const votingFile = await votingUtils.createVotingFile(votingPrivateKey, votingKeyStartEpoch, votingKeyEndEpoch);
+    writeFileSync(join(votingKeysFolder, privateKeyTreeFileName), votingFile);
+    return {
+      publicKey: votingAccount.publicKey,
+    };
+  }
 }
 
 export class CatapultVotingKeyFileProvider implements VotingKeyFileProvider {
-    private readonly runtimeService: RuntimeService;
-    constructor(private readonly logger: Logger, private readonly user: string) {
-        this.runtimeService = new RuntimeService(logger);
-    }
-    public async createVotingFile({
-        presetData,
-        votingKeysFolder,
-        privateKeyTreeFileName,
-        votingKeyStartEpoch,
-        votingKeyEndEpoch,
-    }: VotingKeyParams): Promise<VotingKeyCreationResult> {
-        this.logger.info(`Voting file is created using docker and catapult.tools.votingkey`);
-        const votingAccount = Account.generateNewAccount(presetData.networkType);
-        const votingPrivateKey = votingAccount.privateKey;
-        const symbolServerImage = presetData.symbolServerImage;
-        const binds = [`${votingKeysFolder}:/votingKeys:rw`];
-        const cmd = [
-            `${presetData.catapultAppFolder}/bin/catapult.tools.votingkey`,
-            `--secret=${votingPrivateKey}`,
-            `--startEpoch=${votingKeyStartEpoch}`,
-            `--endEpoch=${votingKeyEndEpoch}`,
-            `--output=/votingKeys/${privateKeyTreeFileName}`,
-        ];
-        const userId = await this.runtimeService.resolveDockerUserFromParam(this.user);
-        const { stdout, stderr } = await this.runtimeService.runImageUsingExec({
-            catapultAppFolder: presetData.catapultAppFolder,
-            image: symbolServerImage,
-            userId: userId,
-            cmds: cmd,
-            binds: binds,
-        });
+  private readonly runtimeService: RuntimeService;
+  constructor(private readonly logger: Logger, private readonly user: string) {
+    this.runtimeService = new RuntimeService(logger);
+  }
+  public async createVotingFile({
+    presetData,
+    votingKeysFolder,
+    privateKeyTreeFileName,
+    votingKeyStartEpoch,
+    votingKeyEndEpoch,
+  }: VotingKeyParams): Promise<VotingKeyCreationResult> {
+    this.logger.info(`Voting file is created using docker and catapult.tools.votingkey`);
+    const votingAccount = Account.generateNewAccount(presetData.networkType);
+    const votingPrivateKey = votingAccount.privateKey;
+    const symbolServerImage = presetData.symbolServerImage;
+    const binds = [`${votingKeysFolder}:/votingKeys:rw`];
+    const cmd = [
+      `${presetData.catapultAppFolder}/bin/catapult.tools.votingkey`,
+      `--secret=${votingPrivateKey}`,
+      `--startEpoch=${votingKeyStartEpoch}`,
+      `--endEpoch=${votingKeyEndEpoch}`,
+      `--output=/votingKeys/${privateKeyTreeFileName}`,
+    ];
+    const userId = await this.runtimeService.resolveDockerUserFromParam(this.user);
+    const { stdout, stderr } = await this.runtimeService.runImageUsingExec({
+      catapultAppFolder: presetData.catapultAppFolder,
+      image: symbolServerImage,
+      userId: userId,
+      cmds: cmd,
+      binds: binds,
+    });
 
-        if (stdout.indexOf('<error> ') > -1) {
-            this.logger.info(stdout);
-            this.logger.error(stderr);
-            throw new Error('Voting key failed. Check the logs!');
-        }
-        return {
-            publicKey: votingAccount.publicKey,
-        };
+    if (stdout.indexOf('<error> ') > -1) {
+      this.logger.info(stdout);
+      this.logger.error(stderr);
+      throw new Error('Voting key failed. Check the logs!');
     }
+    return {
+      publicKey: votingAccount.publicKey,
+    };
+  }
 }

@@ -19,20 +19,20 @@ import { LoggerFactory, System } from '../logger';
 import { BootstrapService, CommandUtils } from '../service';
 
 export default class Stop extends Command {
-    static description =
-        'It stops the docker-compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker-compose down` bash call.';
-    static examples = [`$ symbol-bootstrap stop`];
+  static description =
+    'It stops the docker-compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker-compose down` bash call.';
+  static examples = [`$ symbol-bootstrap stop`];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        target: CommandUtils.targetFlag,
-        logger: CommandUtils.getLoggerFlag(...System),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    target: CommandUtils.targetFlag,
+    logger: CommandUtils.getLoggerFlag(...System),
+  };
 
-    public run(): Promise<void> {
-        const { flags } = this.parse(Stop);
-        const logger = LoggerFactory.getLogger(flags.logger);
-        CommandUtils.showBanner();
-        return new BootstrapService(logger).stop(flags);
-    }
+  public run(): Promise<void> {
+    const { flags } = this.parse(Stop);
+    const logger = LoggerFactory.getLogger(flags.logger);
+    CommandUtils.showBanner();
+    return new BootstrapService(logger).stop(flags);
+  }
 }

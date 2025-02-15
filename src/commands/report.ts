@@ -19,21 +19,21 @@ import { LoggerFactory, System } from '../logger';
 import { BootstrapService, CommandUtils, Constants } from '../service';
 
 export default class Report extends Command {
-    static description = 'it generates reStructuredText (.rst) reports describing the configuration of each node.';
+  static description = 'it generates reStructuredText (.rst) reports describing the configuration of each node.';
 
-    static examples = [`$ symbol-bootstrap report`];
+  static examples = [`$ symbol-bootstrap report`];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        target: CommandUtils.targetFlag,
-        logger: CommandUtils.getLoggerFlag(...System),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    target: CommandUtils.targetFlag,
+    logger: CommandUtils.getLoggerFlag(...System),
+  };
 
-    public async run(): Promise<void> {
-        const { flags } = this.parse(Report);
-        CommandUtils.showBanner();
-        const logger = LoggerFactory.getLogger(flags.logger);
-        const workingDir = Constants.defaultWorkingDir;
-        await new BootstrapService(logger).report({ ...flags, workingDir });
-    }
+  public async run(): Promise<void> {
+    const { flags } = this.parse(Report);
+    CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
+    const workingDir = Constants.defaultWorkingDir;
+    await new BootstrapService(logger).report({ ...flags, workingDir });
+  }
 }

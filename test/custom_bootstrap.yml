@@ -1,6 +1,6 @@
 nemesis:
-    mosaics:
-        - accounts: 10
+  mosaics:
+    - accounts: 10
 #dockerComposeDebugMode: true
 #gateways:
 #  - repeat: 0

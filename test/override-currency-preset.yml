@@ -1,4 +1,4 @@
 preset: bootstrap
 nemesis:
-    mosaics:
-        - accounts: 20
+  mosaics:
+    - accounts: 20

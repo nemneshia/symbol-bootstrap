@@ -19,22 +19,22 @@ import { LoggerFactory, System } from '../logger';
 import { CommandUtils, VerifyService } from '../service';
 
 export default class Verify extends Command {
-    static description =
-        'It tests the installed software in the current computer reporting if there is any missing dependency, invalid version, or software related issue.';
-    static examples = [`$ symbol-bootstrap verify`];
+  static description =
+    'It tests the installed software in the current computer reporting if there is any missing dependency, invalid version, or software related issue.';
+  static examples = [`$ symbol-bootstrap verify`];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        logger: CommandUtils.getLoggerFlag(...System),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    logger: CommandUtils.getLoggerFlag(...System),
+  };
 
-    public async run(): Promise<void> {
-        CommandUtils.showBanner();
-        const { flags } = this.parse(Verify);
-        const logger = LoggerFactory.getLogger(flags.logger);
-        const service = new VerifyService(logger);
-        const report = await service.createReport();
-        service.logReport(report);
-        service.validateReport(report);
-    }
+  public async run(): Promise<void> {
+    CommandUtils.showBanner();
+    const { flags } = this.parse(Verify);
+    const logger = LoggerFactory.getLogger(flags.logger);
+    const service = new VerifyService(logger);
+    const report = await service.createReport();
+    service.logReport(report);
+    service.validateReport(report);
+  }
 }

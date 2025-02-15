@@ -23,61 +23,61 @@ import { BootstrapService, Preset, RunService, StartParams } from '../../src/ser
 const logger = LoggerFactory.getLogger(LogType.Silent);
 const fileSystemService = new FileSystemService(logger);
 describe('RunService', () => {
-    const target = 'target/tests/BootstrapService.standard';
+  const target = 'target/tests/BootstrapService.standard';
 
-    it('healthCheck', async () => {
-        const bootstrapService = new BootstrapService(logger);
-        const config: StartParams = {
-            ...ConfigService.defaultParams,
-            report: false,
-            upgrade: false,
-            preset: Preset.bootstrap,
-            reset: false,
-            target,
-            detached: true,
-            build: false,
-            user: 'current',
-            timeout: 1200,
-        };
+  it('healthCheck', async () => {
+    const bootstrapService = new BootstrapService(logger);
+    const config: StartParams = {
+      ...ConfigService.defaultParams,
+      report: false,
+      upgrade: false,
+      preset: Preset.bootstrap,
+      reset: false,
+      target,
+      detached: true,
+      build: false,
+      user: 'current',
+      timeout: 1200,
+    };
 
-        await bootstrapService.config(config);
+    await bootstrapService.config(config);
 
-        await bootstrapService.compose(config);
+    await bootstrapService.compose(config);
 
-        const service = new RunService(logger, { ...config });
-        try {
-            await service.healthCheck(500);
-        } catch (e) {
-            expect(Utils.getMessage(e)).to.equal('Network did NOT start!!!');
-            return;
-        }
-        throw new Error('This should fail!');
-    });
+    const service = new RunService(logger, { ...config });
+    try {
+      await service.healthCheck(500);
+    } catch (e) {
+      expect(Utils.getMessage(e)).to.equal('Network did NOT start!!!');
+      return;
+    }
+    throw new Error('This should fail!');
+  });
 
-    it('resetData', async () => {
-        const bootstrapService = new BootstrapService(logger);
-        const config: StartParams = {
-            ...ConfigService.defaultParams,
-            report: false,
-            upgrade: false,
-            preset: Preset.bootstrap,
-            reset: false,
-            target,
-            detached: true,
-            build: false,
-            user: 'current',
-            timeout: 1200,
-        };
+  it('resetData', async () => {
+    const bootstrapService = new BootstrapService(logger);
+    const config: StartParams = {
+      ...ConfigService.defaultParams,
+      report: false,
+      upgrade: false,
+      preset: Preset.bootstrap,
+      reset: false,
+      target,
+      detached: true,
+      build: false,
+      user: 'current',
+      timeout: 1200,
+    };
 
-        const configResult = await bootstrapService.config(config);
-        await bootstrapService.compose(config);
+    const configResult = await bootstrapService.config(config);
+    await bootstrapService.compose(config);
 
-        const nodeDataFolder = fileSystemService.getTargetNodesFolder(target, false, configResult.presetData.nodes![0].name, 'data');
-        expect(existsSync(nodeDataFolder)).eq(true);
-        fileSystemService.deleteFolder(nodeDataFolder);
-        expect(existsSync(nodeDataFolder)).eq(false);
-        const service = new RunService(logger, { ...config });
-        await service.resetData();
-        expect(existsSync(join(nodeDataFolder, '00000', '00001.dat'))).eq(false);
-    });
+    const nodeDataFolder = fileSystemService.getTargetNodesFolder(target, false, configResult.presetData.nodes![0].name, 'data');
+    expect(existsSync(nodeDataFolder)).eq(true);
+    fileSystemService.deleteFolder(nodeDataFolder);
+    expect(existsSync(nodeDataFolder)).eq(false);
+    const service = new RunService(logger, { ...config });
+    await service.resetData();
+    expect(existsSync(join(nodeDataFolder, '00000', '00001.dat'))).eq(false);
+  });
 });

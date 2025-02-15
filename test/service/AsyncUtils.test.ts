@@ -21,22 +21,22 @@ import { AsyncUtils, LoggerFactory, LogType } from '../../src';
 const logger = LoggerFactory.getLogger(LogType.Silent);
 
 describe('AsyncUtils', () => {
-    it('sleep', async () => {
-        const initial = Date.now();
-        await AsyncUtils.sleep(200);
-        const final = Date.now();
-        expect(final - initial).gte(190);
-    });
+  it('sleep', async () => {
+    const initial = Date.now();
+    await AsyncUtils.sleep(200);
+    const final = Date.now();
+    expect(final - initial).gte(190);
+  });
 
-    it('poll finishes', async () => {
-        let counter = 0;
-        await AsyncUtils.poll(logger, async () => counter++ == 3, 100, 10);
-        expect(counter).gte(3);
-    });
+  it('poll finishes', async () => {
+    let counter = 0;
+    await AsyncUtils.poll(logger, async () => counter++ == 3, 100, 10);
+    expect(counter).gte(3);
+  });
 
-    it('poll fails', async () => {
-        let counter = 0;
-        await AsyncUtils.poll(logger, async () => counter++ == 4, 21, 10);
-        expect(counter).gte(2);
-    });
+  it('poll fails', async () => {
+    let counter = 0;
+    await AsyncUtils.poll(logger, async () => counter++ == 4, 21, 10);
+    expect(counter).gte(2);
+  });
 });

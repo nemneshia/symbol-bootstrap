@@ -17,30 +17,30 @@
 import { stdin } from 'mock-stdin';
 
 export const StdUtils = {
-    keys: Object.freeze({
-        up: '\u001b[A',
-        down: '\u001b[B',
-        left: '\u001b[D',
-        right: '\u001b[C',
-    }),
-    in: (responses: string[]): void => {
-        let k = 0;
+  keys: Object.freeze({
+    up: '\u001b[A',
+    down: '\u001b[B',
+    left: '\u001b[D',
+    right: '\u001b[C',
+  }),
+  in: (responses: string[]): void => {
+    let k = 0;
 
-        const s = stdin();
-        function sendAnswer() {
-            setTimeout(function () {
-                const text = responses[k];
-                if (typeof text !== 'string') {
-                    throw new Error('Should give only text responses ' + JSON.stringify(responses, null, 2));
-                }
-                s.send(text);
-                k += 1;
-                if (k < responses.length) {
-                    sendAnswer();
-                }
-            }, 0);
+    const s = stdin();
+    function sendAnswer() {
+      setTimeout(function () {
+        const text = responses[k];
+        if (typeof text !== 'string') {
+          throw new Error('Should give only text responses ' + JSON.stringify(responses, null, 2));
         }
+        s.send(text);
+        k += 1;
+        if (k < responses.length) {
+          sendAnswer();
+        }
+      }, 0);
+    }
 
-        sendAnswer();
-    },
+    sendAnswer();
+  },
 };

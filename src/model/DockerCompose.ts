@@ -21,53 +21,53 @@
  */
 
 export interface DockerComposeService {
-    build?: string;
-    image?: string;
-    container_name: string;
-    restart?: string;
-    user?: string;
-    working_dir?: string;
-    command?: string;
-    entrypoint?: string;
-    hostname?: string;
-    environment?: Record<string, string>;
-    stop_signal?: string;
-    stop_grace_period?: string;
-    volumes?: string[];
-    ports?: string[];
-    depends_on?: string[];
-    mem_limit?: string | number;
-    logging?: DockerComposeServiceLogging;
-    // https://docs.docker.com/compose/compose-file/#service-configuration-reference deploy section
-    networks?: {
-        default: {
-            ipv4_address?: string;
-            aliases?: string[];
-        };
+  build?: string;
+  image?: string;
+  container_name: string;
+  restart?: string;
+  user?: string;
+  working_dir?: string;
+  command?: string;
+  entrypoint?: string;
+  hostname?: string;
+  environment?: Record<string, string>;
+  stop_signal?: string;
+  stop_grace_period?: string;
+  volumes?: string[];
+  ports?: string[];
+  depends_on?: string[];
+  mem_limit?: string | number;
+  logging?: DockerComposeServiceLogging;
+  // https://docs.docker.com/compose/compose-file/#service-configuration-reference deploy section
+  networks?: {
+    default: {
+      ipv4_address?: string;
+      aliases?: string[];
     };
-    // DEBUG MODE
-    privileged?: boolean;
-    cap_add?: string[];
-    security_opt?: string[];
+  };
+  // DEBUG MODE
+  privileged?: boolean;
+  cap_add?: string[];
+  security_opt?: string[];
 }
 
 export interface DockerComposeServiceLogging {
-    driver: string;
-    options: Record<string, string>;
+  driver: string;
+  options: Record<string, string>;
 }
 
 export interface DockerCompose {
-    version: string | number;
-    networks?: {
-        default?: {
-            ipam?: {
-                config?: [
-                    {
-                        subnet: string;
-                    },
-                ];
-            };
-        };
+  version: string | number;
+  networks?: {
+    default?: {
+      ipam?: {
+        config?: [
+          {
+            subnet: string;
+          },
+        ];
+      };
     };
-    services: Record<string, DockerComposeService>;
+  };
+  services: Record<string, DockerComposeService>;
 }
