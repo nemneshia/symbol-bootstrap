@@ -194,7 +194,9 @@ ${YamlUtils.toYaml(dockerCompose)}
       customPresetObject: {
         faucets: [
           {
-            environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
+            compose: {
+              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
+            },
           },
         ],
       },
@@ -212,7 +214,9 @@ ${YamlUtils.toYaml(dockerCompose)}
       customPresetObject: {
         faucets: [
           {
-            environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
+            compose: {
+              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
+            },
           },
         ],
       },
@@ -233,7 +237,9 @@ ${YamlUtils.toYaml(dockerCompose)}
       customPresetObject: {
         faucets: [
           {
-            environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
+            compose: {
+              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
+            },
           },
         ],
       },
