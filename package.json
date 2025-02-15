@@ -1,5 +1,5 @@
 {
-  "name": "@nemneshia/symbol-bootstrap",
+  "name": "symbol-bootstrap",
   "description": "Symbol tool that allows you creating, configuring and running Symbol's networks",
   "version": "1.1.12",
   "author": "Nemneshia <@nemneshia>",
@@ -95,7 +95,7 @@
       "@oclif/plugin-help"
     ]
   },
-  "repository": "fboucquez/symbol-bootstrap",
+  "repository": "nemneshia/symbol-bootstrap",
   "scripts": {
     "doc": "typedoc --out \"ts-docs\" src && touch ./ts-docs/.nojekyll",
     "lint": "eslint --cache src/ test/ --ext .ts",
