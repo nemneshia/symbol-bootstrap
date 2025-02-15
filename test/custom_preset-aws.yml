@@ -11,20 +11,20 @@ nemesisGenerationHashSeed: A4D7C86BB3D1334FF40D607C891C676FBC76D336285A9AB851CD4
 ##   Disable harvest currency with repeat 0
 #   mosaics: [{}, { repeat: 0 }]
 databases:
-    - repeat: 1
+  - repeat: 1
 nodes:
-    - repeat: 2
-    - repeat: 1
+  - repeat: 2
+  - repeat: 1
 gateways:
-    - repeat: 1
+  - repeat: 1
 explorers:
-    - repeat: 1
-      defaultNode: 'http://aws-rest-gateway-{{$index}}:3000'
-      restNodes:
-          - 'http://aws-rest-gateway-{{$index}}:3000'
+  - repeat: 1
+    defaultNode: 'http://aws-rest-gateway-{{$index}}:3000'
+    restNodes:
+      - 'http://aws-rest-gateway-{{$index}}:3000'
 faucets:
-    - repeat: 1
-      environment:
-          DEFAULT_NODE: 'http://aws-rest-gateway-{{$index}}:3000'
-          DEFAULT_NODE_CLIENT: 'http://aws-rest-gateway-{{$index}}:3000'
-          EXPLORER_URL: 'http://aws-explorer-url-{{$index}}:80/'
+  - repeat: 1
+    environment:
+      DEFAULT_NODE: 'http://aws-rest-gateway-{{$index}}:3000'
+      DEFAULT_NODE_CLIENT: 'http://aws-rest-gateway-{{$index}}:3000'
+      EXPLORER_URL: 'http://aws-explorer-url-{{$index}}:80/'

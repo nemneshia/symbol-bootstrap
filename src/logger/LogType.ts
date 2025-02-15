@@ -15,12 +15,12 @@
  */
 
 export enum LogType {
-    // Console log with line info
-    Console = 'Console',
-    // File log with line info
-    File = 'File',
-    // Silent, no log at all.
-    Silent = 'Silent',
+  // Console log with line info
+  Console = 'Console',
+  // File log with line info
+  File = 'File',
+  // Silent, no log at all.
+  Silent = 'Silent',
 }
 
 //Shortcut

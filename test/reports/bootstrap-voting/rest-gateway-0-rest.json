@@ -95,5 +95,9 @@
   },
   "nodeMetadata": {
     "_info": "Node metadata"
+  },
+  "metal": {
+    "cacheTtl": 300,
+    "sizeLimit": 10000000
   }
 }

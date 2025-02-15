@@ -21,24 +21,20 @@ import { ConfigPreset } from '../model';
 import { RemoteNodeService } from './RemoteNodeService';
 
 export class TransactionUtils {
-    public static async getRepositoryFactory(
-        logger: Logger,
-        presetData: ConfigPreset,
-        url: string | undefined,
-    ): Promise<RepositoryFactory> {
-        const repositoryInfo = await new RemoteNodeService(logger, presetData, false).getBestRepositoryInfo(url);
-        return repositoryInfo.repositoryFactory;
-    }
+  public static async getRepositoryFactory(logger: Logger, presetData: ConfigPreset, url: string | undefined): Promise<RepositoryFactory> {
+    const repositoryInfo = await new RemoteNodeService(logger, presetData, false).getBestRepositoryInfo(url);
+    return repositoryInfo.repositoryFactory;
+  }
 
-    public static async getMultisigAccount(
-        repositoryFactory: RepositoryFactory,
-        accountAddress: Address,
-    ): Promise<MultisigAccountInfo | undefined> {
-        try {
-            const info = await firstValueFrom(repositoryFactory.createMultisigRepository().getMultisigAccountInfo(accountAddress));
-            return info.isMultisig() ? info : undefined;
-        } catch (e) {
-            return undefined;
-        }
+  public static async getMultisigAccount(
+    repositoryFactory: RepositoryFactory,
+    accountAddress: Address,
+  ): Promise<MultisigAccountInfo | undefined> {
+    try {
+      const info = await firstValueFrom(repositoryFactory.createMultisigRepository().getMultisigAccountInfo(accountAddress));
+      return info.isMultisig() ? info : undefined;
+    } catch (e) {
+      return undefined;
     }
+  }
 }

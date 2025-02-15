@@ -19,51 +19,51 @@ import { LoggerFactory, LogType } from '../logger';
 import { AnnounceService, BootstrapService, CommandUtils } from '../service';
 
 export default class ModifyMultisig extends Command {
-    static description = `Create or modify a multisig account`;
+  static description = `Create or modify a multisig account`;
 
-    static examples = [
-        `$ symbol-bootstrap modifyMultisig`,
-        `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap modifyMultisig --useKnownRestGateways`,
-    ];
+  static examples = [
+    `$ symbol-bootstrap modifyMultisig`,
+    `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap modifyMultisig --useKnownRestGateways`,
+  ];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        target: CommandUtils.targetFlag,
-        minRemovalDelta: flags.integer({
-            description:
-                'Delta of signatures needed to remove a cosignatory. ' +
-                '0 means no change, a positive(+) number means increment and a negative(-) number means decrement to the actual value.',
-            char: 'r',
-        }),
-        minApprovalDelta: flags.integer({
-            description:
-                'Delta of signatures needed to approve a transaction. ' +
-                '0 means no change, a positive(+) number means increment and a negative(-) number means decrement to the actual value.',
-            char: 'a',
-        }),
-        addressAdditions: flags.string({
-            description: 'Cosignatory accounts addresses to be added (separated by a comma).',
-            char: 'A',
-        }),
-        addressDeletions: flags.string({
-            description: 'Cosignatory accounts addresses to be removed (separated by a comma).',
-            char: 'D',
-        }),
-        ...AnnounceService.flags,
-        logger: CommandUtils.getLoggerFlag(LogType.Console),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    target: CommandUtils.targetFlag,
+    minRemovalDelta: flags.integer({
+      description:
+        'Delta of signatures needed to remove a cosignatory. ' +
+        '0 means no change, a positive(+) number means increment and a negative(-) number means decrement to the actual value.',
+      char: 'r',
+    }),
+    minApprovalDelta: flags.integer({
+      description:
+        'Delta of signatures needed to approve a transaction. ' +
+        '0 means no change, a positive(+) number means increment and a negative(-) number means decrement to the actual value.',
+      char: 'a',
+    }),
+    addressAdditions: flags.string({
+      description: 'Cosignatory accounts addresses to be added (separated by a comma).',
+      char: 'A',
+    }),
+    addressDeletions: flags.string({
+      description: 'Cosignatory accounts addresses to be removed (separated by a comma).',
+      char: 'D',
+    }),
+    ...AnnounceService.flags,
+    logger: CommandUtils.getLoggerFlag(LogType.Console),
+  };
 
-    public async run(): Promise<void> {
-        const { flags } = this.parse(ModifyMultisig);
-        const logger = LoggerFactory.getLogger(flags.logger);
-        CommandUtils.showBanner();
-        flags.password = await CommandUtils.resolvePassword(
-            logger,
-            flags.password,
-            flags.noPassword,
-            CommandUtils.passwordPromptDefaultMessage,
-            true,
-        );
-        return new BootstrapService(logger).modifyMultisig(flags);
-    }
+  public async run(): Promise<void> {
+    const { flags } = this.parse(ModifyMultisig);
+    const logger = LoggerFactory.getLogger(flags.logger);
+    CommandUtils.showBanner();
+    flags.password = await CommandUtils.resolvePassword(
+      logger,
+      flags.password,
+      flags.noPassword,
+      CommandUtils.passwordPromptDefaultMessage,
+      true,
+    );
+    return new BootstrapService(logger).modifyMultisig(flags);
+  }
 }

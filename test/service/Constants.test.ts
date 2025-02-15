@@ -19,8 +19,8 @@ import 'mocha';
 import { it } from 'mocha';
 import { Constants } from '../../src';
 describe('Constants', () => {
-    it('Constants.resolveRootFolder', async () => {
-        expect(Constants.resolveRootFolder()).to.not.undefined;
-        expect(Constants.resolveRootFolder()).to.be.eq(Constants.ROOT_FOLDER);
-    });
+  it('Constants.resolveRootFolder', async () => {
+    expect(Constants.resolveRootFolder()).to.not.undefined;
+    expect(Constants.resolveRootFolder()).to.be.eq(Constants.ROOT_FOLDER);
+  });
 });

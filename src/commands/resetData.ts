@@ -19,20 +19,20 @@ import { LoggerFactory, System } from '../logger';
 import { BootstrapService, CommandUtils } from '../service';
 
 export default class ResetData extends Command {
-    static description = 'It removes the data keeping the generated configuration, certificates, keys and block 1.';
+  static description = 'It removes the data keeping the generated configuration, certificates, keys and block 1.';
 
-    static examples = [`$ symbol-bootstrap resetData`];
+  static examples = [`$ symbol-bootstrap resetData`];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        target: CommandUtils.targetFlag,
-        logger: CommandUtils.getLoggerFlag(...System),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    target: CommandUtils.targetFlag,
+    logger: CommandUtils.getLoggerFlag(...System),
+  };
 
-    public async run(): Promise<void> {
-        const { flags } = this.parse(ResetData);
-        CommandUtils.showBanner();
-        const logger = LoggerFactory.getLogger(flags.logger);
-        await new BootstrapService(logger).resetData(flags);
-    }
+  public async run(): Promise<void> {
+    const { flags } = this.parse(ResetData);
+    CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
+    await new BootstrapService(logger).resetData(flags);
+  }
 }

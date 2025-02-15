@@ -19,7 +19,7 @@ import { LoggerFactory, System } from '../logger';
 import { BootstrapService, CommandUtils } from '../service';
 
 export default class HealthCheck extends Command {
-    static description = `It checks if the services created with docker compose are up and running.
+  static description = `It checks if the services created with docker compose are up and running.
 
 This command checks:
 - Whether the docker containers are running.
@@ -29,18 +29,18 @@ This command checks:
 The health check process handles 'repeat' and custom 'openPort' services.
     `;
 
-    static examples = [`$ symbol-bootstrap healthCheck`];
+  static examples = [`$ symbol-bootstrap healthCheck`];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        target: CommandUtils.targetFlag,
-        logger: CommandUtils.getLoggerFlag(...System),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    target: CommandUtils.targetFlag,
+    logger: CommandUtils.getLoggerFlag(...System),
+  };
 
-    public async run(): Promise<void> {
-        const { flags } = this.parse(HealthCheck);
-        CommandUtils.showBanner();
-        const logger = LoggerFactory.getLogger(flags.logger);
-        await new BootstrapService(logger).healthCheck(flags);
-    }
+  public async run(): Promise<void> {
+    const { flags } = this.parse(HealthCheck);
+    CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
+    await new BootstrapService(logger).healthCheck(flags);
+  }
 }

@@ -18,43 +18,43 @@ import { NetworkType } from 'symbol-sdk';
 import { VotingKeyFile } from '../service';
 
 export interface CertificatePair {
-    privateKey?: string;
-    publicKey: string;
+  privateKey?: string;
+  publicKey: string;
 }
 
 export interface ConfigAccount extends CertificatePair {
-    address: string;
+  address: string;
 }
 
 export interface NodeAccount {
-    // keys from ca.cert.pem file
-    main: ConfigAccount;
-    // keys from the node.key.pem file (required for delegate harvesting)
-    transport: ConfigAccount;
-    // Harvester signing key is produced if node is peer or voting.
-    // It could be the ca/main account or a linked remote account. The later is recommended.
-    remote?: ConfigAccount;
-    // VRF key is produced if node is peer
-    vrf?: ConfigAccount;
-    // Voting keys are produced if node is voting
-    voting?: VotingKeyFile[];
-    roles: string;
-    name: string;
-    friendlyName: string;
+  // keys from ca.cert.pem file
+  main: ConfigAccount;
+  // keys from the node.key.pem file (required for delegate harvesting)
+  transport: ConfigAccount;
+  // Harvester signing key is produced if node is peer or voting.
+  // It could be the ca/main account or a linked remote account. The later is recommended.
+  remote?: ConfigAccount;
+  // VRF key is produced if node is peer
+  vrf?: ConfigAccount;
+  // Voting keys are produced if node is voting
+  voting?: VotingKeyFile[];
+  roles: string;
+  name: string;
+  friendlyName: string;
 }
 
 export interface MosaicAccounts {
-    name: string;
-    id: string;
-    accounts: ConfigAccount[];
+  name: string;
+  id: string;
+  accounts: ConfigAccount[];
 }
 
 export interface Addresses {
-    version: number;
-    nodes?: NodeAccount[];
-    nemesisGenerationHashSeed: string;
-    sinkAddress?: string;
-    nemesisSigner?: ConfigAccount;
-    networkType: NetworkType;
-    mosaics?: MosaicAccounts[];
+  version: number;
+  nodes?: NodeAccount[];
+  nemesisGenerationHashSeed: string;
+  sinkAddress?: string;
+  nemesisSigner?: ConfigAccount;
+  networkType: NetworkType;
+  mosaics?: MosaicAccounts[];
 }

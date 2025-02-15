@@ -19,41 +19,41 @@ import { LoggerFactory, System } from '../logger';
 import { BootstrapService, CommandUtils, ComposeService, Constants } from '../service';
 
 export default class Compose extends Command {
-    static description = 'It generates the `docker-compose.yml` file from the configured network.';
+  static description = 'It generates the `docker-compose.yml` file from the configured network.';
 
-    static examples = [`$ symbol-bootstrap compose`];
+  static examples = [`$ symbol-bootstrap compose`];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        target: CommandUtils.targetFlag,
-        password: CommandUtils.passwordFlag,
-        noPassword: CommandUtils.noPasswordFlag,
-        upgrade: flags.boolean({
-            description: 'It regenerates the docker compose and utility files from the <target>/docker folder',
-            default: ComposeService.defaultParams.upgrade,
-        }),
-        offline: CommandUtils.offlineFlag,
-        user: flags.string({
-            char: 'u',
-            description: `User used to run the services in the docker-compose.yml file. "${Constants.CURRENT_USER}" means the current user.`,
-            default: 'current',
-        }),
-        logger: CommandUtils.getLoggerFlag(...System),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    target: CommandUtils.targetFlag,
+    password: CommandUtils.passwordFlag,
+    noPassword: CommandUtils.noPasswordFlag,
+    upgrade: flags.boolean({
+      description: 'It regenerates the docker compose and utility files from the <target>/docker folder',
+      default: ComposeService.defaultParams.upgrade,
+    }),
+    offline: CommandUtils.offlineFlag,
+    user: flags.string({
+      char: 'u',
+      description: `User used to run the services in the docker-compose.yml file. "${Constants.CURRENT_USER}" means the current user.`,
+      default: 'current',
+    }),
+    logger: CommandUtils.getLoggerFlag(...System),
+  };
 
-    public async run(): Promise<void> {
-        const { flags } = this.parse(Compose);
-        CommandUtils.showBanner();
+  public async run(): Promise<void> {
+    const { flags } = this.parse(Compose);
+    CommandUtils.showBanner();
 
-        const logger = LoggerFactory.getLogger(flags.logger);
-        flags.password = await CommandUtils.resolvePassword(
-            logger,
-            flags.password,
-            flags.noPassword,
-            CommandUtils.passwordPromptDefaultMessage,
-            true,
-        );
-        const workingDir = Constants.defaultWorkingDir;
-        await new BootstrapService(logger).compose({ ...flags, workingDir });
-    }
+    const logger = LoggerFactory.getLogger(flags.logger);
+    flags.password = await CommandUtils.resolvePassword(
+      logger,
+      flags.password,
+      flags.noPassword,
+      CommandUtils.passwordPromptDefaultMessage,
+      true,
+    );
+    const workingDir = Constants.defaultWorkingDir;
+    await new BootstrapService(logger).compose({ ...flags, workingDir });
+  }
 }

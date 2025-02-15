@@ -23,41 +23,41 @@ import { KeyName } from '../service';
  * Implementations of this interface could for example prompt or load accounts from a key store.
  */
 export interface AccountResolver {
-    resolveAccount(
-        networkType: NetworkType,
-        account: CertificatePair | undefined,
-        keyName: KeyName,
-        nodeName: string | undefined,
-        operationDescription: string,
-        generateErrorMessage: string | undefined,
-    ): Promise<Account>;
+  resolveAccount(
+    networkType: NetworkType,
+    account: CertificatePair | undefined,
+    keyName: KeyName,
+    nodeName: string | undefined,
+    operationDescription: string,
+    generateErrorMessage: string | undefined,
+  ): Promise<Account>;
 }
 
 /**
  * Basic no prompt implementation. If the account cannot be resolved, it won't be prompted.
  */
 export class DefaultAccountResolver implements AccountResolver {
-    async resolveAccount(
-        networkType: NetworkType,
-        account: CertificatePair | undefined,
-        keyName: KeyName,
-        nodeName: string,
-        operationDescription: string,
-        generateErrorMessage: string | undefined,
-    ): Promise<Account> {
-        if (!account) {
-            if (generateErrorMessage) {
-                throw new Error(generateErrorMessage);
-            }
-            return this.generateNewAccount(networkType);
-        }
-        if (account?.privateKey) {
-            return Account.createFromPrivateKey(account.privateKey, networkType);
-        }
-        throw new Error('Private key not provided');
+  async resolveAccount(
+    networkType: NetworkType,
+    account: CertificatePair | undefined,
+    keyName: KeyName,
+    nodeName: string,
+    operationDescription: string,
+    generateErrorMessage: string | undefined,
+  ): Promise<Account> {
+    if (!account) {
+      if (generateErrorMessage) {
+        throw new Error(generateErrorMessage);
+      }
+      return this.generateNewAccount(networkType);
     }
+    if (account?.privateKey) {
+      return Account.createFromPrivateKey(account.privateKey, networkType);
+    }
+    throw new Error('Private key not provided');
+  }
 
-    generateNewAccount(networkType: NetworkType): Account {
-        return Account.generateNewAccount(networkType);
-    }
+  generateNewAccount(networkType: NetworkType): Account {
+    return Account.generateNewAccount(networkType);
+  }
 }

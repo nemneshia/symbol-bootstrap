@@ -18,3 +18,4 @@ coverage
 /privateSeeds/
 /test/service/logs.log
 /backup-sync/
+/lib

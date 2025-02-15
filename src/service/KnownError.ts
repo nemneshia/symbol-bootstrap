@@ -18,5 +18,5 @@
  * Exception with special, not critical, error handling.
  */
 export class KnownError extends Error {
-    public readonly known = true;
+  public readonly known = true;
 }

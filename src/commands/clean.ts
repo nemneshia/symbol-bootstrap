@@ -19,20 +19,20 @@ import { LoggerFactory, System } from '../logger';
 import { CommandUtils, FileSystemService } from '../service';
 
 export default class Clean extends Command {
-    static description = 'It removes the target folder deleting the generated configuration and data';
+  static description = 'It removes the target folder deleting the generated configuration and data';
 
-    static examples = [`$ symbol-bootstrap clean`];
+  static examples = [`$ symbol-bootstrap clean`];
 
-    static flags = {
-        help: CommandUtils.helpFlag,
-        target: CommandUtils.targetFlag,
-        logger: CommandUtils.getLoggerFlag(...System),
-    };
+  static flags = {
+    help: CommandUtils.helpFlag,
+    target: CommandUtils.targetFlag,
+    logger: CommandUtils.getLoggerFlag(...System),
+  };
 
-    public async run(): Promise<void> {
-        const { flags } = this.parse(Clean);
-        CommandUtils.showBanner();
-        const logger = LoggerFactory.getLogger(flags.logger);
-        new FileSystemService(logger).deleteFolder(flags.target);
-    }
+  public async run(): Promise<void> {
+    const { flags } = this.parse(Clean);
+    CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
+    new FileSystemService(logger).deleteFolder(flags.target);
+  }
 }
