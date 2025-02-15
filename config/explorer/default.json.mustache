@@ -1,18 +1,15 @@
 {
-	"peersApi": {
-		"defaultNode": "{{defaultNode}}",
-		"nodes":  {{{toJson restNodes}}}
-	},
+  "apiNodePort": {{explorerApiNodePort}},
 	"endpoints": {
-		"marketData": "https://min-api.cryptocompare.com/"
+		"marketData": "{{marketData}}",
+    "statisticsService": "{{statisticsService}}"
 	},
 	"networkConfig": {
 		"namespaceName": "{{namespaceName}}",
-		"mosaicId": "{{{toSimpleHex currencyMosaicId}}}",
 		"divisibility": "{{maxMosaicDivisibility}}",
-		"namespaceId": "{{{toSimpleHex namespaceId}}}",
-		"networkIdentifier": {{networkType}}
+		"namespaceId": "{{{toSimpleHex namespaceId}}}"
 	},
-	"footer": {{{toJson footer}}}
+	"footer": {{{toJson footer}}},
+  "timezone": "{{timezone}}"
 }
 

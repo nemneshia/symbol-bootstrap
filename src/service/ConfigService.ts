@@ -186,7 +186,7 @@ export class ConfigService {
       await this.generateNodeCertificates(presetData, addresses);
       await this.generateNodes(presetData, addresses, remoteNodeService);
       await this.generateGateways(presetData);
-      await this.generateExplorers(presetData, remoteNodeService);
+      await this.generateExplorers(presetData);
       const isUpgrade = !!oldPresetData || !!oldAddresses;
       if (presetData.nodes?.length) {
         await this.resolveNemesis(presetData, addresses, isUpgrade);
@@ -673,18 +673,15 @@ export class ConfigService {
     return currencyName;
   }
 
-  private generateExplorers(presetData: ConfigPreset, remoteNodeService: RemoteNodeService) {
+  private generateExplorers(presetData: ConfigPreset) {
     return Promise.all(
       (presetData.explorers || []).map(async (explorerPreset, index: number) => {
         const copyFrom = join(Constants.ROOT_FOLDER, 'config', 'explorer');
         const fullName = `${presetData.baseNamespace}.${this.resolveCurrencyName(presetData)}`;
         const namespaceId = new NamespaceId(fullName);
-        const { restNodes, defaultNode } = await remoteNodeService.resolveRestUrlsForServices();
         const templateContext = {
           namespaceName: fullName,
           namespaceId: namespaceId.toHex(),
-          restNodes: restNodes,
-          defaultNode: defaultNode,
           ...presetData,
           ...explorerPreset,
         };
