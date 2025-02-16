@@ -250,7 +250,6 @@ corruptAggregateTransactionHashes: []
 # Explorer
 explorerApiNodePort: 3001
 marketData: https://min-api.cryptocompare.com/
-statisticsService: https://symbol.services
 footer:
   link:
     - href: https://github.com/symbol
