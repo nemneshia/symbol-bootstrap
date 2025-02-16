@@ -15,7 +15,7 @@ services:
     restart: on-failure:2
   explorer:
     container_name: explorer
-    image: symbolplatform/symbol-explorer:1.2.3
+    image: symbolplatform/symbol-explorer:1.2.3-amd64
     entrypoint: ash -c "/bin/ash /symbol-commands/run.sh explorer"
     stop_signal: SIGINT
     working_dir: /symbol-workdir
