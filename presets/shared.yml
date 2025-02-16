@@ -66,7 +66,7 @@ maxNamespaceDepth: 3
 batchVerificationRandomSource:
 symbolServerImage: symbolplatform/symbol-server:gcc-1.0.3.7
 symbolRestImage: symbolplatform/symbol-rest:2.4.4
-symbolExplorerImage: symbolplatform/symbol-explorer:1.1.1-alpha-202110290945
+symbolExplorerImage: symbolplatform/symbol-explorer:1.2.3-amd64
 symbolFaucetImage: symbolplatform/symbol-faucet:1.0.1-alpha-202110131930
 mongoImage: mongo:6.0.14
 httpsPortalImage: steveltn/https-portal:1.23.1
@@ -234,7 +234,7 @@ restSSLPath: '/symbol-workdir'
 restSSLKeyFileName: 'restSSL.key'
 restSSLCertificateFileName: 'restSSL.crt'
 restNodeMetadata:
-    _info: 'Node metadata'
+  _info: 'Node metadata'
 restMetalCacheTtl: 300
 restMetalSizeLimit: 10000000
 statisticsServicePeerFilter: ''
@@ -246,3 +246,22 @@ treasuryReissuanceTransactionSignatures_has_items: false
 corruptAggregateTransactionHashes_has_items: false
 treasuryReissuanceTransactionSignatures: []
 corruptAggregateTransactionHashes: []
+
+# Explorer
+explorerApiNodePort: 3001
+marketData: https://min-api.cryptocompare.com/
+footer:
+  link:
+    - href: https://github.com/symbol
+      text: GitHub
+      icon: IconGithub
+    - href: https://discord.com/invite/xymcity
+      text: Discord
+      icon: IconDiscord
+    - href: https://twitter.com/NEMofficial
+      text: Twitter
+      icon: IconTwitter
+    # - href: https://testnet.symbol.tools/
+    #   text: Faucet
+    #   icon: IconCurrencyUsd
+timezone: Local

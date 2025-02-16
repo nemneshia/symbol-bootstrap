@@ -15,12 +15,12 @@ services:
     restart: on-failure:2
   explorer:
     container_name: explorer
-    image: symbolplatform/symbol-explorer:1.1.1-alpha-202110290945
+    image: symbolplatform/symbol-explorer:1.2.3
     entrypoint: ash -c "/bin/ash /symbol-commands/run.sh explorer"
     stop_signal: SIGINT
     working_dir: /symbol-workdir
     ports:
-      - '90:4000'
+      - '4000:4000'
     restart: on-failure:2
     volumes:
       - ../explorers/explorer:/symbol-workdir:ro

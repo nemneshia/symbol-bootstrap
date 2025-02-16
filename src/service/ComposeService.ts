@@ -178,7 +178,8 @@ export class ComposeService {
           const brokerCommand = `/bin/bash ${nodeCommandsDirectory}/start.sh ${presetData.catapultAppFolder} ${
             presetData.dataDirectory
           } broker server ${n.brokerName || 'broker'} ${brokerDebugMode}`;
-          const portConfigurations = [{ internalPort: 7900, openPort: n.openPort }];
+          const internalPort = typeof n.openPort === 'number' ? n.openPort : 7900;
+          const portConfigurations = [{ internalPort: internalPort, openPort: n.openPort }];
 
           const serverDependsOn: string[] = [];
           const brokerDependsOn: string[] = [];

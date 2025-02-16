@@ -39,4 +39,4 @@ EXAMPLE
   $ symbol-bootstrap healthCheck
 ```
 
-_See code: [src/commands/healthCheck.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.12/src/commands/healthCheck.ts)_
+_See code: [src/commands/healthCheck.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.13/src/commands/healthCheck.ts)_

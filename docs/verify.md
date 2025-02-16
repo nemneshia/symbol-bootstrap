@@ -23,4 +23,4 @@ EXAMPLE
   $ symbol-bootstrap verify
 ```
 
-_See code: [src/commands/verify.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.12/src/commands/verify.ts)_
+_See code: [src/commands/verify.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v1.1.13/src/commands/verify.ts)_
