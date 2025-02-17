@@ -1,9 +1,16 @@
-localNetworks: 127.0.0.1
 nodes:
   - harvesting: true
-    api: false
+    api: true
     name: 'node'
     openPort: true
+    trustedHosts: 127.0.0.1, 172.20.0.25
+    localNetworks: 127.0.0.1, 172.20.0.25
+gateways:
+  - name: 'rest-gateway'
+    apiNodeName: 'node'
+    apiNodeHost: 'node'
+    openPort: true
+    ipv4_address: 172.20.0.25
 explorers:
   - name: 'explorer'
     excludeDockerService: true

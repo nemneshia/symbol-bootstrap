@@ -1,0 +1,55 @@
+{
+  "network": {
+    "name": "{{{networkName}}}",
+    "description": "{{{networkDescription}}}"
+  },
+
+  "port": 3000,
+  "protocol": "{{{restProtocol}}}",
+  "sslKeyPath": "{{{restSSLPath}}}/{{{restSSLKeyFileName}}}",
+  "sslCertificatePath": "{{{restSSLPath}}}/{{{restSSLCertificateFileName}}}",
+
+  "crossDomain": {
+    "allowedHosts": ["*"],
+    "allowedMethods": ["GET"]
+  },
+
+  "apiNode": {
+    "host": "{{{apiNodeHost}}}",
+    "port": {{{apiNodePort}}},
+    "tlsClientCertificatePath": "{{{apiNodeConfigPath}}}/cert/node.crt.pem",
+    "tlsClientKeyPath": "{{{apiNodeConfigPath}}}/cert/node.key.pem",
+    "tlsCaCertificatePath": "{{{apiNodeConfigPath}}}/cert/ca.cert.pem",
+    "timeout": {{{apiNodeTimeout}}}
+  },
+
+  "throttling": {
+    "burst": {{throttlingBurst}},
+    "rate": {{throttlingRate}}
+  },
+
+  "logging": {
+    "console": {
+      "formats": ["colorize", "simple"],
+
+      "level": "verbose",
+      "handleExceptions": true
+    },
+    "file": {
+      "formats": ["prettyPrint"],
+
+      "level": "verbose",
+      "handleExceptions": true,
+
+      "filename": "{{{restLoggingFilename}}}",
+      "maxsize": 20971520,
+      "maxFiles": 100
+    }
+  },
+
+  "deployment": {
+    "deploymentTool": "{{{restDeploymentTool}}}",
+    "deploymentToolVersion": "{{{restDeploymentToolVersion}}}",
+    "lastUpdatedDate": "{{{restDeploymentToolLastUpdatedDate}}}"
+  }
+}

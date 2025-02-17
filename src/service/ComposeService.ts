@@ -254,23 +254,40 @@ export class ComposeService {
       (presetData.gateways || [])
         .filter((d) => !d.excludeDockerService)
         .map(async (n) => {
-          const volumes = [vol(`../${targetGatewaysFolder}/${n.name}`, nodeWorkingDirectory, false)];
-          services.push(
-            await resolveService(n, {
-              container_name: n.name,
-              user,
-              environment: { npm_config_cache: nodeWorkingDirectory },
-              image: presetData.symbolRestImage,
-              command: 'npm start --prefix /app /symbol-workdir/rest.json',
-              stop_signal: 'SIGINT',
-              working_dir: nodeWorkingDirectory,
-              ports: resolvePorts([{ internalPort: restInternalPort, openPort: n.openPort }]),
-              restart: restart,
-              volumes: volumes,
-              depends_on: [n.databaseHost],
-              ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.dockerComposeDebugMode),
-            }),
-          );
+          if (n.databaseHost) {
+            const volumes = [vol(`../${targetGatewaysFolder}/${n.name}`, nodeWorkingDirectory, false)];
+            services.push(
+              await resolveService(n, {
+                container_name: n.name,
+                user,
+                environment: { npm_config_cache: nodeWorkingDirectory },
+                image: presetData.symbolRestImage,
+                command: 'npm start --prefix /app /symbol-workdir/rest.json',
+                stop_signal: 'SIGINT',
+                working_dir: nodeWorkingDirectory,
+                ports: resolvePorts([{ internalPort: restInternalPort, openPort: n.openPort }]),
+                restart: restart,
+                volumes: volumes,
+                depends_on: [n.databaseHost],
+                ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.dockerComposeDebugMode),
+              }),
+            );
+          } else {
+            services.push(
+              await resolveService(n, {
+                container_name: n.name,
+                user,
+                environment: { npm_config_cache: nodeWorkingDirectory },
+                image: presetData.symbolRestImage,
+                command: 'npm start-light --prefix /app /symbol-workdir/rest.light.json',
+                stop_signal: 'SIGINT',
+                working_dir: nodeWorkingDirectory,
+                ports: resolvePorts([{ internalPort: restInternalPort, openPort: n.openPort }]),
+                restart: restart,
+                ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.dockerComposeDebugMode),
+              }),
+            );
+          }
         }),
     );
 

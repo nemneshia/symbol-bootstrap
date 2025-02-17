@@ -1,0 +1,22 @@
+assembly: peer
+preset: testnet
+nodes:
+  - voting: true
+    host: hoge.harvestasya.com
+    friendlyName: hoge/.
+    openPort: 7950
+explorers:
+  - excludeDockerService: false
+restNodeMetadata:
+  info: Bootstrap test metadata
+  info2: Bootstrap test metadata 2
+  info3:
+    info3-1: Bootstrap test metadata 3-1
+    info3-2: Bootstrap test metadata 3-2
+  info4:
+    - info4-1: Bootstrap test metadata 4-1
+      info4-2: Bootstrap test metadata 4-2
+restMetalCacheTtl: 350
+restMetalSizeLimit: 15000000
+nodePort: 7950
+apiNodePort: 7950
