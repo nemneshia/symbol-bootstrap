@@ -14,6 +14,20 @@ services:
     volumes:
       - '../nodes/node:/symbol-workdir:rw'
       - './server:/symbol-commands:ro'
+  rest-gateway:
+    container_name: rest-gateway
+    environment:
+      npm_config_cache: /symbol-workdir
+    image: symbolplatform/symbol-rest:2.4.4
+    command: npm start-light --prefix /app /symbol-workdir/rest.light.json
+    stop_signal: SIGINT
+    working_dir: /symbol-workdir
+    ports:
+      - '3000:3000'
+    restart: on-failure:2
+    networks:
+      default:
+        ipv4_address: 172.20.0.25
 networks:
   default:
     ipam:

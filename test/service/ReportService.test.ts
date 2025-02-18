@@ -72,6 +72,22 @@ describe('ReportService', () => {
       ).to.be.eq(expectedRestJson.trim());
     }
 
+    for (const gateway of configResult.presetData.gateways || []) {
+      const currentRestJsonFile = fileSystemService.getTargetGatewayFolder(params.target, true, gateway.name, 'rest.light.json');
+      const currentRestJson = await YamlUtils.readTextFile(currentRestJsonFile);
+      const expectedRestJsonFile = join(expectedReportFolder, `${gateway.name}-rest.light.json`);
+      if (!existsSync(expectedRestJsonFile)) {
+        await YamlUtils.writeTextFile(expectedRestJsonFile, currentRestJson + '\n');
+      }
+      const expectedRestJson = await YamlUtils.readTextFile(expectedRestJsonFile);
+      expect(
+        currentRestJson.trim(),
+        `Rest ${currentRestJsonFile} doesn't match
+
+`,
+      ).to.be.eq(expectedRestJson.trim());
+    }
+
     await Promise.all(promises);
   };
 

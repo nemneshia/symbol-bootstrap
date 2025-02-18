@@ -1,6 +1,6 @@
 nodes:
   - harvesting: true
-    api: true
+    api: false
     name: 'node'
     openPort: true
     trustedHosts: 127.0.0.1, 172.20.0.25
@@ -11,6 +11,14 @@ gateways:
     apiNodeHost: 'node'
     openPort: true
     ipv4_address: 172.20.0.25
+httpsProxies:
+  - name: 'https-proxy'
+    excludeDockerService: true #disabled as default
+    openPort: 3001
+    #domains: 'symbol-node.example.com -> http://rest-gateway:3000'
+    stage: 'production'
+    webSocket: 'true'
+    serverNamesHashBucketSize: 128
 explorers:
   - name: 'explorer'
     excludeDockerService: true
