@@ -67,7 +67,7 @@ batchVerificationRandomSource:
 symbolServerImage: symbolplatform/symbol-server:gcc-1.0.3.7
 symbolRestImage: symbolplatform/symbol-rest:2.4.4
 symbolExplorerImage: symbolplatform/symbol-explorer:1.2.3-amd64
-symbolFaucetImage: symbolplatform/symbol-faucet:1.0.1-alpha-202110131930
+symbolFaucetImage: symbolplatform/symbol-faucet:1.1.0
 mongoImage: mongo:6.0.14
 httpsPortalImage: steveltn/https-portal:1.23.1
 mongoComposeRunParam: --wiredTigerCacheSizeGB 2

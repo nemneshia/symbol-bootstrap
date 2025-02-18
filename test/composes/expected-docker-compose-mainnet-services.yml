@@ -27,7 +27,7 @@ services:
       - ./explorer:/symbol-commands:ro
   faucet:
     container_name: faucet
-    image: symbolplatform/symbol-faucet:1.0.1-alpha-202110131930
+    image: symbolplatform/symbol-faucet:1.1.0
     stop_signal: SIGINT
     environment:
       DEFAULT_NODE: http://some.node.com:3000

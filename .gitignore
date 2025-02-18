@@ -19,3 +19,4 @@ coverage
 /test/service/logs.log
 /backup-sync/
 /lib
+custom-preset.yml
