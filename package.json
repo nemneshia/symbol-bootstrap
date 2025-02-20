@@ -1,10 +1,11 @@
 {
   "name": "@nemneshia/symbol-bootstrap",
   "description": "Symbol tool that allows you creating, configuring and running Symbol's networks",
-  "version": "1.1.14a",
+  "version": "2.0.0",
   "author": "Nemneshia <@nemneshia>",
   "bin": {
-    "symbol-bootstrap": "bin/run"
+    "symbol-bootstrap": "bin/run",
+    "sb": "bin/run"
   },
   "bugs": "https://github.com/nemneshia/symbol-bootstrap/issues",
   "dependencies": {
