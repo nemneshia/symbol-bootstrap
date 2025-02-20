@@ -241,6 +241,10 @@ statisticsServicePeerFilter: ''
 statisticsServicePeerLimit: 50
 statisticsServiceRestFilter: suggested
 statisticsServiceRestLimit: 10
+pageSizeMin: 10
+pageSizeMax: 100
+logMaxSize: 20971520
+logMaxFiles: 100
 
 treasuryReissuanceTransactionSignatures_has_items: false
 corruptAggregateTransactionHashes_has_items: false

@@ -15,11 +15,13 @@
   },
   "uncirculatingAccountPublicKeys": {{{toJson (splitCsv restUncirculatingAccountPublicKeys)}}},
   "extensions": {{{toJson (splitCsv restExtensions)}}},
+  "routeExtensions": [
+	],
   "db": {
     "url": "mongodb://{{{databaseHost}}}:27017/",
     "name": "catapult",
-    "pageSizeMin": 10,
-    "pageSizeMax": 100,
+    "pageSizeMin": {{{pageSizeMin}}},
+    "pageSizeMax": {{{pageSizeMax}}},
     "maxConnectionAttempts": {{{maxConnectionAttempts}}},
     "baseRetryDelay": {{{baseRetryDelay}}},
     "connectionPoolSize": {{{connectionPoolSize}}}
@@ -68,8 +70,8 @@
       "handleExceptions": true,
 
       "filename": "{{{restLoggingFilename}}}",
-      "maxsize": 20971520,
-      "maxFiles": 100
+      "maxsize": {{{logMaxSize}}},
+      "maxFiles": {{{logMaxFiles}}}
     }
   },
 
