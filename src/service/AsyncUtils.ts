@@ -29,13 +29,25 @@ export class AsyncUtils {
   })();
 
   public static sleep(ms: number): Promise<any> {
-    // Create a promise that rejects in <ms> milliseconds
+    // Check if stopProcess is already true before entering the sleep cycle
+    if (AsyncUtils.stopProcess) {
+      return Promise.resolve();
+    }
+
+    // Instead of a single setTimeout, use small intervals to check for stopProcess
     return new Promise<void>((resolve) => {
-      setTimeout(() => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        //@ts-ignore
-        resolve();
-      }, ms);
+      const interval = 100; // Check every 100ms
+      let elapsed = 0;
+
+      const checkInterval = setInterval(() => {
+        elapsed += interval;
+
+        // If stopProcess flag is set or we've waited long enough, resolve
+        if (AsyncUtils.stopProcess || elapsed >= ms) {
+          clearInterval(checkInterval);
+          resolve();
+        }
+      }, interval);
     });
   }
 
