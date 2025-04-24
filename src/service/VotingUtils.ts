@@ -41,11 +41,11 @@ export class VotingUtils {
   public static nobleImplementation: CryptoImplementation = {
     name: 'Noble',
     createKeyPairFromPrivateKey: async (privateKey: Uint8Array): Promise<KeyPair> => {
-      const publicKey = await noble.getPublicKey(privateKey);
+      const publicKey = await noble.getPublicKeyAsync(privateKey);
       return { privateKey, publicKey: publicKey };
     },
     sign: async (keyPair: KeyPair, data: Uint8Array): Promise<Uint8Array> => {
-      return await noble.sign(data, keyPair.privateKey);
+      return await noble.signAsync(data, keyPair.privateKey);
     },
   };
 

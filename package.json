@@ -11,7 +11,7 @@
   "bugs": "https://github.com/nemneshia/symbol-bootstrap/issues",
   "dependencies": {
     "@inquirer/prompts": "^7.3.2",
-    "@noble/ed25519": "^1.5.3",
+    "@noble/ed25519": "^2.2.3",
     "@oclif/core": "^4.2.8",
     "@oclif/plugin-autocomplete": "^3.2.23",
     "@oclif/plugin-help": "^6.2.26",
