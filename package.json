@@ -1,7 +1,7 @@
 {
   "name": "@nemneshia/symbol-bootstrap",
   "description": "Symbol tool that allows you creating, configuring and running Symbol's networks",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "author": "Nemneshia <@nemneshia>",
   "type": "module",
   "bin": {

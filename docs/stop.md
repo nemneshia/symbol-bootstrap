@@ -27,4 +27,4 @@ EXAMPLES
   $ symbol-bootstrap stop
 ```
 
-_See code: [src/commands/stop/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.5/src/commands/stop/index.ts)_
+_See code: [src/commands/stop/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.6/src/commands/stop/index.ts)_

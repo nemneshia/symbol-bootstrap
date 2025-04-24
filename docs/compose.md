@@ -37,4 +37,4 @@ EXAMPLES
   $ symbol-bootstrap compose
 ```
 
-_See code: [src/commands/compose/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.5/src/commands/compose/index.ts)_
+_See code: [src/commands/compose/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.6/src/commands/compose/index.ts)_

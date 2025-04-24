@@ -41,4 +41,4 @@ EXAMPLES
   $ symbol-bootstrap healthCheck
 ```
 
-_See code: [src/commands/healthCheck/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.5/src/commands/healthCheck/index.ts)_
+_See code: [src/commands/healthCheck/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.6/src/commands/healthCheck/index.ts)_

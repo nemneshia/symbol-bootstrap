@@ -130,7 +130,7 @@ $ npm install -g @nemneshia/symbol-bootstrap
 $ symbol-bootstrap COMMAND
 running command...
 $ symbol-bootstrap (--version)
-@nemneshia/symbol-bootstrap/2.0.5 linux-x64 node-v22.14.0
+@nemneshia/symbol-bootstrap/2.0.6 linux-x64 node-v20.19.1
 $ symbol-bootstrap --help [COMMAND]
 USAGE
   $ symbol-bootstrap COMMAND

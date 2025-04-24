@@ -47,4 +47,4 @@ EXAMPLES
    $ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap encrypt --source plain-custom-preset.yml --destination encrypted-custom-preset.yml
 ```
 
-_See code: [src/commands/encrypt/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.5/src/commands/encrypt/index.ts)_
+_See code: [src/commands/encrypt/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.6/src/commands/encrypt/index.ts)_

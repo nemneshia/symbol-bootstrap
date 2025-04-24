@@ -57,4 +57,4 @@ EXAMPLES
   $ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap decrypt --source target/addresses.yml --destination plain-addresses.yml
 ```
 
-_See code: [src/commands/decrypt/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.5/src/commands/decrypt/index.ts)_
+_See code: [src/commands/decrypt/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.6/src/commands/decrypt/index.ts)_

@@ -20,4 +20,4 @@ ALIASES
   $ symbol-bootstrap -v
 ```
 
-_See code: [src/commands/version/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.5/src/commands/version/index.ts)_
+_See code: [src/commands/version/index.ts](https://github.com/nemneshia/symbol-bootstrap/blob/v2.0.6/src/commands/version/index.ts)_
