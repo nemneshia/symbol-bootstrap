@@ -130,7 +130,7 @@ $ npm install -g @nemneshia/symbol-bootstrap
 $ symbol-bootstrap COMMAND
 running command...
 $ symbol-bootstrap (--version)
-@nemneshia/symbol-bootstrap/2.0.5 win32-x64 node-v22.14.0
+@nemneshia/symbol-bootstrap/2.0.5 linux-x64 node-v22.14.0
 $ symbol-bootstrap --help [COMMAND]
 USAGE
   $ symbol-bootstrap COMMAND
@@ -255,6 +255,7 @@ If you don't like it, let me know by creating issues on GitHub. Pull Requests ar
 * [`symbol-bootstrap stop`](docs/stop.md) - It stops the docker compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker compose down` bash call.
 * [`symbol-bootstrap updateVotingKeys`](docs/updateVotingKeys.md) - It updates the voting files containing the voting keys when required.
 * [`symbol-bootstrap verify`](docs/verify.md) - It tests the installed software in the current computer reporting if there is any missing dependency, invalid version, or software related issue.
+* [`symbol-bootstrap version`](docs/version.md) - Show bootstrap version
 * [`symbol-bootstrap wizard`](docs/wizard.md) - An utility command that will help you configuring node!
 
 <!-- commandsstop -->
