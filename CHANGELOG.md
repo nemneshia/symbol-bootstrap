@@ -12,8 +12,8 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 | ---------------- | ------- | ----------------------------------------------------------------- |
 | Symbol Bootstrap | v2.0.6  | [symbol-bootstrap](https://github.com/nemneshia/symbol-bootstrap) |
 
-- Fixed `healthCheck` to terminate even while waiting for `Ctrl + C`
-- Added support for version checking with the `-v` option
+- Fixed an issue where `Ctrl + C` could not terminate while waiting in `healthCheck`
+- Added support for version checking using the `-v` option
 
 ## [2.0.5] - 2025-04-17
 

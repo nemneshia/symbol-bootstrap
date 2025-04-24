@@ -12,7 +12,7 @@
 | ---------------- | ---------- | ----------------------------------------------------------------- |
 | Symbol Bootstrap | v2.0.6     | [symbol-bootstrap](https://github.com/nemneshia/symbol-bootstrap) |
 
-- `healthCheck` が `Ctrl + C` 待機中でも終了するように修正
+- `healthCheck` で待機中でも `Ctrl + C` で終了するように修正
 - `-v` オプションでバージョン確認が可能になるように対応
 
 ## [2.0.5] - 2025-04-17
