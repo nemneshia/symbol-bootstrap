@@ -4,6 +4,17 @@
 
 変更履歴の形式は[Keep a Changelog](https://keepachangelog.com/en/1.0.0/)に基づいています。
 
+## [2.0.6] - 2025-04-24
+
+**マイルストーン**: メインネット(1.0.3.8)
+
+| パッケージ       | バージョン | リンク                                                            |
+| ---------------- | ---------- | ----------------------------------------------------------------- |
+| Symbol Bootstrap | v2.0.6     | [symbol-bootstrap](https://github.com/nemneshia/symbol-bootstrap) |
+
+- `healthCheck` が `Ctrl + C` 待機中でも終了するように修正
+- `-v` オプションでバージョン確認が可能になるように対応
+
 ## [2.0.5] - 2025-04-17
 
 **マイルストーン**: メインネット(1.0.3.8)
@@ -76,6 +87,24 @@
 - [Rest 2.5.0](https://github.com/symbol/symbol/releases/tag/rest%2Fv2.5.0)
 - MongoDB 7.0.17
 - Docker Compose プロジェクトに対応
+
+  ```yaml
+  nodes:
+    - host: <ホスト名>
+      friendlyName: <フレンドリー名>
+      voting: false
+      trustedHosts: 127.0.0.1, 172.21.0.25 # ネットワークのサブネットを変更する場合(Apiノード用)
+      localNetworks: 127.0.0.1, 172.21.0.25 # ネットワークのサブネットを変更する場合(Apiノード用)
+
+  # RESTの設定
+  gateways:
+    - ipv4_address: 172.21.0.25 # ネットワークのサブネットを変更する場合
+
+    # コンテナ名にプレフィックスを付与
+    dockerComposeProjectName: mainnet
+    # ネットワークのサブネット変更
+    subnet: "172.21.0.0/24"
+  ```
 
 ## [2.0.0] - 2025-02-24
 

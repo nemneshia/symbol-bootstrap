@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The changelog format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.6] - 2025-04-24
+
+**Milestone**: Mainnet(1.0.3.8)
+
+| Package          | Version | Link                                                              |
+| ---------------- | ------- | ----------------------------------------------------------------- |
+| Symbol Bootstrap | v2.0.6  | [symbol-bootstrap](https://github.com/nemneshia/symbol-bootstrap) |
+
+- Fixed `healthCheck` to terminate even while waiting for `Ctrl + C`
+- Added support for version checking with the `-v` option
+
 ## [2.0.5] - 2025-04-17
 
 **Milestone**: Mainnet(1.0.3.8)
@@ -76,6 +87,24 @@ The changelog format is based on [Keep a Changelog](https://keepachangelog.com/e
 - [Rest 2.5.0](https://github.com/symbol/symbol/releases/tag/rest%2Fv2.5.0)
 - MongoDB 7.0.17
 - Support for Docker Compose projects
+
+  ```yaml
+  nodes:
+    - host: <Host Name>
+      friendlyName: <Friendly Name>
+      voting: false
+      trustedHosts: 127.0.0.1, 172.21.0.25 # Change the network subnet if necessary (for API nodes)
+      localNetworks: 127.0.0.1, 172.21.0.25 # Change the network subnet if necessary (for API nodes)
+
+  # REST configuration
+  gateways:
+    - ipv4_address: 172.21.0.25 # Change the network subnet if necessary
+
+    # Add a prefix to the container name
+    dockerComposeProjectName: mainnet
+    # Change the network subnet
+    subnet: "172.21.0.0/24"
+  ```
 
 ## [2.0.0] - 2025-02-24
 
