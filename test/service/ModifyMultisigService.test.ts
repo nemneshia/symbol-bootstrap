@@ -211,6 +211,7 @@ describe('ModifyMultisigService', () => {
         cosignatoryAddresses: [cosigner1.address],
       });
     } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       expect(Utils.getMessage(err).startsWith('Cannot add cosignatory!')).to.be.true;
     }
   });
@@ -225,6 +226,7 @@ describe('ModifyMultisigService', () => {
         cosignatoryAddresses: [cosigner1.address],
       });
     } catch (err) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       expect(Utils.getMessage(err).startsWith('Cannot remove cosignatory!')).to.be.true;
     }
   });

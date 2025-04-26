@@ -16,7 +16,7 @@
 
 import { join, resolve } from 'path';
 import * as winston from 'winston';
-import { FileTransportInstance } from 'winston/lib/winston/transports';
+import { FileTransportInstance } from 'winston/lib/winston/transports/index.js';
 import { Constants } from '../service/index.js';
 import { Logger } from './Logger.js';
 import { LogType } from './LogType.js';

@@ -20,6 +20,7 @@ import { it } from 'mocha';
 import { Constants } from '../../src';
 describe('Constants', () => {
   it('Constants.resolveRootFolder', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(Constants.resolveRootFolder()).to.not.undefined;
     expect(Constants.resolveRootFolder()).to.be.eq(Constants.ROOT_FOLDER);
   });

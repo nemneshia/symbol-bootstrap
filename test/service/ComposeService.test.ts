@@ -35,6 +35,7 @@ describe('ComposeService', () => {
       }
     });
     const targetDocker = join(params.target, `docker`, 'compose.yml');
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(existsSync(targetDocker)).to.be.true;
     const expectedFileLocation = `./test/composes/${expectedComposeFile}`;
     if (!existsSync(expectedFileLocation)) {

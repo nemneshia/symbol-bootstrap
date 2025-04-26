@@ -16,7 +16,7 @@ export interface Migration {
  */
 export class MigrationService {
   constructor(private readonly logger: Logger) {}
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
+
   public migrateAddresses(addresses: any): Addresses {
     const addressesFileName = 'addresses.yml';
     const networkType = addresses.networkType;

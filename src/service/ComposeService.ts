@@ -58,7 +58,10 @@ export class ComposeService {
   private readonly configLoader: ConfigLoader;
   private readonly fileSystemService: FileSystemService;
 
-  constructor(private readonly logger: Logger, protected readonly params: ComposeParams) {
+  constructor(
+    private readonly logger: Logger,
+    protected readonly params: ComposeParams,
+  ) {
     this.configLoader = new ConfigLoader(logger);
     this.fileSystemService = new FileSystemService(logger);
   }

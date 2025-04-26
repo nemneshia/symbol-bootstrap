@@ -221,7 +221,9 @@ describe('Announce Service', () => {
       transactionFactory,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(announceSimple.called).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(tsAnnounce.calledOnceWith(match({ signerPublicKey: mainPublicKey }), match.any)).to.be.true;
   });
 
@@ -244,8 +246,10 @@ describe('Announce Service', () => {
       transactionFactory,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(announceAggregateComplete.called).to.be.true;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(tsAnnounce.calledOnceWith(match({ signerPublicKey: mainPublicKey }), match.any)).to.be.true;
   });
 
@@ -279,7 +283,9 @@ describe('Announce Service', () => {
       transactionFactory,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(announceAggregateComplete.called).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(tsAnnounce.calledOnceWith(match({ signerPublicKey: bestCosigner.publicKey }), match.any)).to.be.true;
   });
 
@@ -307,9 +313,13 @@ describe('Announce Service', () => {
       serviceProviderAccount.publicKey,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(announceAggregateBonded.called).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(tsAnnounce.calledOnceWith(match({ signerPublicKey: serviceProviderAccount.publicKey }), match.any)).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(tsAnnounceBonded.calledOnceWith(match({ signerPublicKey: serviceProviderAccount.publicKey }), match.any)).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(
       createBonded.calledWith(
         match.any,
@@ -358,9 +368,13 @@ describe('Announce Service', () => {
       serviceProviderAccount.publicKey,
     );
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(announceAggregateBonded.called).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(tsAnnounce.calledOnceWith(match({ signerPublicKey: bestCosigner.publicKey }), match.any)).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(tsAnnounceBonded.calledOnceWith(match({ signerPublicKey: bestCosigner.publicKey }), match.any)).to.be.true;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(
       createBonded.calledWith(
         match.any,

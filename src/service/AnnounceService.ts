@@ -65,7 +65,10 @@ export interface TransactionFactory {
 }
 
 export class AnnounceService {
-  constructor(private readonly logger: Logger, private readonly accountResolver: AccountResolver) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly accountResolver: AccountResolver,
+  ) {}
 
   private static onProcessListener = () => {
     process.on('SIGINT', () => {
@@ -456,7 +459,7 @@ export class AnnounceService {
   private async getAccountInfo(repositoryFactory: RepositoryFactory, mainAccountAddress: Address): Promise<AccountInfo | undefined> {
     try {
       return await firstValueFrom(repositoryFactory.createAccountRepository().getAccountInfo(mainAccountAddress));
-    } catch (e) {
+    } catch {
       return undefined;
     }
   }
@@ -473,7 +476,7 @@ export class AnnounceService {
         if (!this.isAccountEmpty(accountInfo, currencyMosaicId)) {
           return cosigner;
         }
-      } catch (e) {}
+      } catch {}
     }
     return undefined;
   }

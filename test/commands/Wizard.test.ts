@@ -304,22 +304,27 @@ describe('Wizard', () => {
     const wizard = new Wizard(logger);
     // valid cases
     it('should return true when given hostname is a valid IP address', () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       expect(wizard.isValidHost('10.10.10.10')).to.be.true;
     });
 
     it('should return true when given hostname is a valid domain name', () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       expect(wizard.isValidHost('example.com')).to.be.true;
     });
 
     it('should return true when given hostname is a valid numeric only domain name', () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       expect(wizard.isValidHost('1000.org')).to.be.true;
     });
 
     it('should return true when given hostname is a valid a subdomain', () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       expect(wizard.isValidHost('mynode.example.com')).to.be.true;
     });
 
     it('should return true when given hostname is a valid a subdomain starting with number', () => {
+      // eslint-disable-next-line @typescript-eslint/no-unused-expressions
       expect(wizard.isValidHost('2.example.com')).to.be.true;
     });
 

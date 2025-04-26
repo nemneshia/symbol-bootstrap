@@ -73,7 +73,6 @@ export class Utils {
     }
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public static pruneEmpty(obj: any): any {
     return (function prune(current: any) {
       _.forOwn(current, (value, key) => {

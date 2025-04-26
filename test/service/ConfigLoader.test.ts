@@ -105,6 +105,7 @@ describe('ConfigLoader', () => {
       customPresetObject: undefined,
       password: 'abc',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(presetData).to.not.be.undefined;
     expect(presetData.preset).to.eq(Preset.bootstrap);
     expect(presetData.assembly).to.eq(Assembly.multinode);
@@ -120,6 +121,7 @@ describe('ConfigLoader', () => {
       customPresetObject: undefined,
       password: 'abc',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(presetData).to.not.be.undefined;
     expect(presetData.preset).to.eq(Preset.testnet);
     expect(presetData.assembly).to.eq(Assembly.api);
@@ -135,6 +137,7 @@ describe('ConfigLoader', () => {
       customPresetObject: undefined,
       password: 'abc',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(presetData).to.not.be.undefined;
     expect(presetData.preset).to.eq('presets/testnet/network.yml');
     expect(presetData.assembly).to.eq('presets/assemblies/assembly-api.yml');
@@ -152,6 +155,7 @@ describe('ConfigLoader', () => {
       },
       password: 'abcd',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(originalPresetData).to.not.be.undefined;
     expect(originalPresetData.nodes![0].maxUnlockedAccounts).eq(undefined);
     expect(originalPresetData.maxUnlockedAccounts).eq(30);
@@ -177,6 +181,7 @@ describe('ConfigLoader', () => {
       assembly: Assembly.dual,
       password: 'abcd',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(upgradedPresetData).to.not.be.undefined;
     expect(upgradedPresetData.nodes![0].maxUnlockedAccounts).eq(undefined);
     expect(upgradedPresetData.maxUnlockedAccounts).eq(30);
@@ -205,6 +210,7 @@ describe('ConfigLoader', () => {
       assembly: Assembly.dual,
       password: 'abcd',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(upgradedPresetResetToDefaults).to.not.be.undefined;
     expect(upgradedPresetResetToDefaults.nodes![0].maxUnlockedAccounts).eq(undefined);
     expect(upgradedPresetResetToDefaults.maxUnlockedAccounts).eq(15);
@@ -262,6 +268,7 @@ describe('ConfigLoader', () => {
       },
       password: 'abcd',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(originalPresetData).to.not.be.undefined;
     expect(originalPresetData.nodes![0].maxUnlockedAccounts).eq(undefined);
     expect(originalPresetData.maxUnlockedAccounts).eq(30);
@@ -287,6 +294,7 @@ describe('ConfigLoader', () => {
       assembly: Assembly.dual,
       password: 'abcd',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(upgradedPresetData).to.not.be.undefined;
     expect(upgradedPresetData.nodes![0].maxUnlockedAccounts).eq(undefined);
     expect(upgradedPresetData.maxUnlockedAccounts).eq(30);
@@ -315,6 +323,7 @@ describe('ConfigLoader', () => {
       assembly: Assembly.dual,
       password: 'abcd',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(upgradedPresetResetToDefaults).to.not.be.undefined;
     expect(upgradedPresetResetToDefaults.nodes![0].maxUnlockedAccounts).eq(undefined);
     expect(upgradedPresetResetToDefaults.maxUnlockedAccounts).eq(15);
@@ -370,6 +379,7 @@ describe('ConfigLoader', () => {
       customPresetObject: undefined,
       password: 'abcd',
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(presetData).to.not.be.undefined;
     expect(presetData?.nemesis?.mosaics?.[0].accounts).to.be.eq(20);
     const yaml = YamlUtils.toYaml(presetData);

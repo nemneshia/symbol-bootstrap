@@ -22,7 +22,6 @@ export class CryptoUtils {
   private static readonly ENCRYPT_PREFIX = 'ENCRYPTED:';
   private static readonly ENCRYPTABLE_KEYS = ['privateKey', 'restSSLKeyBase64', 'privateFileContent'];
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public static encrypt(value: any, password: string, fieldName?: string): any {
     if (!value) {
       return value;
@@ -53,7 +52,6 @@ export class CryptoUtils {
     throw new KnownError(`${value} is not a valid Security Mode. Please use one of ${securityModes.join(', ')}`);
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public static removePrivateKeysAccordingToSecurityMode(value: any, securityMode: PrivateKeySecurityMode): any {
     if (securityMode === PrivateKeySecurityMode.PROMPT_MAIN) {
       return this.removePrivateKeys(value, ['main', 'voting']);
@@ -67,7 +65,6 @@ export class CryptoUtils {
     return this.removePrivateKeys(value, ['voting']);
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public static removePrivateKeys(value: any, blacklistNames: string[] = []): any {
     if (!value) {
       return value;
@@ -93,7 +90,6 @@ export class CryptoUtils {
     return value;
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public static decrypt(value: any, password: string, fieldName?: string): any {
     if (!value) {
       return value;
@@ -110,7 +106,7 @@ export class CryptoUtils {
       try {
         const encryptedValue = value.substring(CryptoUtils.ENCRYPT_PREFIX.length);
         decryptedValue = Crypto.decrypt(encryptedValue, password);
-      } catch (e) {
+      } catch {
         throw Error('Value could not be decrypted!');
       }
       if (!decryptedValue) {
@@ -121,7 +117,6 @@ export class CryptoUtils {
     return value;
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public static encryptedCount(value: any, fieldName?: string): number {
     if (!value) {
       return 0;

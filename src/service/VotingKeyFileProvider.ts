@@ -65,7 +65,10 @@ export class NativeVotingKeyFileProvider implements VotingKeyFileProvider {
 
 export class CatapultVotingKeyFileProvider implements VotingKeyFileProvider {
   private readonly runtimeService: RuntimeService;
-  constructor(private readonly logger: Logger, private readonly user: string) {
+  constructor(
+    private readonly logger: Logger,
+    private readonly user: string,
+  ) {
     this.runtimeService = new RuntimeService(logger);
   }
   public async createVotingFile({

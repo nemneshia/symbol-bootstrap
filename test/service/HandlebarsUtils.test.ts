@@ -23,9 +23,13 @@ import { HandlebarsUtils } from '../../src/service';
 
 describe('HandlebarsUtils', () => {
   it('HandlebarsUtils.toAmount', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(() => HandlebarsUtils.toAmount(12345678.9)).to.throw;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(() => HandlebarsUtils.toAmount('12345678.9')).to.throw;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(() => HandlebarsUtils.toAmount('abc')).to.throw;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(() => HandlebarsUtils.toAmount('')).to.throw;
     expect(HandlebarsUtils.toAmount(12345678)).to.be.eq("12'345'678");
     expect(HandlebarsUtils.toAmount('12345678')).to.be.eq("12'345'678");

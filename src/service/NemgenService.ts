@@ -28,7 +28,10 @@ type NemgenParams = ConfigParams;
 export class NemgenService {
   private readonly runtimeService: RuntimeService;
   private readonly fileSystemService: FileSystemService;
-  constructor(private readonly logger: Logger, protected readonly params: NemgenParams) {
+  constructor(
+    private readonly logger: Logger,
+    protected readonly params: NemgenParams,
+  ) {
     this.runtimeService = new RuntimeService(logger);
     this.fileSystemService = new FileSystemService(logger);
   }

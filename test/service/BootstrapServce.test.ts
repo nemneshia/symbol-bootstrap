@@ -37,9 +37,12 @@ describe('BootstrapService', () => {
     };
 
     const configResult = await service.config(config);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(configResult.presetData).to.not.null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(configResult.addresses).to.not.null;
     const dockerCompose = await service.compose(config);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(dockerCompose).to.not.undefined;
   });
 
@@ -61,9 +64,12 @@ describe('BootstrapService', () => {
     };
 
     const configResult = await service.config(config);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(configResult.presetData).to.not.null;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(configResult.addresses).to.not.null;
     const dockerCompose = await service.compose(config);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(dockerCompose).to.not.undefined;
   });
 });

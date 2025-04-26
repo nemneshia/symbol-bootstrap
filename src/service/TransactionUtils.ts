@@ -33,7 +33,7 @@ export class TransactionUtils {
     try {
       const info = await firstValueFrom(repositoryFactory.createMultisigRepository().getMultisigAccountInfo(accountAddress));
       return info.isMultisig() ? info : undefined;
-    } catch (e) {
+    } catch {
       return undefined;
     }
   }

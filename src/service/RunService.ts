@@ -59,7 +59,10 @@ export class RunService {
   private readonly fileSystemService: FileSystemService;
   private readonly runtimeService: RuntimeService;
 
-  constructor(private readonly logger: Logger, protected readonly params: RunParams) {
+  constructor(
+    private readonly logger: Logger,
+    protected readonly params: RunParams,
+  ) {
     this.configLoader = new ConfigLoader(this.logger);
     this.fileSystemService = new FileSystemService(this.logger);
     this.runtimeService = new RuntimeService(this.logger);

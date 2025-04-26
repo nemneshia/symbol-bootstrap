@@ -61,6 +61,7 @@ describe('BootstrapAccountResolver', () => {
 
   it('should resolveAccount generate account when no account is not provided', async () => {
     const account = await resolver.resolveAccount(networkType, undefined, KeyName.Main, 'some node', 'some description', undefined);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account).to.not.be.undefined;
     expect(account).to.be.not.deep.eq(testAccount);
   });

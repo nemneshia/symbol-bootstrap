@@ -49,7 +49,10 @@ export interface VerifyAction {
 
 export class AppVersionService {
   public static readonly semverOptions = { loose: true };
-  constructor(private readonly logger: Logger, private readonly runtimeService: RuntimeService) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly runtimeService: RuntimeService,
+  ) {}
   public loadVersion(text: string): string | undefined {
     return text
       .replace(',', '')
@@ -136,7 +139,10 @@ export class AppVersionVerifyAction implements VerifyAction {
 }
 
 export class DockerRunVerifyAction implements VerifyAction {
-  constructor(private readonly logger: Logger, private readonly runtimeService: RuntimeService) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly runtimeService: RuntimeService,
+  ) {}
   async verify(): Promise<ReportLine> {
     const header = 'Docker Run Test';
     const command = 'docker run hello-world';
@@ -189,7 +195,10 @@ export class VerifyService {
   public readonly actions: VerifyAction[] = [];
   private readonly runtimeService: RuntimeService;
 
-  constructor(private readonly logger: Logger, expectedVersions: Partial<ExpectedVersions> = {}) {
+  constructor(
+    private readonly logger: Logger,
+    expectedVersions: Partial<ExpectedVersions> = {},
+  ) {
     this.runtimeService = new RuntimeService(logger);
     this.expectedVersions = { ...defaultExpectedVersions, ...expectedVersions };
 

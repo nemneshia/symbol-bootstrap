@@ -50,7 +50,7 @@ export class YamlUtils {
       Utils.validatePassword(password);
       try {
         return CryptoUtils.decrypt(object, password);
-      } catch (e) {
+      } catch {
         throw new KnownError(`Cannot decrypt file ${fileLocation}. Have you used the right password?`);
       }
     } else {

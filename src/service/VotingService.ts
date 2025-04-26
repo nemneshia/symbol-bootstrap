@@ -29,7 +29,10 @@ export interface VotingParams {
 
 export class VotingService {
   private readonly fileSystemService: FileSystemService;
-  constructor(private readonly logger: Logger, protected readonly params: VotingParams) {
+  constructor(
+    private readonly logger: Logger,
+    protected readonly params: VotingParams,
+  ) {
     this.fileSystemService = new FileSystemService(logger);
   }
 

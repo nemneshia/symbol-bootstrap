@@ -247,8 +247,11 @@ describe('', () => {
     const networkType = NetworkType.TEST_NET;
     const securityMode = PrivateKeySecurityMode.ENCRYPT;
     const account = await service.resolveAccount(networkType, securityMode, KeyName.Main, nodeName, undefined, undefined);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.address).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.privateKey).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.privateKey).not.undefined;
   });
 
@@ -256,8 +259,11 @@ describe('', () => {
     const networkType = NetworkType.TEST_NET;
     const securityMode = PrivateKeySecurityMode.PROMPT_MAIN_TRANSPORT;
     const account = await service.resolveAccount(networkType, securityMode, KeyName.Remote, nodeName, undefined, undefined);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.address).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.privateKey).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.privateKey).not.undefined;
   });
 
@@ -265,8 +271,11 @@ describe('', () => {
     const networkType = NetworkType.TEST_NET;
     const securityMode = PrivateKeySecurityMode.PROMPT_MAIN;
     const account = await service.resolveAccount(networkType, securityMode, KeyName.Voting, nodeName, undefined, undefined);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.address).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.privateKey).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(account.privateKey).not.undefined;
   });
 
@@ -287,12 +296,14 @@ describe('', () => {
   it('should resolveAccount raise error new', async () => {
     const networkType = NetworkType.TEST_NET;
     const securityMode = PrivateKeySecurityMode.PROMPT_MAIN_TRANSPORT;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(async () => await service.resolveAccount(networkType, securityMode, KeyName.Transport, nodeName, undefined, undefined)).throw;
   });
 
   it('should resolveAccount raise error new', async () => {
     const networkType = NetworkType.TEST_NET;
     const securityMode = PrivateKeySecurityMode.PROMPT_ALL;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(async () => await service.resolveAccount(networkType, securityMode, KeyName.Remote, nodeName, undefined, undefined)).throw;
   });
 });

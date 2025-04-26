@@ -26,6 +26,7 @@ type GenericTransaction =
 const logger = LoggerFactory.getLogger(LogType.Silent);
 describe('LinkTransactionGenericFactory', () => {
   it('should test overlaps', () => {
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(
       LinkTransactionGenericFactory.overlapsVotingAccounts(
         { startEpoch: 1, endEpoch: 10, publicKey: 'A' },
@@ -33,6 +34,7 @@ describe('LinkTransactionGenericFactory', () => {
       ),
     ).true;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(
       LinkTransactionGenericFactory.overlapsVotingAccounts(
         { startEpoch: 1, endEpoch: 4, publicKey: 'A' },
@@ -40,6 +42,7 @@ describe('LinkTransactionGenericFactory', () => {
       ),
     ).true;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(
       LinkTransactionGenericFactory.overlapsVotingAccounts(
         { startEpoch: 1, endEpoch: 4, publicKey: 'A' },
@@ -47,6 +50,7 @@ describe('LinkTransactionGenericFactory', () => {
       ),
     ).false;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(
       LinkTransactionGenericFactory.overlapsVotingAccounts(
         { startEpoch: 11, endEpoch: 20, publicKey: 'A' },
@@ -54,6 +58,7 @@ describe('LinkTransactionGenericFactory', () => {
       ),
     ).false;
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(
       LinkTransactionGenericFactory.overlapsVotingAccounts(
         { startEpoch: 10, endEpoch: 20, publicKey: 'A' },

@@ -30,7 +30,11 @@ export interface RepositoryInfo {
   chainInfo: ChainInfo;
 }
 export class RemoteNodeService {
-  constructor(private readonly logger: Logger, private readonly presetData: ConfigPreset, private readonly offline: boolean) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly presetData: ConfigPreset,
+    private readonly offline: boolean,
+  ) {}
   private restUrls: string[] | undefined;
 
   public async resolveCurrentFinalizationEpoch(): Promise<number> {

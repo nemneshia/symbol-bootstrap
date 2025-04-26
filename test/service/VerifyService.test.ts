@@ -45,7 +45,9 @@ describe('VerifyService', () => {
   it('VerifyService verify current installation', async () => {
     const service = new VerifyService(logger);
     const { currentDockerVersion, currentDockerComposeVersion } = await getCurrentVersions();
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(currentDockerVersion).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(currentDockerComposeVersion).not.undefined;
     const report = await service.createReport();
     const expected: VerifyReport = {
@@ -88,7 +90,9 @@ describe('VerifyService', () => {
     };
     const service = new VerifyService(logger, expectedVersions);
     const { currentDockerVersion, currentDockerComposeVersion } = await getCurrentVersions();
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(currentDockerVersion).not.undefined;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
     expect(currentDockerComposeVersion).not.undefined;
     const report = await service.createReport();
     const expected: VerifyReport = {

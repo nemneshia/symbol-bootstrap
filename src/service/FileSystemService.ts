@@ -1,4 +1,4 @@
-import { createWriteStream, existsSync, lstatSync, promises as fsPromises, readdirSync, rmdirSync, statSync, unlinkSync } from 'fs';
+import { createWriteStream, existsSync, promises as fsPromises, lstatSync, readdirSync, rmdirSync, statSync, unlinkSync } from 'fs';
 import { default as https } from 'https';
 import { basename, dirname, join } from 'path';
 import { Logger } from '../logger/index.js';
@@ -182,7 +182,8 @@ export class FileSystemService {
               fileLocation: dest,
             });
           } else if (response.statusCode === 200) {
-            existsSync(dest) && unlinkSync(dest);
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+            existsSync(dest) && unlinkSync(dest); // Delete temp file
             const file = createWriteStream(dest, { flags: 'wx' });
             this.logger.info(`Downloading file ${url}. This could take a while!`);
             response.pipe(file);
@@ -213,6 +214,7 @@ export class FileSystemService {
         });
 
         request.on('error', (err) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-expressions
           existsSync(dest) && unlinkSync(dest); // Delete temp file
           reject(err.message);
         });

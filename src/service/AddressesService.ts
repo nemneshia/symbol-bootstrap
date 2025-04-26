@@ -14,7 +14,10 @@ import { YamlUtils } from './YamlUtils.js';
  */
 export class AddressesService {
   private readonly migrationService: MigrationService;
-  constructor(private readonly logger: Logger, private readonly accountResolver: AccountResolver) {
+  constructor(
+    private readonly logger: Logger,
+    private readonly accountResolver: AccountResolver,
+  ) {
     this.migrationService = new MigrationService(this.logger);
   }
 

@@ -63,7 +63,10 @@ export class ModifyMultisigService implements TransactionFactory {
 
   private readonly configLoader: ConfigLoader;
 
-  constructor(private readonly logger: Logger, protected readonly params: ModifyMultisigParams) {
+  constructor(
+    private readonly logger: Logger,
+    protected readonly params: ModifyMultisigParams,
+  ) {
     this.configLoader = new ConfigLoader(logger);
   }
 

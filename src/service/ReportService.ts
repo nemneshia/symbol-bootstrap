@@ -56,7 +56,10 @@ export class ReportService {
   };
   private readonly configLoader: ConfigLoader;
   private readonly fileSystemService: FileSystemService;
-  constructor(private readonly logger: Logger, protected readonly params: ReportParams) {
+  constructor(
+    private readonly logger: Logger,
+    protected readonly params: ReportParams,
+  ) {
     this.configLoader = new ConfigLoader(logger);
     this.fileSystemService = new FileSystemService(logger);
   }

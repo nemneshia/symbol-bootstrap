@@ -117,7 +117,10 @@ export class ConfigService {
   private readonly fileSystemService: FileSystemService;
   private readonly addressesService: AddressesService;
 
-  constructor(private readonly logger: Logger, private readonly params: ConfigParams) {
+  constructor(
+    private readonly logger: Logger,
+    private readonly params: ConfigParams,
+  ) {
     this.configLoader = new ConfigLoader(logger);
     this.fileSystemService = new FileSystemService(logger);
     this.addressesService = new AddressesService(logger, params.accountResolver);

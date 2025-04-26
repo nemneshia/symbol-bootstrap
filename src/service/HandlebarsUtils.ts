@@ -25,7 +25,6 @@ import { YamlUtils } from './YamlUtils.js';
 
 export class HandlebarsUtils {
   public static async generateConfiguration(
-    // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
     templateContext: any,
     copyFrom: string,
     copyTo: string,
@@ -144,7 +143,6 @@ export class HandlebarsUtils {
     return renderedText.toString().split("'").join('').replace(/^(0x)/, '');
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public static toJson(object: any): string {
     return JSON.stringify(object, null, 2);
   }

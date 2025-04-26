@@ -79,7 +79,10 @@ export class LinkService implements TransactionFactory {
 
   private readonly configLoader: ConfigLoader;
 
-  constructor(private readonly logger: Logger, protected readonly params: LinkParams) {
+  constructor(
+    private readonly logger: Logger,
+    protected readonly params: LinkParams,
+  ) {
     this.configLoader = new ConfigLoader(logger);
   }
 
@@ -151,7 +154,10 @@ export class LinkService implements TransactionFactory {
 }
 
 export class LinkTransactionGenericFactory {
-  constructor(private readonly logger: Logger, private readonly params: { unlink: boolean; ready?: boolean; removeOldLinked?: boolean }) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly params: { unlink: boolean; ready?: boolean; removeOldLinked?: boolean },
+  ) {}
 
   public async createGenericTransactions<AccountKL, VRFKL, VotingKL>(
     nodeName: string,

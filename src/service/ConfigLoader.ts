@@ -223,7 +223,6 @@ export class ConfigLoader {
     };
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public applyValueTemplate(context: any, value: any): any {
     if (!value) {
       return value;
@@ -242,7 +241,6 @@ export class ConfigLoader {
     return HandlebarsUtils.runTemplate(value, context);
   }
 
-  // eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
   public expandServicesRepeat(context: any, services: any[]): any[] {
     return _.flatMap(services || [], (service) => {
       if (!_.isObject(service)) {

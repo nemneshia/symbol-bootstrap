@@ -136,7 +136,7 @@ export class RuntimeService {
       const outputLines = stdout.toString().split('\n');
       this.logger.info(`Image pulled: ${outputLines[outputLines.length - 2]}`);
       RuntimeService.pulledImages.push(image);
-    } catch (e) {
+    } catch {
       this.logger.warn(`Image ${image} could not be pulled!`);
     }
   }

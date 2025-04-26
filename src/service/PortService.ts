@@ -39,7 +39,7 @@ export class PortService {
     try {
       await promise;
       return true;
-    } catch (_) {
+    } catch {
       return false;
     }
   }
