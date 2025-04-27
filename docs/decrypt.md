@@ -1,11 +1,10 @@
-`symbol-bootstrap decrypt`
-==========================
+# `symbol-bootstrap decrypt`
 
 It decrypts a yml file using the provided password. The source file can be a custom preset file, a preset.yml file or an addresses.yml.
 
 The main use case of this command is to verify private keys in encrypted files after encrypting a custom preset or running a bootstrap command with a provided --password.
 
-* [`symbol-bootstrap decrypt`](#symbol-bootstrap-decrypt)
+- [`symbol-bootstrap decrypt`](#symbol-bootstrap-decrypt)
 
 ## `symbol-bootstrap decrypt`
 
@@ -41,7 +40,7 @@ EXAMPLES
   $ cat plain-custom-preset.yml
   $ rm plain-addresses.yml
   $ rm plain-custom-preset.yml
-        
+
 
   $ symbol-bootstrap start --preset testnet --assembly dual --customPreset decrypted-custom-preset.yml --detached
   > password prompt

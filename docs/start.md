@@ -1,9 +1,8 @@
-`symbol-bootstrap start`
-========================
+# `symbol-bootstrap start`
 
 Single command that aggregates config, compose and run in one line!
 
-* [`symbol-bootstrap start`](#symbol-bootstrap-start)
+- [`symbol-bootstrap start`](#symbol-bootstrap-start)
 
 ## `symbol-bootstrap start`
 

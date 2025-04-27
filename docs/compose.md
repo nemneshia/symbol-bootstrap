@@ -1,9 +1,8 @@
-`symbol-bootstrap compose`
-==========================
+# `symbol-bootstrap compose`
 
 It generates the `compose.yml` file from the configured network.
 
-* [`symbol-bootstrap compose`](#symbol-bootstrap-compose)
+- [`symbol-bootstrap compose`](#symbol-bootstrap-compose)
 
 ## `symbol-bootstrap compose`
 

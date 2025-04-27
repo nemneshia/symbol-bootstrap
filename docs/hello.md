@@ -1,10 +1,9 @@
-`symbol-bootstrap hello`
-========================
+# `symbol-bootstrap hello`
 
 Say hello
 
-* [`symbol-bootstrap hello PERSON`](#symbol-bootstrap-hello-person)
-* [`symbol-bootstrap hello:world`](#symbol-bootstrap-helloworld)
+- [`symbol-bootstrap hello PERSON`](#symbol-bootstrap-hello-person)
+- [`symbol-bootstrap hello:world`](#symbol-bootstrap-helloworld)
 
 ## `symbol-bootstrap hello PERSON`
 

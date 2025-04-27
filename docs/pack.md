@@ -1,9 +1,8 @@
-`symbol-bootstrap pack`
-=======================
+# `symbol-bootstrap pack`
 
 It configures and packages your node into a zip file that can be uploaded to the final node machine.
 
-* [`symbol-bootstrap pack`](#symbol-bootstrap-pack)
+- [`symbol-bootstrap pack`](#symbol-bootstrap-pack)
 
 ## `symbol-bootstrap pack`
 

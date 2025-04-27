@@ -1,9 +1,8 @@
-`symbol-bootstrap wizard`
-=========================
+# `symbol-bootstrap wizard`
 
 An utility command that will help you configuring node!
 
-* [`symbol-bootstrap wizard`](#symbol-bootstrap-wizard)
+- [`symbol-bootstrap wizard`](#symbol-bootstrap-wizard)
 
 ## `symbol-bootstrap wizard`
 

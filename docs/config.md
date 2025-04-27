@@ -1,9 +1,8 @@
-`symbol-bootstrap config`
-=========================
+# `symbol-bootstrap config`
 
 Command used to set up the configuration files and the nemesis block for the current network
 
-* [`symbol-bootstrap config`](#symbol-bootstrap-config)
+- [`symbol-bootstrap config`](#symbol-bootstrap-config)
 
 ## `symbol-bootstrap config`
 

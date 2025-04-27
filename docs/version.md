@@ -1,9 +1,8 @@
-`symbol-bootstrap version`
-==========================
+# `symbol-bootstrap version`
 
 Show bootstrap version
 
-* [`symbol-bootstrap version`](#symbol-bootstrap-version)
+- [`symbol-bootstrap version`](#symbol-bootstrap-version)
 
 ## `symbol-bootstrap version`
 

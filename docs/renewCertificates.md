@@ -1,5 +1,4 @@
-`symbol-bootstrap renewCertificates`
-====================================
+# `symbol-bootstrap renewCertificates`
 
 It renews the SSL certificates of the node regenerating the node.csr.pem files but reusing the current private keys.
 
@@ -9,7 +8,7 @@ This command does not change the node private key (yet). This change would requi
 
 It's recommended to backup the target folder before running this operation!
 
-* [`symbol-bootstrap renewCertificates`](#symbol-bootstrap-renewcertificates)
+- [`symbol-bootstrap renewCertificates`](#symbol-bootstrap-renewcertificates)
 
 ## `symbol-bootstrap renewCertificates`
 

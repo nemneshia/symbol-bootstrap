@@ -1,9 +1,8 @@
-`symbol-bootstrap modifyMultisig`
-=================================
+# `symbol-bootstrap modifyMultisig`
 
 Create or modify a multisig account
 
-* [`symbol-bootstrap modifyMultisig`](#symbol-bootstrap-modifymultisig)
+- [`symbol-bootstrap modifyMultisig`](#symbol-bootstrap-modifymultisig)
 
 ## `symbol-bootstrap modifyMultisig`
 

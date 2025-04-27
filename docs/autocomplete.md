@@ -1,9 +1,8 @@
-`symbol-bootstrap autocomplete`
-===============================
+# `symbol-bootstrap autocomplete`
 
 Display autocomplete installation instructions.
 
-* [`symbol-bootstrap autocomplete [SHELL]`](#symbol-bootstrap-autocomplete-shell)
+- [`symbol-bootstrap autocomplete [SHELL]`](#symbol-bootstrap-autocomplete-shell)
 
 ## `symbol-bootstrap autocomplete [SHELL]`
 

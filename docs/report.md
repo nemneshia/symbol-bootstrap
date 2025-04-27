@@ -1,9 +1,8 @@
-`symbol-bootstrap report`
-=========================
+# `symbol-bootstrap report`
 
 it generates reStructuredText (.rst) reports describing the configuration of each node.
 
-* [`symbol-bootstrap report`](#symbol-bootstrap-report)
+- [`symbol-bootstrap report`](#symbol-bootstrap-report)
 
 ## `symbol-bootstrap report`
 

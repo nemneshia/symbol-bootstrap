@@ -1,5 +1,4 @@
-`symbol-bootstrap updateVotingKeys`
-===================================
+# `symbol-bootstrap updateVotingKeys`
 
 It updates the voting files containing the voting keys when required.
 
@@ -9,7 +8,7 @@ By default, bootstrap creates a new voting file once the current file reaches it
 
 When a new voting file is created, Bootstrap will advise running the `link` command again.
 
-* [`symbol-bootstrap updateVotingKeys`](#symbol-bootstrap-updatevotingkeys)
+- [`symbol-bootstrap updateVotingKeys`](#symbol-bootstrap-updatevotingkeys)
 
 ## `symbol-bootstrap updateVotingKeys`
 

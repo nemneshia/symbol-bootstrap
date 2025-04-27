@@ -1,9 +1,8 @@
-`symbol-bootstrap link`
-=======================
+# `symbol-bootstrap link`
 
 It announces VRF and Voting Link transactions to the network for each node with 'Peer' or 'Voting' roles. This command finalizes the node registration to an existing network.
 
-* [`symbol-bootstrap link`](#symbol-bootstrap-link)
+- [`symbol-bootstrap link`](#symbol-bootstrap-link)
 
 ## `symbol-bootstrap link`
 

@@ -1,9 +1,8 @@
-`symbol-bootstrap run`
-======================
+# `symbol-bootstrap run`
 
 It boots the network via docker using the generated `compose.yml` file and configuration. The config and compose methods/commands need to be called before this method. This is just a wrapper for the `docker compose up` bash call.
 
-* [`symbol-bootstrap run`](#symbol-bootstrap-run)
+- [`symbol-bootstrap run`](#symbol-bootstrap-run)
 
 ## `symbol-bootstrap run`
 

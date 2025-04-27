@@ -1,9 +1,8 @@
-`symbol-bootstrap resetData`
-============================
+# `symbol-bootstrap resetData`
 
 It removes the data keeping the generated configuration, certificates, keys and block 1.
 
-* [`symbol-bootstrap resetData`](#symbol-bootstrap-resetdata)
+- [`symbol-bootstrap resetData`](#symbol-bootstrap-resetdata)
 
 ## `symbol-bootstrap resetData`
 

@@ -1,9 +1,8 @@
-`symbol-bootstrap clean`
-========================
+# `symbol-bootstrap clean`
 
 It removes the target folder deleting the generated configuration and data
 
-* [`symbol-bootstrap clean`](#symbol-bootstrap-clean)
+- [`symbol-bootstrap clean`](#symbol-bootstrap-clean)
 
 ## `symbol-bootstrap clean`
 

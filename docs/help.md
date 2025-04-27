@@ -1,9 +1,8 @@
-`symbol-bootstrap help`
-=======================
+# `symbol-bootstrap help`
 
 Display help for symbol-bootstrap.
 
-* [`symbol-bootstrap help [COMMAND]`](#symbol-bootstrap-help-command)
+- [`symbol-bootstrap help [COMMAND]`](#symbol-bootstrap-help-command)
 
 ## `symbol-bootstrap help [COMMAND]`
 

@@ -49,29 +49,29 @@ Alternatively, you can use the [BootstrapService](src/service/BootstrapService.t
 Example:
 
 ```ts
-import {BootstrapService, StartParams, Preset} from 'symbol-bootstrap';
-import {expect} from '@oclif/test';
+import { BootstrapService, StartParams, Preset } from 'symbol-bootstrap';
+import { expect } from '@oclif/test';
 
 it('Bootstrap e2e test', async () => {
-    const service = new BootstrapService();
-    const config: StartParams = {
-        preset: Preset.bootstrap,
-        reset: true,
-        healthCheck: true,
-        timeout: 60000 * 5,
-        target: 'target/bootstrap-test',
-        detached: true,
-        user: 'current',
-    };
-    try {
-        await service.stop(config);
-        const configResult = await service.start(config);
-        expect(configResult.presetData).not.null;
-        expect(configResult.addresses).not.null;
-        // Here you can write unit tests against a http://localhost:3000 network
-    } finally {
-        await service.stop(config);
-    }
+  const service = new BootstrapService();
+  const config: StartParams = {
+    preset: Preset.bootstrap,
+    reset: true,
+    healthCheck: true,
+    timeout: 60000 * 5,
+    target: 'target/bootstrap-test',
+    detached: true,
+    user: 'current',
+  };
+  try {
+    await service.stop(config);
+    const configResult = await service.start(config);
+    expect(configResult.presetData).not.null;
+    expect(configResult.addresses).not.null;
+    // Here you can write unit tests against a http://localhost:3000 network
+  } finally {
+    await service.stop(config);
+  }
 });
 ```
 
