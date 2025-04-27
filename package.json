@@ -106,7 +106,7 @@
     "clean": "npx shx rm -rf ./lib tsconfig.tsbuildinfo",
     "lint:fix": "eslint src/ test/ --ext .ts --fix",
     "prettier": "prettier --write ./src ./test ./*.md ./docs/**/*.md",
-    "style:fix": "npm run create-index-files && npm run prettier && npm run lint:fix && npm run oclif-doc",
+    "style:fix": "npm run prettier && npm run lint:fix && npm run oclif-doc",
     "create-index-files": "cti create ./src -b -n -e commands",
     "postpack": "npx shx rm -f oclif.manifest.json tsconfig.tsbuildinfo",
     "posttest": "eslint src/ test/ --ext .ts",

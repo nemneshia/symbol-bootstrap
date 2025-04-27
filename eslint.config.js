@@ -1,3 +1,4 @@
+import eslintConfigPrettier from 'eslint-config-prettier';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import tseslint from 'typescript-eslint';
 
@@ -16,9 +17,13 @@ export default [
     plugins: {
       '@typescript-eslint': tseslint.plugin,
     },
+    rules: {
+      'prettier/prettier': 'error',
+    },
   },
   ...tseslint.configs.recommended,
   eslintPluginPrettierRecommended,
+  eslintConfigPrettier,
   {
     rules: {
       '@typescript-eslint/no-non-null-assertion': 'off',
