@@ -16,7 +16,7 @@
 import fetch from 'cross-fetch';
 import { lookup } from 'dns';
 import _ from 'lodash';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { ChainInfo, RepositoryFactory, RepositoryFactoryHttp, RoleType } from 'symbol-sdk';
 import { Configuration, NodeApi, NodeListFilter, RequestContext } from 'symbol-statistics-service-typescript-fetch-client';
 import { Logger } from '../logger/index.js';
@@ -107,7 +107,7 @@ export class RemoteNodeService {
         urls.map(async (restGatewayUrl): Promise<RepositoryInfo | undefined> => {
           const repositoryFactory = new RepositoryFactoryHttp(restGatewayUrl);
           try {
-            const chainInfo = await firstValueFrom(repositoryFactory.createChainRepository().getChainInfo());
+            const chainInfo = await firstValueFrom(repositoryFactory.createChainRepository().getChainInfo().pipe(timeout(3000)));
             return {
               restGatewayUrl,
               repositoryFactory,
