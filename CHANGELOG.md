@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 The changelog format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [2.0.8] - 2026-04-19
+
+### Changes:
+- Changed the source for retrieving the node list from StatisticsService to NodeWatch.
+
+## [2.0.7] - 2025-11-30
+
+### Changes:
+- Added soft and hard limits for Docker 29.
+
 ## [2.0.6] - 2025-09-23
 
 **Milestone**: Mainnet(1.0.3.9)
