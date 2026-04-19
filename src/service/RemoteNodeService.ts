@@ -241,7 +241,7 @@ export class RemoteNodeService {
 
   public async getNodes(nodewatchUrl: string, limit: number, order: string): Promise<NodewatchPeer[]> {
     const nodewatchRequestUrl = new URL('/api/symbol/nodes/peer', nodewatchUrl);
-    nodewatchRequestUrl.searchParams.set('limit', limit ? limit.toString() : '10');
+    nodewatchRequestUrl.searchParams.set('limit', limit.toString());
     nodewatchRequestUrl.searchParams.set('order', order);
 
     const response = await fetch(nodewatchRequestUrl.toString());
@@ -249,7 +249,7 @@ export class RemoteNodeService {
       throw new Error(`Nodewatch responded with status ${response.status}`);
     }
     const nodes = (await response.json()) as NodewatchPeer[];
-    if (!nodes) {
+    if (!nodes || !Array.isArray(nodes)) {
       throw new Error(`Nodewatch responded with invalid body ${JSON.stringify(nodes)}`);
     }
 

@@ -62,7 +62,7 @@
     "mocha-lcov-reporter": "^1.3.0",
     "mock-stdin": "^1.0.0",
     "nock": "^14.0.10",
-    "nyc": "18",
+    "nyc": "^18.0.0",
     "oclif": "^4.22.50",
     "prettier": "^3.7.1",
     "prettier-plugin-organize-imports": "^4.3.0",
