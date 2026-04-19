@@ -7,9 +7,15 @@
     "rootDir": ".",
     "strict": true,
     "target": "es2022",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "types": [
+      "mocha"
+    ]
   },
-  "include": ["src/**/*", "test/**/*"],
+  "include": [
+    "src/**/*",
+    "test/**/*"
+  ],
   "ts-node": {
     "esm": true
   }

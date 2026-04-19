@@ -18,9 +18,9 @@ import { lookup } from 'dns';
 import _ from 'lodash';
 import { firstValueFrom } from 'rxjs';
 import { ChainInfo, RepositoryFactory, RepositoryFactoryHttp, RoleType } from 'symbol-sdk';
-import { Configuration, NodeApi, NodeListFilter, RequestContext } from 'symbol-statistics-service-typescript-fetch-client';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset, PeerInfo } from '../model/index.js';
+import { NodewatchPeer } from '../model/Nodewatch.js';
 import { KnownError } from './KnownError.js';
 import { Utils } from './Utils.js';
 
@@ -131,19 +131,17 @@ export class RemoteNodeService {
     }
     const presetData = this.presetData;
     const urls = [...(presetData.knownRestGateways || [])];
-    const statisticsServiceUrl = presetData.statisticsServiceUrl;
-    if (statisticsServiceUrl && !this.offline) {
-      const client = this.createNodeApiRestClient(statisticsServiceUrl);
+    const nodewatchUrl = presetData.nodewatchUrl;
+    if (nodewatchUrl && !this.offline) {
       try {
-        const filter = presetData.statisticsServiceRestFilter as NodeListFilter;
         const limit = presetData.statisticsServiceRestLimit;
-        const nodes = await client.getNodes(filter ? filter : undefined, limit);
-        urls.push(...nodes.map((n) => n.apiStatus?.restGatewayUrl).filter((url): url is string => !!url));
+        const order = 'random';
+        const nodes = await this.getNodes(nodewatchUrl, limit || 10, order);
+
+        urls.push(...nodes.map((n) => n.endpoint).filter((url): url is string => !!url));
       } catch (e) {
         this.logger.warn(
-          `There has been an error connecting to statistics ${statisticsServiceUrl}. Rest urls cannot be resolved! Error ${Utils.getMessage(
-            e,
-          )}`,
+          `There has been an error connecting to nodewatch ${nodewatchUrl}. Rest urls cannot be resolved! Error ${Utils.getMessage(e)}`,
         );
       }
     }
@@ -174,27 +172,44 @@ export class RemoteNodeService {
 
   public async getPeerInfos(): Promise<PeerInfo[]> {
     const presetData = this.presetData;
-    const statisticsServiceUrl = presetData.statisticsServiceUrl;
+    const nodewatchUrl = presetData.nodewatchUrl;
     const knownPeers = [...(presetData.knownPeers || [])];
-    if (statisticsServiceUrl && !this.offline) {
-      const client = this.createNodeApiRestClient(statisticsServiceUrl);
+    if (nodewatchUrl && !this.offline) {
       try {
-        const filter = presetData.statisticsServicePeerFilter as NodeListFilter;
         const limit = presetData.statisticsServicePeerLimit;
-        const nodes = await client.getNodes(filter ? filter : undefined, limit);
+        const order = 'random';
+        const nodes = await this.getNodes(nodewatchUrl, limit || 10, order);
+
+        await Promise.all(
+          nodes.map(async (node) => {
+            if (!node.endpoint || !node.isHealthy) return;
+            try {
+              const nodeInfoUrl = new URL('/node/info', node.endpoint);
+              const nodeInfoResponse = await fetch(nodeInfoUrl.toString());
+              if (nodeInfoResponse.ok) {
+                const nodeInfo = await nodeInfoResponse.json();
+                node.host = nodeInfo.host;
+                node.port = nodeInfo.port;
+              }
+            } catch (e) {
+              this.logger.warn(`Failed to get node info from ${node.endpoint}: ${Utils.getMessage(e)}`);
+            }
+          }),
+        );
+
         const peerInfos = nodes
           .map((n): PeerInfo | undefined => {
-            if (!n.peerStatus?.isAvailable || !n.publicKey || !n.port || !n.friendlyName || !n.roles) {
+            if (!n.isHealthy || !n.mainPublicKey || !n.name || !n.roles || !n.host || !n.port) {
               return undefined;
             }
             return {
-              publicKey: n.publicKey,
+              publicKey: n.mainPublicKey,
               endpoint: {
                 host: n.host || '',
                 port: n.port,
               },
               metadata: {
-                name: n.friendlyName,
+                name: n.name,
                 roles: RemoteNodeService.getNodeRoles(n.roles),
               },
             };
@@ -203,30 +218,11 @@ export class RemoteNodeService {
         knownPeers.push(...peerInfos);
       } catch (error) {
         this.logger.warn(
-          `There has been an error connecting to statistics ${statisticsServiceUrl}. Peers cannot be resolved! Error ${Utils.getMessage(
-            error,
-          )}`,
+          `There has been an error connecting to nodewatch ${nodewatchUrl}. Peers cannot be resolved! Error ${Utils.getMessage(error)}`,
         );
       }
     }
     return knownPeers;
-  }
-
-  public createNodeApiRestClient(statisticsServiceUrl: string): NodeApi {
-    return new NodeApi(
-      new Configuration({
-        fetchApi: fetch as any,
-        basePath: statisticsServiceUrl,
-        middleware: [
-          {
-            pre: (context: RequestContext): Promise<void> => {
-              this.logger.info(`Getting nodes information from ${context.url}`);
-              return Promise.resolve();
-            },
-          },
-        ],
-      }),
-    );
   }
 
   public async resolveRestUrlsForServices(): Promise<{ restNodes: string[]; defaultNode: string }> {
@@ -241,5 +237,22 @@ export class RemoteNodeService {
       throw new Error('Rest node could not be resolved!');
     }
     return { restNodes: _.uniq(restNodes), defaultNode: defaultNode };
+  }
+
+  public async getNodes(nodewatchUrl: string, limit: number, order: string): Promise<NodewatchPeer[]> {
+    const nodewatchRequestUrl = new URL('/api/symbol/nodes/peer', nodewatchUrl);
+    nodewatchRequestUrl.searchParams.set('limit', limit ? limit.toString() : '10');
+    nodewatchRequestUrl.searchParams.set('order', order);
+
+    const response = await fetch(nodewatchRequestUrl.toString());
+    if (!response.ok) {
+      throw new Error(`Nodewatch responded with status ${response.status}`);
+    }
+    const nodes = (await response.json()) as NodewatchPeer[];
+    if (!nodes) {
+      throw new Error(`Nodewatch responded with invalid body ${JSON.stringify(nodes)}`);
+    }
+
+    return nodes;
   }
 }
