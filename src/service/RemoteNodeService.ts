@@ -19,8 +19,7 @@ import _ from 'lodash';
 import { firstValueFrom } from 'rxjs';
 import { ChainInfo, RepositoryFactory, RepositoryFactoryHttp, RoleType } from 'symbol-sdk';
 import { Logger } from '../logger/index.js';
-import { ConfigPreset, PeerInfo } from '../model/index.js';
-import { NodewatchPeer } from '../model/Nodewatch.js';
+import { ConfigPreset, NodewatchPeer, PeerInfo } from '../model/index.js';
 import { KnownError } from './KnownError.js';
 import { Utils } from './Utils.js';
 
