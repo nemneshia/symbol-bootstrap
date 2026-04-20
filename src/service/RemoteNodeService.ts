@@ -240,7 +240,8 @@ export class RemoteNodeService {
   }
 
   public async getNodes(nodewatchUrl: string, limit: number, order: string): Promise<NodewatchPeer[]> {
-    const nodewatchRequestUrl = new URL('/api/symbol/nodes/peer', nodewatchUrl);
+    const base = nodewatchUrl.endsWith('/') ? nodewatchUrl : nodewatchUrl + '/';
+    const nodewatchRequestUrl = new URL('api/symbol/nodes/peer', base);
     nodewatchRequestUrl.searchParams.set('limit', limit.toString());
     nodewatchRequestUrl.searchParams.set('order', order);
 
