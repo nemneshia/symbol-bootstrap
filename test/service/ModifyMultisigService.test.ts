@@ -69,7 +69,7 @@ describe('ModifyMultisigService', () => {
   };
 
   it('Converts regular account to multisig, adding single cosignatory', async () => {
-    StdUtils.in(['\n']); // for addressDeletions
+    StdUtils.in(['\n', '\n']); // for addressDeletions
 
     const tx = await commonStub(cosigner1.address.plain(), undefined, 1, 1, undefined);
 
@@ -81,7 +81,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Converts regular account to multisig, adding multiple cosignatories', async () => {
-    StdUtils.in(['\n']); // for addressDeletions
+    StdUtils.in(['\n', '\n']); // for addressDeletions
 
     const tx = await commonStub([cosigner1, cosigner2].map((c) => c.address.plain()).join(','), undefined, 1, 1, undefined);
 
@@ -93,7 +93,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Adds another cosignatory to the current multisig account', async () => {
-    StdUtils.in(['\n']); // for addressDeletions
+    StdUtils.in(['\n', '\n']); // for addressDeletions
 
     const tx = await commonStub(cosigner2.address.plain(), undefined, 1, 1, {
       minApproval: 1,
@@ -108,7 +108,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Removes a cosignatory from the current multisig account', async () => {
-    StdUtils.in(['\n']); // for addressAdditions
+    StdUtils.in(['\n', '\n']); // for addressAdditions
 
     const tx = await commonStub(undefined, cosigner1.address.plain(), -1, -1, {
       minApproval: 1,
@@ -124,7 +124,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Modifies minApproval and minRemoval of the current multisig account with prompt for the address additions/deletions', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions, addressAdditions
+    StdUtils.in(['\n', '\n', '\n']); // for addressDeletions, addressAdditions
 
     const tx = await commonStub(undefined, undefined, -1, -1, {
       minApproval: 2,
@@ -154,7 +154,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Throws error when new minApproval is larger than the total number of cosignatories ', async () => {
-    StdUtils.in(['\n']); // for addressDeletions
+    StdUtils.in(['\n', '\n']); // for addressDeletions
 
     try {
       await commonStub(cosigner2.address.plain(), undefined, 1, 1, {
@@ -170,7 +170,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Throws error when new minRemoval is larger than the total number of cosignatories ', async () => {
-    StdUtils.in(['\n']); // for addressDeletions
+    StdUtils.in(['\n', '\n']); // for addressDeletions
 
     try {
       await commonStub(cosigner2.address.plain(), undefined, 1, 1, {
@@ -186,7 +186,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Throws error when new minApproval is 0 when there are cosignatories in the account', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions, addressAdditions
+    StdUtils.in(['\n', '\n', '\n']); // for addressDeletions, addressAdditions
 
     try {
       await commonStub(undefined, undefined, -1, -1, {
@@ -202,7 +202,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Throws error while cosignatory to be added already a cosignatory.', async () => {
-    StdUtils.in(['\n']); // for addressDeletions, addressAdditions
+    StdUtils.in(['\n', '\n']); // for addressDeletions, addressAdditions
 
     try {
       await commonStub(cosigner1.address.plain(), undefined, -1, -1, {
@@ -216,7 +216,7 @@ describe('ModifyMultisigService', () => {
   });
 
   it('Throws error while cosignatory to be removed is not an actual cosignatory.', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions, addressAdditions
+    StdUtils.in(['\n', '\n', '\n']); // for addressDeletions, addressAdditions
 
     try {
       await commonStub(undefined, cosigner2.address.plain(), -1, -1, {

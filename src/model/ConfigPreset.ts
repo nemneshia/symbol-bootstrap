@@ -427,6 +427,7 @@ export interface CommonConfigPreset extends NodeConfigPreset, GatewayConfigPrese
   useExperimentalNativeVotingKeyGeneration?: boolean;
   lastKnownNetworkEpoch: number;
   autoUpdateVotingKeys: boolean;
+  nodewatchUrl?: string;
   statisticsServiceUrl?: string;
   statisticsServicePeerLimit: number;
   statisticsServicePeerFilter?: string;
