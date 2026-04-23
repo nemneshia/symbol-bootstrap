@@ -6,7 +6,7 @@ import { mkdirSync } from 'fs';
  * causing EACCES errors for all subsequent tests that try to write there.
  */
 export function setup() {
-  const dirs = ['target', 'target/tests', 'target/wizardTest', 'target/tests.encrypt', 'target/test-config-loader-legacy-upgrade'];
+  const dirs = ['target', 'target/tests', 'target/tests.encrypt', 'target/test-config-loader-legacy-upgrade'];
   for (const dir of dirs) {
     mkdirSync(dir, { recursive: true });
   }
