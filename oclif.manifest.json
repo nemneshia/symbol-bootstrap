@@ -184,7 +184,7 @@
         },
         "assembly": {
           "char": "a",
-          "description": "The assembly that defines the node(s) layout. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: dual, peer, api, demo, multinode, services, my-custom-assembly.yml (advanced).",
+          "description": "The assembly that defines the node(s) layout. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: dual, peer, api, demo, my-custom-assembly.yml (advanced).",
           "name": "assembly",
           "hasDynamicHelp": false,
           "multiple": false,
@@ -214,12 +214,6 @@
         "offline": {
           "description": "If --offline is used, Bootstrap resolves the configuration without querying the running network.",
           "name": "offline",
-          "allowNo": false,
-          "type": "boolean"
-        },
-        "report": {
-          "description": "It generates reStructuredText (.rst) reports describing the configuration of each node.",
-          "name": "report",
           "allowNo": false,
           "type": "boolean"
         },
@@ -768,7 +762,7 @@
         },
         "assembly": {
           "char": "a",
-          "description": "The assembly that defines the node(s) layout. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: dual, peer, api, demo, multinode, services, my-custom-assembly.yml (advanced).",
+          "description": "The assembly that defines the node(s) layout. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: dual, peer, api, demo, my-custom-assembly.yml (advanced).",
           "name": "assembly",
           "hasDynamicHelp": false,
           "multiple": false,
@@ -786,12 +780,6 @@
           "char": "r",
           "description": "It resets the configuration generating a new one.",
           "name": "reset",
-          "allowNo": false,
-          "type": "boolean"
-        },
-        "report": {
-          "description": "It generates reStructuredText (.rst) reports describing the configuration of each node.",
-          "name": "report",
           "allowNo": false,
           "type": "boolean"
         },
@@ -901,55 +889,6 @@
         "lib",
         "commands",
         "renewCertificates",
-        "index.js"
-      ]
-    },
-    "report": {
-      "aliases": [],
-      "args": {},
-      "description": "it generates reStructuredText (.rst) reports describing the configuration of each node.",
-      "examples": [
-        "$ symbol-bootstrap report"
-      ],
-      "flags": {
-        "help": {
-          "char": "h",
-          "description": "It shows the help of this command.",
-          "name": "help",
-          "allowNo": false,
-          "type": "boolean"
-        },
-        "target": {
-          "char": "t",
-          "description": "The target folder where the symbol-bootstrap network is generated",
-          "name": "target",
-          "default": "target",
-          "hasDynamicHelp": false,
-          "multiple": false,
-          "type": "option"
-        },
-        "logger": {
-          "description": "The loggers the command will use. Options are: Console,File,Silent. Use ',' to select multiple loggers.",
-          "name": "logger",
-          "default": "Console,File",
-          "hasDynamicHelp": false,
-          "multiple": false,
-          "type": "option"
-        }
-      },
-      "hasDynamicHelp": false,
-      "hiddenAliases": [],
-      "id": "report",
-      "pluginAlias": "@nemneshia/symbol-bootstrap",
-      "pluginName": "@nemneshia/symbol-bootstrap",
-      "pluginType": "core",
-      "strict": true,
-      "enableJsonFlag": false,
-      "isESM": true,
-      "relativePath": [
-        "lib",
-        "commands",
-        "report",
         "index.js"
       ]
     },
@@ -1227,7 +1166,7 @@
         },
         "assembly": {
           "char": "a",
-          "description": "The assembly that defines the node(s) layout. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: dual, peer, api, demo, multinode, services, my-custom-assembly.yml (advanced).",
+          "description": "The assembly that defines the node(s) layout. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: dual, peer, api, demo, my-custom-assembly.yml (advanced).",
           "name": "assembly",
           "hasDynamicHelp": false,
           "multiple": false,
@@ -1245,12 +1184,6 @@
           "char": "r",
           "description": "It resets the configuration generating a new one.",
           "name": "reset",
-          "allowNo": false,
-          "type": "boolean"
-        },
-        "report": {
-          "description": "It generates reStructuredText (.rst) reports describing the configuration of each node.",
-          "name": "report",
           "allowNo": false,
           "type": "boolean"
         }

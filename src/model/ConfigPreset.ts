@@ -41,7 +41,6 @@ export interface CurrencyDistribution {
 
 export interface MosaicPreset {
   name: string;
-  repeat?: number;
   main: boolean;
   harvest: boolean;
   divisibility: number;
@@ -56,7 +55,6 @@ export interface MosaicPreset {
 }
 
 export interface DatabasePreset extends DockerServicePreset {
-  repeat?: number;
   name: string;
   databaseName?: string;
 }
@@ -265,7 +263,6 @@ export interface NodePreset extends DockerServicePreset, Partial<NodeConfigPrese
   api: boolean;
   voting: boolean;
 
-  repeat?: number;
   databaseHost?: string;
   host?: string;
   roles?: string;
@@ -332,7 +329,6 @@ export interface GatewayConfigPreset {
 
 export interface GatewayPreset extends DockerServicePreset, Partial<GatewayConfigPreset> {
   // At least these properties.
-  repeat?: number;
   apiNodeName: string;
   apiNodeHost: string;
   apiNodeBrokerHost: string;
@@ -346,19 +342,6 @@ export interface HttpsProxyPreset extends DockerServicePreset {
   stage: string;
   webSocket?: string;
   serverNamesHashBucketSize?: number;
-}
-
-export interface ExplorerPreset extends DockerServicePreset {
-  // At least these properties.
-  repeat?: number;
-  name: string;
-}
-
-export interface FaucetPreset extends DockerServicePreset {
-  // At least these properties.
-  gateway: string;
-  repeat?: number;
-  name: string;
 }
 
 export interface PeerInfo {
@@ -378,7 +361,6 @@ export type DeepPartial<T> = {
 
 export interface CommonConfigPreset extends NodeConfigPreset, GatewayConfigPreset {
   version: number; // file version
-  reportBootstrapVersion: string;
   preset: string;
   assembly: string;
   privateKeySecurityMode?: string;
@@ -389,14 +371,11 @@ export interface CommonConfigPreset extends NodeConfigPreset, GatewayConfigPrese
   dataDirectory: string;
   subnet?: string;
   transactionsDirectory: string;
-  faucetUrl?: string;
   nemesisSeedFolder?: string; // Optional seed folder if user provides an external seed/00000 folder.
   domain?: string; // Optional for services assembly.
 
   symbolServerImage: string;
-  symbolExplorerImage: string;
   symbolRestImage: string;
-  symbolFaucetImage: string;
   httpsPortalImage: string;
 
   dockerComposeServiceRestart: string;
@@ -452,8 +431,6 @@ export interface ConfigPreset extends CommonConfigPreset {
   databases?: DatabasePreset[];
   nodes?: NodePreset[];
   gateways?: GatewayPreset[];
-  explorers?: ExplorerPreset[];
-  faucets?: FaucetPreset[];
   httpsProxies?: HttpsProxyPreset[];
   customPresetCache?: CustomPreset;
 }
@@ -463,7 +440,5 @@ export interface CustomPreset extends Partial<CommonConfigPreset> {
   databases?: DeepPartial<DatabasePreset>[];
   nodes?: DeepPartial<NodePreset>[];
   gateways?: DeepPartial<GatewayPreset>[];
-  explorers?: DeepPartial<ExplorerPreset>[];
-  faucets?: DeepPartial<FaucetPreset>[];
   httpsProxies?: DeepPartial<HttpsProxyPreset>[];
 }

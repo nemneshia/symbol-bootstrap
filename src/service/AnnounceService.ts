@@ -129,7 +129,6 @@ export class AnnounceService {
     const epochAdjustment = await firstValueFrom(repositoryFactory.getEpochAdjustment());
     const listener = repositoryFactory.createListener();
     await listener.open();
-    const faucetUrl = presetData.faucetUrl;
     const currency = (await firstValueFrom(repositoryFactory.getCurrencies())).currency;
     const currencyMosaicId = currency.mosaicId;
     const deadline = Deadline.create(epochAdjustment);
@@ -169,9 +168,7 @@ export class AnnounceService {
         );
       }
       const announcerPublicAccount = serviceProviderPublicAccount ? serviceProviderPublicAccount : mainAccount;
-      const noFundsMessage = faucetUrl
-        ? `Your account does not have enough XYM to complete this transaction. Send ${tokenAmount} tokens to ${announcerPublicAccount.address.plain()} via ${faucetUrl}/?recipient=${announcerPublicAccount.address.plain()}`
-        : `Your account does not have enough XYM to complete this transaction. Send ${tokenAmount} tokens to ${announcerPublicAccount.address.plain()} .`;
+      const noFundsMessage = `Your account does not have enough XYM to complete this transaction. Send ${tokenAmount} tokens to ${announcerPublicAccount.address.plain()} .`;
       const announcerAccountInfo = await this.getAccountInfo(repositoryFactory, announcerPublicAccount.address);
 
       if (!announcerAccountInfo) {

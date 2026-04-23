@@ -7,8 +7,6 @@ maxHarvesterBalance: 50000000000000
 networkType: 152
 minVoterBalance: 50000
 baseNamespace: 'cat'
-explorerUrl: http://localhost:90/
-faucetUrl: http://localhost:100/
 beneficiaryAddress: ''
 votingKeyDesiredLifetime: 720
 votingKeyDesiredFutureLifetime: 120

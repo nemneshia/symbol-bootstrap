@@ -33,7 +33,6 @@ export type ComposeParams = { target: string; user?: string; upgrade?: boolean; 
 const targetNodesFolder = Constants.targetNodesFolder;
 const targetDatabasesFolder = Constants.targetDatabasesFolder;
 const targetGatewaysFolder = Constants.targetGatewaysFolder;
-const targetExplorersFolder = Constants.targetExplorersFolder;
 
 export interface PortConfiguration {
   internalPort: number;
@@ -336,59 +335,6 @@ export class ComposeService {
               },
               restart: restart,
               depends_on: restDependency ? [restDependency] : [],
-              ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.dockerComposeDebugMode),
-            }),
-          );
-        }),
-    );
-
-    await Promise.all(
-      (presetData.explorers || [])
-        .filter((d) => !d.excludeDockerService)
-        .map(async (n) => {
-          const volumes = [
-            vol(`../${targetExplorersFolder}/${n.name}`, nodeWorkingDirectory, true),
-            vol(`./explorer`, nodeCommandsDirectory, true),
-          ];
-          const entrypoint = `ash -c "/bin/ash ${nodeCommandsDirectory}/run.sh ${n.name}"`;
-          services.push(
-            await resolveService(n, {
-              container_name: containerNamePrefix + n.name,
-              image: presetData.symbolExplorerImage,
-              entrypoint: entrypoint,
-              stop_signal: 'SIGINT',
-              working_dir: nodeWorkingDirectory,
-              ports: resolvePorts([{ internalPort: 4000, openPort: n.openPort }]),
-              restart: restart,
-              volumes: volumes,
-              ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.dockerComposeDebugMode),
-            }),
-          );
-        }),
-    );
-
-    await Promise.all(
-      (presetData.faucets || [])
-        .filter((d) => !d.excludeDockerService)
-        .map(async (n) => {
-          const mosaicPreset = presetData.nemesis.mosaics[0];
-          const fullName = `${presetData.baseNamespace}.${mosaicPreset.name}`;
-          const { defaultNode } = await remoteNodeService.resolveRestUrlsForServices();
-          services.push(
-            await resolveService(n, {
-              container_name: containerNamePrefix + n.name,
-              image: presetData.symbolFaucetImage,
-              stop_signal: 'SIGINT',
-              environment: {
-                DEFAULT_NODE: defaultNode,
-                DEFAULT_NODE_CLIENT: defaultNode,
-                NATIVE_CURRENCY_NAME: fullName,
-                FAUCET_PRIVATE_KEY: this.getMainAccountPrivateKey(passedAddresses) || '',
-                NATIVE_CURRENCY_ID: HandlebarsUtils.toSimpleHex(presetData.currencyMosaicId || ''),
-              },
-              restart: restart,
-              ports: resolvePorts([{ internalPort: 4000, openPort: n.openPort }]),
-              depends_on: [n.gateway],
               ...this.resolveDebugOptions(presetData.dockerComposeDebugMode, n.dockerComposeDebugMode),
             }),
           );

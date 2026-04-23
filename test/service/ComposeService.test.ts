@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'vitest';
 import { existsSync } from 'fs';
+import { expect } from 'vitest';
 
 import { join } from 'path';
 import { Assembly, Constants, FileSystemService, LoggerFactory, LogType, RuntimeService, YamlUtils } from '../../src';
@@ -191,15 +191,7 @@ ${YamlUtils.toYaml(dockerCompose)}
     const params = {
       ...ConfigService.defaultParams,
       ...LinkService.defaultParams,
-      customPresetObject: {
-        faucets: [
-          {
-            compose: {
-              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
-            },
-          },
-        ],
-      },
+      customPresetObject: {},
       target: 'target/tests/ComposeService-bootstrap.default',
       reset: false,
       preset: Preset.bootstrap,
@@ -211,21 +203,13 @@ ${YamlUtils.toYaml(dockerCompose)}
     const params = {
       ...ConfigService.defaultParams,
       ...LinkService.defaultParams,
-      customPresetObject: {
-        faucets: [
-          {
-            compose: {
-              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
-            },
-          },
-        ],
-      },
+      customPresetObject: {},
       target: 'target/tests/ComposeService-bootstrap.compose',
       password,
       customPreset: './test/custom_compose_preset.yml',
       reset: false,
       preset: Preset.bootstrap,
-      assembly: Assembly.multinode,
+      assembly: Assembly.dual,
     };
     await assertDockerCompose(params, 'expected-compose-bootstrap-custom-compose.yml');
   });
@@ -234,20 +218,12 @@ ${YamlUtils.toYaml(dockerCompose)}
     const params = {
       ...ConfigService.defaultParams,
       ...LinkService.defaultParams,
-      customPresetObject: {
-        faucets: [
-          {
-            compose: {
-              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
-            },
-          },
-        ],
-      },
+      customPresetObject: {},
       target: 'target/tests/ComposeService-bootstrap.custom',
       customPreset: './test/custom_preset.yml',
       reset: false,
       preset: Preset.bootstrap,
-      assembly: Assembly.multinode,
+      assembly: Assembly.dual,
     };
     await assertDockerCompose(params, 'expected-compose-bootstrap-custom.yml');
   });
@@ -271,13 +247,6 @@ ${YamlUtils.toYaml(dockerCompose)}
       ...LinkService.defaultParams,
       customPresetObject: {
         dockerComposeDebugMode: true,
-        faucets: [
-          {
-            compose: {
-              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
-            },
-          },
-        ],
       },
       target: 'target/tests/ComposeService-bootstrap.demo',
       password,
@@ -299,47 +268,6 @@ ${YamlUtils.toYaml(dockerCompose)}
       preset: Preset.bootstrap,
     };
     await assertDockerCompose(params, 'expected-compose-bootstrap-dual.yml');
-  });
-
-  it('Compose mainnet services', async () => {
-    const params: StartParams = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      customPreset: './test/unit-test-profiles/services_custom_preset.yml',
-      customPresetObject: {
-        knownRestGateways: ['http://some.node.com:3000'],
-      },
-      offline: true,
-      target: 'target/tests/ComposeService-mainnet-services.dual',
-      password,
-      reset: false,
-      assembly: Assembly.services,
-      preset: Preset.mainnet,
-    };
-    await assertDockerCompose(params, 'expected-compose-mainnet-services.yml');
-  });
-
-  it('Compose bootstrap repeat', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      customPresetObject: {
-        faucets: [
-          {
-            compose: {
-              environment: { FAUCET_PRIVATE_KEY: 'MockMe', NATIVE_CURRENCY_ID: 'Mockme2' },
-            },
-          },
-        ],
-      },
-      reset: false,
-      target: 'target/tests/ComposeService-bootstrap.repeat',
-      password,
-      preset: Preset.bootstrap,
-      assembly: Assembly.multinode,
-      customPreset: './test/repeat_preset.yml',
-    };
-    await assertDockerCompose(params, 'expected-compose-bootstrap-repeat.yml');
   });
 
   it('resolveDebugOptions', async () => {

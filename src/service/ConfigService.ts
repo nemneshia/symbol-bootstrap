@@ -23,7 +23,6 @@ import {
   Convert,
   Deadline,
   LinkAction,
-  NamespaceId,
   Transaction,
   TransactionMapping,
   UInt64,
@@ -44,7 +43,6 @@ import { HandlebarsUtils } from './HandlebarsUtils.js';
 import { KnownError } from './KnownError.js';
 import { NemgenService } from './NemgenService.js';
 import { RemoteNodeService } from './RemoteNodeService.js';
-import { ReportParams, ReportService } from './ReportService.js';
 import { Utils } from './Utils.js';
 import { VotingParams, VotingService } from './VotingService.js';
 import { Password, YamlUtils } from './YamlUtils.js';
@@ -63,12 +61,10 @@ export enum Assembly {
   peer = 'peer',
   api = 'api',
   demo = 'demo',
-  multinode = 'multinode',
-  services = 'services',
 }
 
 export const defaultAssembly: Record<string, string> = {
-  [Preset.bootstrap]: Assembly.multinode,
+  [Preset.bootstrap]: Assembly.dual,
 };
 
 export enum KeyName {
@@ -81,8 +77,7 @@ export enum KeyName {
   ServiceProvider = 'Service Provider',
 }
 
-export interface ConfigParams extends VotingParams, ReportParams {
-  report: boolean;
+export interface ConfigParams extends VotingParams {
   reset: boolean;
   upgrade: boolean;
   workingDir: string;
@@ -106,7 +101,6 @@ export class ConfigService {
   public static defaultParams: ConfigParams = {
     target: Constants.defaultTargetFolder,
     workingDir: Constants.defaultWorkingDir,
-    report: false,
     offline: false,
     reset: false,
     upgrade: false,
@@ -151,9 +145,6 @@ export class ConfigService {
         );
         const presetData = this.configLoader.loadExistingPresetData(target, password);
         const addresses = this.configLoader.loadExistingAddresses(target, password);
-        if (this.params.report) {
-          await new ReportService(this.logger, this.params).run(presetData);
-        }
         return { presetData, addresses };
       }
 
@@ -210,14 +201,10 @@ export class ConfigService {
       await this.generateNodeCertificates(presetData, addresses);
       await this.generateNodes(presetData, addresses, remoteNodeService);
       await this.generateGateways(presetData);
-      await this.generateExplorers(presetData);
       const isUpgrade = !!oldPresetData || !!oldAddresses;
       if (presetData.nodes?.length) {
         await this.resolveNemesis(presetData, addresses, isUpgrade);
         await this.copyNemesis(addresses);
-      }
-      if (this.params.report) {
-        await new ReportService(this.logger, this.params).run(presetData);
       }
       await YamlUtils.writeYaml(
         addressesLocation,
@@ -684,34 +671,6 @@ export class ConfigService {
             }
           }
         }
-      }),
-    );
-  }
-
-  private resolveCurrencyName(presetData: ConfigPreset): string {
-    const mosaicPreset = presetData.nemesis?.mosaics?.[0];
-    const currencyName = mosaicPreset?.name;
-    if (!currencyName) {
-      throw new Error('Currency name could not be resolved!!');
-    }
-    return currencyName;
-  }
-
-  private generateExplorers(presetData: ConfigPreset) {
-    return Promise.all(
-      (presetData.explorers || []).map(async (explorerPreset, index: number) => {
-        const copyFrom = join(Constants.ROOT_FOLDER, 'config', 'explorer');
-        const fullName = `${presetData.baseNamespace}.${this.resolveCurrencyName(presetData)}`;
-        const namespaceId = new NamespaceId(fullName);
-        const templateContext = {
-          namespaceName: fullName,
-          namespaceId: namespaceId.toHex(),
-          ...presetData,
-          ...explorerPreset,
-        };
-        const name = templateContext.name || `explorer-${index}`;
-        const moveTo = this.fileSystemService.getTargetFolder(this.params.target, false, Constants.targetExplorersFolder, name);
-        await HandlebarsUtils.generateConfiguration(templateContext, copyFrom, moveTo);
       }),
     );
   }

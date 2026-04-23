@@ -24,7 +24,6 @@ export * from './NemgenService.js';
 export * from './OSUtils.js';
 export * from './PortService.js';
 export * from './RemoteNodeService.js';
-export * from './ReportService.js';
 export * from './RunService.js';
 export * from './RuntimeService.js';
 export * from './TransactionUtils.js';

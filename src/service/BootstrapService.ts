@@ -20,7 +20,6 @@ import { ComposeParams, ComposeService } from './ComposeService.js';
 import { ConfigParams, ConfigResult, ConfigService } from './ConfigService.js';
 import { LinkParams, LinkService } from './LinkService.js';
 import { ModifyMultisigParams, ModifyMultisigService } from './ModifyMultisigService.js';
-import { ReportParams, ReportService } from './ReportService.js';
 import { RunParams, RunService } from './RunService.js';
 
 export type StartParams = ConfigParams & ComposeParams & RunParams;
@@ -90,19 +89,6 @@ export class BootstrapService {
     passedAddresses?: Addresses | undefined,
   ): Promise<void> {
     return new ModifyMultisigService(this.logger, config).run(passedPresetData, passedAddresses);
-  }
-
-  /**
-   * It generates reStructuredText (.rst) reports describing the configuration of each node.
-   *
-   * The config method/command needs to be called before this method
-   *
-   * @param config the params of the report command.
-   * @param passedPresetData the created preset if you know if, otherwise will load the latest one resolved from the target folder.
-   * @return the paths of the created reports.
-   */
-  public report(config: ReportParams, passedPresetData?: ConfigPreset): Promise<string[]> {
-    return new ReportService(this.logger, config).run(passedPresetData);
   }
 
   /**

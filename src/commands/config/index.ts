@@ -70,10 +70,6 @@ export default class Config extends Command {
       default: ConfigService.defaultParams.reset,
     }),
     offline: CommandUtils.offlineFlag,
-    report: Flags.boolean({
-      description: 'It generates reStructuredText (.rst) reports describing the configuration of each node.',
-      default: ConfigService.defaultParams.report,
-    }),
 
     user: Flags.string({
       char: 'u',

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'vitest';
 import _ from 'lodash';
+import { expect } from 'vitest';
 
 import { join } from 'path';
 import { Assembly, CustomPreset, LoggerFactory, LogType, Utils } from '../../src';
@@ -129,31 +129,6 @@ describe('ConfigService', () => {
     } catch (e) {
       expect(Utils.getMessage(e)).eq(`${join('test', `customNetwork`, 'nemesis-seed-invalid')} folder does not exist`);
     }
-  });
-
-  it('ConfigService bootstrap repeat', async () => {
-    const configResult = await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      target: 'target/tests/ConfigService.bootstrap.repeat',
-      preset: Preset.bootstrap,
-      customPreset: './test/repeat_preset.yml',
-    }).run();
-
-    const assertRepeatedService = (expectedCount: number, services: any[] | undefined) => {
-      expect(services!.length).to.be.eq(expectedCount);
-
-      services?.forEach((service) => {
-        Object.values(service).forEach((value) => {
-          expect((value + '').indexOf('index'), `'${value}' contains index!`).to.be.eq(-1);
-        });
-      });
-    };
-
-    assertRepeatedService(4, configResult.presetData.databases);
-    assertRepeatedService(7, configResult.presetData.nodes);
-    assertRepeatedService(4, configResult.presetData.gateways);
-    assertRepeatedService(4, configResult.presetData.databases);
   });
 
   it('ConfigService resolve nemesis balances', async () => {

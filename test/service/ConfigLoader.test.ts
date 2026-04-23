@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'vitest';
 import { createCipheriv, pbkdf2Sync, randomBytes } from 'crypto';
 import { existsSync } from 'fs';
+import { expect } from 'vitest';
 
 import { join } from 'path';
 import sinon from 'sinon';
@@ -59,7 +59,7 @@ describe('ConfigLoader', () => {
       expect(false).to.be.eq(true); // should have raised an error!
     } catch (e) {
       expect(Utils.getMessage(e)).eq(
-        'Preset testnet requires assembly (-a, --assembly option). Possible values are: dual, peer, api, demo, multinode, services',
+        'Preset testnet requires assembly (-a, --assembly option). Possible values are: dual, peer, api, demo',
       );
     }
   });
@@ -111,7 +111,7 @@ describe('ConfigLoader', () => {
     });
     expect(presetData).to.not.be.undefined;
     expect(presetData.preset).to.eq(Preset.bootstrap);
-    expect(presetData.assembly).to.eq(Assembly.multinode);
+    expect(presetData.assembly).to.eq(Assembly.dual);
   });
 
   it('ConfigLoader loadPresetData testnet assembly', async () => {
@@ -407,112 +407,6 @@ describe('ConfigLoader', () => {
     expect(configLoader.applyValueTemplate(context, '{{add $index 2}}')).to.be.eq('12');
     expect(configLoader.applyValueTemplate(context, '100.100.{{add $index 2}}')).to.be.eq('100.100.12');
     expect(configLoader.applyValueTemplate(context, '100.100.{{add $index 5}}')).to.be.eq('100.100.15');
-  });
-
-  it('expandServicesRepeat when repeat 3', async () => {
-    const configLoader = new ConfigLoader(logger);
-    const services = [
-      {
-        repeat: 3,
-        apiNodeName: 'api-node-{{$index}}',
-        apiNodeHost: 'api-node-{{$index}}',
-        apiNodeBrokerHost: 'api-node-broker-{{$index}}',
-        name: 'rest-gateway-{{$index}}',
-        description: 'catapult development network',
-        databaseHost: 'db-{{$index}}',
-        openPort: true,
-        ipv4_address: '172.20.0.{{add $index 5}}',
-      },
-    ];
-
-    const expandedServices = configLoader.expandServicesRepeat({}, services);
-
-    const expectedExpandedServices = [
-      {
-        apiNodeName: 'api-node-0',
-        apiNodeHost: 'api-node-0',
-        apiNodeBrokerHost: 'api-node-broker-0',
-        name: 'rest-gateway-0',
-        description: 'catapult development network',
-        databaseHost: 'db-0',
-        openPort: true,
-        ipv4_address: '172.20.0.5',
-      },
-      {
-        apiNodeName: 'api-node-1',
-        apiNodeHost: 'api-node-1',
-        apiNodeBrokerHost: 'api-node-broker-1',
-        name: 'rest-gateway-1',
-        description: 'catapult development network',
-        databaseHost: 'db-1',
-        openPort: true,
-        ipv4_address: '172.20.0.6',
-      },
-      {
-        apiNodeName: 'api-node-2',
-        apiNodeHost: 'api-node-2',
-        apiNodeBrokerHost: 'api-node-broker-2',
-        name: 'rest-gateway-2',
-        description: 'catapult development network',
-        databaseHost: 'db-2',
-        openPort: true,
-        ipv4_address: '172.20.0.7',
-      },
-    ];
-    expect(expandedServices).to.be.deep.eq(expectedExpandedServices);
-  });
-
-  it('expandServicesRepeat when repeat 0', async () => {
-    const configLoader = new ConfigLoader(logger);
-    const services = [
-      {
-        repeat: 0,
-        apiNodeName: 'api-node-{{$index}}',
-        apiNodeHost: 'api-node-{{$index}}',
-        apiNodeBrokerHost: 'api-node-broker-{{$index}}',
-        name: 'rest-gateway-{{$index}}',
-        description: 'catapult development network',
-        databaseHost: 'db-{{$index}}',
-        openPort: true,
-        ipv4_address: '172.20.0.{{add $index 5}}',
-      },
-    ];
-
-    const expandedServices = configLoader.expandServicesRepeat({}, services);
-
-    expect(expandedServices).to.be.deep.eq([]);
-  });
-
-  it('expandServicesRepeat when no repeat', async () => {
-    const configLoader = new ConfigLoader(logger);
-    const services = [
-      {
-        apiNodeName: 'api-node-{{$index}}',
-        apiNodeHost: 'api-node-{{$index}}',
-        apiNodeBrokerHost: 'api-node-broker-{{$index}}',
-        name: 'rest-gateway-{{$index}}',
-        description: 'catapult development network',
-        databaseHost: 'db-{{$index}}',
-        openPort: true,
-        ipv4_address: '172.20.0.{{add $index 5}}',
-      },
-    ];
-
-    const expandedServices = configLoader.expandServicesRepeat({}, services);
-
-    const expectedExpandedServices = [
-      {
-        apiNodeBrokerHost: 'api-node-broker-0',
-        apiNodeHost: 'api-node-0',
-        apiNodeName: 'api-node-0',
-        databaseHost: 'db-0',
-        description: 'catapult development network',
-        ipv4_address: '172.20.0.5',
-        name: 'rest-gateway-0',
-        openPort: true,
-      },
-    ];
-    expect(expandedServices).to.be.deep.eq(expectedExpandedServices);
   });
 
   it('applyValueTemplate when object', async () => {

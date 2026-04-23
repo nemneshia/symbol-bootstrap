@@ -40,9 +40,7 @@ export const assembliesDescriptions: Record<Assembly, string> = {
   [Assembly.dual]: 'Dual Node',
   [Assembly.peer]: 'Peer Node',
   [Assembly.api]: 'Api Node',
-  [Assembly.demo]: 'Demo Node. A dual node that includes a Faucet and Explorer.',
-  [Assembly.multinode]: 'Multinode Node. A docker compose that includes one api, one rest and two peers.',
-  [Assembly.services]: 'Services. A docker compose with just Faucet and Explorer.',
+  [Assembly.demo]: 'Demo Node',
 };
 
 export enum HttpsOption {
@@ -59,7 +57,7 @@ export type Network = Preset | CustomNetwork;
 export const assemblies: Record<Network, Assembly[]> = {
   [Preset.mainnet]: [Assembly.dual, Assembly.peer, Assembly.api],
   [Preset.testnet]: [Assembly.dual, Assembly.peer, Assembly.api, Assembly.demo],
-  [Preset.bootstrap]: [Assembly.multinode, Assembly.dual, Assembly.peer, Assembly.api, Assembly.demo],
+  [Preset.bootstrap]: [Assembly.dual, Assembly.peer, Assembly.api, Assembly.demo],
   [CustomNetwork.custom]: [Assembly.dual, Assembly.peer, Assembly.api],
 };
 
@@ -553,7 +551,7 @@ export class Wizard {
   public async resolveHttpsOptions(): Promise<HttpsOption> {
     // TODO work on these messages, should be concise and clearer
     this.logger.info(
-      'Your REST Gateway should be running on HTTPS (which is a secure protocol) so that it can be recognized by the Symbol Explorer.',
+      'Your REST Gateway should be running on HTTPS (which is a secure protocol) so that it can be recognized by the network.',
     );
     const value = await select({
       message: 'Select your HTTPS setup method:',

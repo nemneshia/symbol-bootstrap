@@ -66,9 +66,6 @@ maxNamespaceDepth: 3
 batchVerificationRandomSource:
 symbolServerImage: symbolplatform/symbol-server:gcc-1.0.3.9
 symbolRestImage: symbolplatform/symbol-rest:2.5.1
-symbolExplorerImage: symbolplatform/symbol-explorer:1.3.0-amd64
-
-symbolFaucetImage: symbolplatform/symbol-faucet:1.1.0
 mongoImage: mongo:7.0.23
 httpsPortalImage: steveltn/https-portal:1.23.1
 mongoComposeRunParam: --wiredTigerCacheSizeGB 2
@@ -253,23 +250,6 @@ corruptAggregateTransactionHashes_has_items: false
 treasuryReissuanceTransactionSignatures: []
 corruptAggregateTransactionHashes: []
 
-# Explorer
-explorerApiNodePort: 3001
-marketData: https://min-api.cryptocompare.com/
-footer:
-  link:
-    - href: https://github.com/symbol
-      text: GitHub
-      icon: IconGithub
-    - href: https://discord.com/invite/xymcity
-      text: Discord
-      icon: IconDiscord
-    - href: https://twitter.com/NEMofficial
-      text: Twitter
-      icon: IconTwitter
-    # - href: https://testnet.symbol.tools/
-    #   text: Faucet
-    #   icon: IconCurrencyUsd
 timezone: Local
 
 # Docker Project

@@ -19,7 +19,3 @@ httpsProxies:
     stage: 'production'
     webSocket: 'true'
     serverNamesHashBucketSize: 128
-explorers:
-  - name: 'explorer'
-    excludeDockerService: true
-    openPort: 90

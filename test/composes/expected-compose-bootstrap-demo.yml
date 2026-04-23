@@ -1,135 +1,91 @@
 services:
-  db:
-    user: '1000:1000'
-    environment:
-      MONGO_INITDB_DATABASE: catapult
-    container_name: db
-    image: mongo:7.0.23
-    command: mongod --dbpath=/dbdata --bind_ip=db --wiredTigerCacheSizeGB 2
-    stop_signal: SIGINT
-    working_dir: /docker-entrypoint-initdb.d
-    volumes:
-      - ./mongo:/docker-entrypoint-initdb.d:ro
-      - ../databases/db:/dbdata:rw
-    security_opt:
-      - seccomp:unconfined
-    cap_add:
-      - ALL
-    privileged: true
-  node:
-    container_name: node
-    image: symbolplatform/symbol-server:gcc-1.0.3.9
-    command: /bin/bash /symbol-commands/start.sh /usr/catapult ./data server broker node DEBUG true
-    stop_signal: SIGINT
-    working_dir: /symbol-workdir
-    restart: on-failure:2
-    ports:
-      - '7900:7900'
-    ulimits:
-      nofile:
-        soft: 1048576
-        hard: 1048576
-    volumes:
-      - ../nodes/node:/symbol-workdir:rw
-      - ./server:/symbol-commands:ro
-    depends_on:
-      - db
-      - broker
-    security_opt:
-      - seccomp:unconfined
-    cap_add:
-      - ALL
-    privileged: true
-    stop_grace_period: 300s
-  broker:
-    container_name: broker
-    image: symbolplatform/symbol-server:gcc-1.0.3.9
-    working_dir: /symbol-workdir
-    command: /bin/bash /symbol-commands/start.sh /usr/catapult ./data broker server broker DEBUG
-    stop_signal: SIGINT
-    restart: on-failure:2
-    volumes:
-      - ../nodes/node:/symbol-workdir:rw
-      - ./server:/symbol-commands:ro
-    depends_on:
-      - db
-    security_opt:
-      - seccomp:unconfined
-    cap_add:
-      - ALL
-    privileged: true
-    stop_grace_period: 20s
-  rest-gateway:
-    user: '1000:1000'
-    container_name: rest-gateway
-    environment:
-      npm_config_cache: /symbol-workdir
-    image: symbolplatform/symbol-rest:2.5.1
-    command: npm start --prefix /app /symbol-workdir/rest.json
-    stop_signal: SIGINT
-    working_dir: /symbol-workdir
-    ports:
-      - '3000:3000'
-    restart: on-failure:2
-    volumes:
-      - ../gateways/rest-gateway:/symbol-workdir:rw
-    depends_on:
-      - db
-    security_opt:
-      - seccomp:unconfined
-    cap_add:
-      - ALL
-    privileged: true
-    networks:
-      default:
-        ipv4_address: 172.20.0.25
-  explorer:
-    container_name: explorer
-    image: symbolplatform/symbol-explorer:1.3.0-amd64
-
-    entrypoint: ash -c "/bin/ash /symbol-commands/run.sh explorer"
-    stop_signal: SIGINT
-    working_dir: /symbol-workdir
-    ports:
-      - '90:4000'
-    restart: on-failure:2
-    volumes:
-      - ../explorers/explorer:/symbol-workdir:ro
-      - ./explorer:/symbol-commands:ro
-    security_opt:
-      - seccomp:unconfined
-    cap_add:
-      - ALL
-    privileged: true
-  faucet:
-    container_name: faucet
-    image: symbolplatform/symbol-faucet:1.1.0
-    stop_signal: SIGINT
-    environment:
-      DEFAULT_NODE: http://rest-gateway:3000
-      DEFAULT_NODE_CLIENT: http://localhost:3000
-      NATIVE_CURRENCY_NAME: cat.currency
-      FAUCET_PRIVATE_KEY: MockMe
-      NATIVE_CURRENCY_ID: Mockme2
-      NATIVE_CURRENCY_OUT_MAX: 500000000
-      NATIVE_CURRENCY_OUT_MIN: 100000000
-      MAX_FEE: 5000000
-      ENOUGH_BALANCE: 100000000000
-      MAX_UNCONFIRMED: 99
-      BLACKLIST_MOSAIC_IDS: '[]'
-      EXPLORER_URL: http://localhost:90/
-    restart: on-failure:2
-    ports:
-      - '100:4000'
-    depends_on:
-      - rest-gateway
-    security_opt:
-      - seccomp:unconfined
-    cap_add:
-      - ALL
-    privileged: true
+    db:
+        user: '1000:1000'
+        environment:
+            MONGO_INITDB_DATABASE: catapult
+        container_name: db
+        image: mongo:7.0.23
+        command: mongod --dbpath=/dbdata --bind_ip=db --wiredTigerCacheSizeGB 2
+        stop_signal: SIGINT
+        working_dir: /docker-entrypoint-initdb.d
+        volumes:
+            - ./mongo:/docker-entrypoint-initdb.d:ro
+            - ../databases/db:/dbdata:rw
+        security_opt:
+            - seccomp:unconfined
+        cap_add:
+            - ALL
+        privileged: true
+    node:
+        container_name: node
+        image: symbolplatform/symbol-server:gcc-1.0.3.9
+        command: /bin/bash /symbol-commands/start.sh /usr/catapult ./data server broker node DEBUG true
+        stop_signal: SIGINT
+        working_dir: /symbol-workdir
+        restart: on-failure:2
+        ports:
+            - '7900:7900'
+        ulimits:
+            nofile:
+                soft: 1048576
+                hard: 1048576
+        volumes:
+            - ../nodes/node:/symbol-workdir:rw
+            - ./server:/symbol-commands:ro
+        depends_on:
+            - db
+            - broker
+        security_opt:
+            - seccomp:unconfined
+        cap_add:
+            - ALL
+        privileged: true
+        stop_grace_period: 300s
+    broker:
+        container_name: broker
+        image: symbolplatform/symbol-server:gcc-1.0.3.9
+        working_dir: /symbol-workdir
+        command: /bin/bash /symbol-commands/start.sh /usr/catapult ./data broker server broker DEBUG
+        stop_signal: SIGINT
+        restart: on-failure:2
+        volumes:
+            - ../nodes/node:/symbol-workdir:rw
+            - ./server:/symbol-commands:ro
+        depends_on:
+            - db
+        security_opt:
+            - seccomp:unconfined
+        cap_add:
+            - ALL
+        privileged: true
+        stop_grace_period: 20s
+    rest-gateway:
+        container_name: rest-gateway
+        user: '1000:1000'
+        environment:
+            npm_config_cache: /symbol-workdir
+        image: symbolplatform/symbol-rest:2.5.1
+        command: npm start --prefix /app /symbol-workdir/rest.json
+        stop_signal: SIGINT
+        working_dir: /symbol-workdir
+        ports:
+            - '3000:3000'
+        restart: on-failure:2
+        volumes:
+            - ../gateways/rest-gateway:/symbol-workdir:rw
+        depends_on:
+            - db
+        security_opt:
+            - seccomp:unconfined
+        cap_add:
+            - ALL
+        privileged: true
+        networks:
+            default:
+                ipv4_address: 172.20.0.25
 networks:
-  default:
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
+    default:
+        ipam:
+            config:
+                -
+                    subnet: 172.20.0.0/24

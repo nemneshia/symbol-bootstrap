@@ -217,8 +217,6 @@ export class ConfigLoader {
       nodes: this.expandServicesRepeat(presetData, presetData.nodes || []),
       gateways: this.expandServicesRepeat(presetData, presetData.gateways || []),
       httpsProxies: this.expandServicesRepeat(presetData, presetData.httpsProxies || []),
-      explorers: this.expandServicesRepeat(presetData, presetData.explorers || []),
-      faucets: this.expandServicesRepeat(presetData, presetData.faucets || []),
       nemesis: this.applyValueTemplate(presetData, presetData.nemesis),
     };
   }
@@ -242,29 +240,11 @@ export class ConfigLoader {
   }
 
   public expandServicesRepeat(context: any, services: any[]): any[] {
-    return _.flatMap(services || [], (service) => {
+    return (services || []).map((service) => {
       if (!_.isObject(service)) {
         return service;
       }
-      const repeat = (service as any).repeat;
-      if (repeat === 0) {
-        return [];
-      }
-      return _.range(repeat || 1).map((index) => {
-        return _.omit(
-          _.mapValues(service, (v: any) =>
-            this.applyValueTemplate(
-              {
-                ...context,
-                ...service,
-                $index: index,
-              },
-              v,
-            ),
-          ),
-          'repeat',
-        );
-      });
+      return _.mapValues(service, (v: any) => this.applyValueTemplate({ ...context, ...service }, v));
     });
   }
 
