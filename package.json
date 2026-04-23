@@ -17,12 +17,10 @@
     "@oclif/plugin-autocomplete": "^3.2.39",
     "@oclif/plugin-help": "^6.2.36",
     "archiver": "^7.0.1",
-    "cross-fetch": "^4.1.0",
     "figlet": "^1.9.4",
     "handlebars": "^4.7.8",
     "js-yaml": "^4.1.1",
     "lodash": "^4.17.21",
-    "memorystream": "^0.3.1",
     "node-stream-zip": "^1.15.0",
     "rxjs": "^7.8.2",
     "semver": "^7.7.3",
@@ -32,7 +30,6 @@
     "symbol-statistics-service-typescript-fetch-client": "^1.1.5",
     "tslib": "^2.8.1",
     "tweetnacl": "^1.0.3",
-    "utf8": "^3.0.0",
     "winston": "^3.18.3"
   },
   "devDependencies": {
@@ -42,7 +39,6 @@
     "@types/figlet": "^1.7.0",
     "@types/js-yaml": "^4.0.9",
     "@types/lodash": "^4.17.21",
-    "@types/memorystream": "^0.3.4",
     "@types/node": "^25.6.0",
     "@types/semver": "^7.7.1",
     "@types/sinon": "^21.0.0",
@@ -52,9 +48,9 @@
     "coveralls": "^3.1.1",
     "create-ts-index": "^1.14.0",
     "dir-compare": "^5.0.0",
+    "esbuild": "^0.28.0",
     "eslint": "^10.2.1",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-prettier": "^5.5.4",
     "globals": "^17.5.0",
     "globby": "^16.0.0",
     "marked": "^18.0.2",
@@ -64,13 +60,13 @@
     "prettier": "^3.7.1",
     "prettier-plugin-organize-imports": "^4.3.0",
     "sinon": "^21.0.0",
-    "ts-node": "^10.9.2",
+    "tsx": "^4.0.0",
     "typedoc": "^0.28.14",
     "typescript": "^6.0.3",
     "vitest": "^3.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=20.0.0"
   },
   "files": [
     "/config",
@@ -86,6 +82,12 @@
   ],
   "license": "Apache-2.0",
   "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
   "oclif": {
     "bin": "symbol-bootstrap",
     "commands": "./lib/commands",
@@ -100,30 +102,29 @@
   },
   "scripts": {
     "doc": "typedoc --out \"ts-docs\" src && touch ./ts-docs/.nojekyll",
-    "lint": "eslint --cache src/ test/ --ext .ts",
-    "clean": "npx shx rm -rf ./lib tsconfig.build.tsbuildinfo",
-    "lint:fix": "eslint src/ test/ --ext .ts --fix",
+    "lint": "eslint --cache src/ test/",
+    "clean": "pnpm exec shx rm -rf ./lib tsconfig.build.tsbuildinfo",
+    "lint:fix": "eslint src/ test/ --fix",
     "prettier": "prettier --write ./src ./test",
-    "style:fix": "npm run create-index-files && npm run prettier && npm run lint:fix && npm run oclif-doc",
+    "style:fix": "pnpm run create-index-files && pnpm run prettier && pnpm run lint:fix && pnpm run oclif-doc",
     "create-index-files": "cti create ./src -b -n -e commands",
-    "postpack": "npx shx rm -f oclif.manifest.json tsconfig.build.tsbuildinfo",
-    "posttest": "eslint src/ test/ --ext .ts",
+    "postpack": "pnpm exec shx rm -f oclif.manifest.json tsconfig.build.tsbuildinfo",
     "oclif-doc": "oclif manifest && oclif readme --multi",
     "oclif-debug": "env DEBUG=* oclif manifest",
     "watch": "tsc -w -p tsconfig.build.json",
-    "compile": "tsc -p tsconfig.build.json",
-    "build": "npm run clean && npm run compile && oclif manifest",
-    "prepack": "npm run build && npm run oclif-doc",
+    "compile": "esbuild 'src/**/*.ts' --bundle=false --format=esm --outdir=lib --platform=node --target=es2022 && tsc -p tsconfig.build.json --emitDeclarationOnly",
+    "build": "pnpm run clean && pnpm run compile && oclif manifest",
+    "prepack": "pnpm run build && pnpm run oclif-doc",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "e2e": "vitest run \"test/**/*.e2e.ts\"",
     "coveralls-report": "cat ./coverage/lcov.info | coveralls",
     "version": "echo $npm_package_version",
-    "install-cli": "npm pack && npm i -g",
+    "install-cli": "pnpm pack && pnpm add -g symbol-bootstrap",
     "clean-network": "symbol-bootstrap clean -t target/bootstrap-test",
     "start-network": "symbol-bootstrap start -t target/bootstrap-test -u 'current'",
-    "publish:prd": "npm publish --access public",
-    "publish:dry": "npm publish --access public --dry-run"
+    "publish:prd": "pnpm publish --access public",
+    "publish:dry": "pnpm publish --access public --dry-run"
   },
   "types": "lib/index.d.ts"
 }

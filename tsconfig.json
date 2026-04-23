@@ -2,12 +2,12 @@
   "compilerOptions": {
     "composite": true,
     "declaration": true,
-    "module": "esnext",
+    "module": "NodeNext",
     "outDir": "lib",
     "rootDir": ".",
     "strict": true,
     "target": "es2022",
-    "moduleResolution": "bundler",
+    "moduleResolution": "NodeNext",
     "types": [
       "vitest/globals"
     ]
@@ -15,8 +15,5 @@
   "include": [
     "src/**/*",
     "test/**/*"
-  ],
-  "ts-node": {
-    "esm": true
-  }
+  ]
 }
