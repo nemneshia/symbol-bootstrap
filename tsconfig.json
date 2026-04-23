@@ -9,7 +9,7 @@
     "target": "es2022",
     "moduleResolution": "bundler",
     "types": [
-      "mocha"
+      "vitest/globals"
     ]
   },
   "include": [

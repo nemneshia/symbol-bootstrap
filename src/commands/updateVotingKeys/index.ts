@@ -76,6 +76,7 @@ When a new voting file is created, Bootstrap will advise running the \`link\` co
         `Node's preset cannot be loaded. Have you provided the right --target? If you have, please rerun the 'config' command with --upgrade. Error: ${Utils.getMessage(
           e,
         )}`,
+        { cause: e },
       );
     }
     const addresses = configLoader.loadExistingAddresses(target, password);

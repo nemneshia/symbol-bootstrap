@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import 'mocha';
-import { it } from 'mocha';
+import { expect } from 'vitest';
+
+
 import { AccountInfoDTO } from 'symbol-openapi-typescript-fetch-client';
 import {
   AccountHttp,

@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import { it } from 'mocha';
+import { expect } from 'vitest';
+
 import { LoggerFactory } from '../../src';
 
 describe('LoggerFactory', () => {

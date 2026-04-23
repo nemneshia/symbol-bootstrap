@@ -1,5 +1,5 @@
-import { expect } from 'chai';
-import { describe } from 'mocha';
+import { expect } from 'vitest';
+
 import { Account, NetworkType } from 'symbol-sdk';
 import { DefaultAccountResolver, KeyName, LoggerFactory, LogType, PrivateKeySecurityMode, Utils } from '../../src';
 import { AddressesService } from '../../src/service/AddressesService';

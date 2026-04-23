@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { Account, NetworkType } from 'symbol-sdk';
 import {
   Assembly,

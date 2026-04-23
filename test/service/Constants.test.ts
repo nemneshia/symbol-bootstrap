@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import 'mocha';
-import { it } from 'mocha';
+import { expect } from 'vitest';
+
+
 import { Constants } from '../../src';
 describe('Constants', () => {
   it('Constants.resolveRootFolder', async () => {

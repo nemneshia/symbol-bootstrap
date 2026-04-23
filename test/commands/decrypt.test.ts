@@ -15,7 +15,7 @@
  */
 
 import { runCommand } from '@oclif/test';
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { existsSync } from 'fs';
 import { CryptoUtils, FileSystemService, LoggerFactory, LogType, YamlUtils } from '../../src';
 const logger = LoggerFactory.getLogger(LogType.Silent);

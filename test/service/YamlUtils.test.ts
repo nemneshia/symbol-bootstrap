@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import _ from 'lodash';
-import 'mocha';
-import { it } from 'mocha';
+
+
 import { Account, NetworkType } from 'symbol-sdk';
 import { ConfigurationUtils, Utils, YamlUtils } from '../../src';
 import { ConfigAccount } from '../../src/model';

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { existsSync } from 'fs';
-import 'mocha';
+
 import { join } from 'path';
 import { ConfigService, FileSystemService, LoggerFactory, LogType, Utils } from '../../src';
 import { BootstrapService, Preset, RunService, StartParams } from '../../src/service';

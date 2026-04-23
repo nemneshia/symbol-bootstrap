@@ -88,8 +88,8 @@ $ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap decrypt --source target/address
     const data = await YamlUtils.loadYaml(flags.source, password);
     await new FileSystemService(logger).mkdir(dirname(flags.destination));
     await YamlUtils.writeYaml(flags.destination, data, '');
-    logger.info(
-      `Decrypted file ${flags.destination} has been created! Any private keys on this file are now in plain text. Remember to remove the file!`,
-    );
+    const decryptMessage = `Decrypted file ${flags.destination} has been created! Any private keys on this file are now in plain text. Remember to remove the file!`;
+    logger.info(decryptMessage);
+    process.stdout.write(decryptMessage + '\n');
   }
 }

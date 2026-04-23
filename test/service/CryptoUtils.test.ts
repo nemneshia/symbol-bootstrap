@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { createCipheriv, pbkdf2Sync, randomBytes } from 'crypto';
-import 'mocha';
+
 import { Utils } from '../../src';
 import { PrivateKeySecurityMode } from '../../src/model';
 import { CryptoUtils } from '../../src/service/CryptoUtils';

@@ -15,9 +15,9 @@
  */
 
 import { deepStrictEqual } from 'assert';
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { promises as fsPromises, readFileSync } from 'fs';
-import 'mocha';
+
 import { join } from 'path';
 import { Account, NetworkType } from 'symbol-sdk';
 import { LoggerFactory, LogType } from '../../src/logger';

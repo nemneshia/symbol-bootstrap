@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import { it } from 'mocha';
+import { expect } from 'vitest';
+
 import { LinkAction } from 'symbol-sdk';
 import { LoggerFactory, LogType } from '../../src';
 import { GenericNodeAccount, KeyAccount, LinkTransactionGenericFactory, VotingKeyAccount } from '../../src/service';

@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { createCipheriv, pbkdf2Sync, randomBytes } from 'crypto';
 import { existsSync } from 'fs';
-import 'mocha';
+
 import { join } from 'path';
 import sinon from 'sinon';
 import { Assembly, Constants, LoggerFactory, LogType, Utils, YamlUtils } from '../../src';

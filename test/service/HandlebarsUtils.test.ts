@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import _ from 'lodash';
-import 'mocha';
-import { it } from 'mocha';
+
+
 import { totalmem } from 'os';
 import { HandlebarsUtils } from '../../src/service';
 

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { readFileSync } from 'fs';
-import 'mocha';
+
 import { Convert, KeyPair } from 'symbol-sdk';
 import { VotingKeyAccount, VotingUtils } from '../../src/service';
 describe('VotingUtils', () => {

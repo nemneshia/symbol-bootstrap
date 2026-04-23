@@ -14,7 +14,6 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
 import { of } from 'rxjs';
 import { match, restore, spy, stub } from 'sinon';
 import {
@@ -32,6 +31,7 @@ import {
   TransferTransaction,
   UInt64,
 } from 'symbol-sdk';
+import { expect } from 'vitest';
 import {
   AccountResolver,
   AnnounceService,
@@ -58,7 +58,7 @@ describe('Announce Service', () => {
     announceService = new AnnounceService(logger, accountResolver);
   });
 
-  afterEach(restore);
+  afterEach(() => restore());
 
   const password = '1234';
   const params = {

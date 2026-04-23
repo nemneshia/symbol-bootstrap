@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import { it } from 'mocha';
+import { expect } from 'vitest';
+
 import { LoggerFactory, LogType, OSUtils, RuntimeService, Utils } from '../../src';
 const logger = LoggerFactory.getLogger(LogType.Silent);
 const service = new RuntimeService(logger);

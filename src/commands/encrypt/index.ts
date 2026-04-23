@@ -80,6 +80,8 @@ $ symbol-bootstrap start --password 1234 --preset testnet --assembly dual --cust
     }
     await new FileSystemService(logger).mkdir(dirname(flags.destination));
     await YamlUtils.writeYaml(flags.destination, data, password);
-    logger.info(`Encrypted file ${flags.destination} has been created!`);
+    const encryptMessage = `Encrypted file ${flags.destination} has been created!`;
+    logger.info(encryptMessage);
+    process.stdout.write(encryptMessage + '\n');
   }
 }

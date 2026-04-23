@@ -1,5 +1,5 @@
-import { expect } from 'chai';
-import { describe } from 'mocha';
+import { expect } from 'vitest';
+
 import { Addresses, LoggerFactory, LogType, YamlUtils } from '../../src';
 import { MigrationService } from '../../src/service/MigrationService';
 const logger = LoggerFactory.getLogger(LogType.Silent);

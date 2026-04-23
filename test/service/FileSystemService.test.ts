@@ -14,10 +14,10 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { statSync } from 'fs';
-import 'mocha';
-import { it } from 'mocha';
+
+
 import nock from 'nock';
 import { FileSystemService, LoggerFactory, LogType, Utils, YamlUtils } from '../../src';
 const logger = LoggerFactory.getLogger(LogType.Silent);

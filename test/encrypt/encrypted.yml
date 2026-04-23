@@ -1,11 +1,12 @@
 nodes:
-  - voting: true
-    host: mynode-symbollocal.io
-    mainPrivateKey: >-
-      ENCRYPTED:ddb74fd1a90273b3d4fa2c045c8bd35e484ccabfd23e2a4c21650d008891d807wACTVinxE7dC/ukTdnVAQpDcPUQa8JW1+/12vtEC+f+xgpEH1+BR+gi0gUOIN/W+J71KmZIW+qFP/YXOwZdCdky+HTs2+RACMtbNkANpUHQ=
-    transportPrivateKey: >-
-      ENCRYPTED:424c052ae09a9e58993289c9b43356b64f9aa65ce4608ea7d7e994e21a8734164TlrS94M54sn+9B8mfD1DVCBjlEht7bazy7j9vPsFzGNWFtmumFBsm1zF55VkWz3CWoDCZYKq7EVkQmhL8kkRWaJJvMkvyOXJDvxyPh6kNY=
-    vrfPrivateKey: >-
-      ENCRYPTED:c5355ac6ecd7e010cd79ffe1eac43b8fb058d49f4c5709ada2d8966e8aa5a749FJwYy/EDFYrccPXKBDaVppwRBmpW8/RW+70rNzyNHyBI0Hl52NMOu5ig44pK533YlF0PqmOyYRHGqAQ1NJNYs03+RZngrrINGR/XpSXt7Lg=
-    votingPrivateKey: >-
-      ENCRYPTED:07ca4935bcdb5755b1705b40a136897854c718245b8f05af5684cef08491561d7pX7xrEFBTC2FDFrvUc+9fFSJ6WehCPDNf08tlLu1r5RlsOfeIE2knM1cjTxexkLmc+B4kg5h3/mDLBq+nD1CWoeeVLKcFitYpS/K3u1GXo=
+    -
+        voting: true
+        host: mynode-symbollocal.io
+        mainPrivateKey: >-
+            ENCRYPTED_V2:1e27bb021dda8d4062ec4e15fa42945be994fb7d4d285c880345139c3cc9b105Bu/3c+H58Qof64VOlV7+7LzfW35JrS8RmqKB+XL3uuWxrk37Tw87JSHjgZn1ocTEunxVuZjQfa3Ckqf44ZjfhLe0PfVYMdaPlp//zEqMg8k=
+        transportPrivateKey: >-
+            ENCRYPTED_V2:91c24f99e9f2238a2bec4dc545ac83305b62718657c79b5d514a54a705f9521d9+lIn3y8X1J2/DmU4YyuNzR9pDwgVLqozMfd5zHlJTdXX50bbXBtLg/Onl8C4lk1OmzhUMUgQzMWZjwkoOaj79C1NDqIdiHz11epcn3FwQ0=
+        vrfPrivateKey: >-
+            ENCRYPTED_V2:d877ed18542cb57845a6b7a46a135746e45d602017396664674a967467adb891iPesbYX3U5EnQ3X7Tu+maQDHLuEnKN8F7dp8fGDEvZK4QZaBxoGYqYt6OmHq78PSKqUQ65VTVWYeUJa9di423zBobaF/AmT0XX1iWNob/Kc=
+        votingPrivateKey: >-
+            ENCRYPTED_V2:1b78c0dec053adfb69a1b7f6094fb1266f0f1c33a4e1bf6350814e575f8f6256vdvtpgOLxIJsbvCBCKzdIKrv+9T0N/eeDo2+lIny+IlW5AXWLsyQMWJSGrigM8y/K1nkpCB3kkfZUa6lu6yhvaSMTFk7jXZbLI+UFSF43iw=

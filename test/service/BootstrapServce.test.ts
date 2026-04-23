@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import 'mocha';
+import { expect } from 'vitest';
+
 import { Assembly, BootstrapService, Constants, DefaultAccountResolver, LoggerFactory, LogType, Preset, StartParams } from '../../src';
 
 const logger = LoggerFactory.getLogger(LogType.Silent);

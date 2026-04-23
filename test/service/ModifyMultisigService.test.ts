@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
 import { restore, stub } from 'sinon';
 import { Account, Deadline, MultisigAccountModificationTransaction, NetworkType, TransactionType, UInt64 } from 'symbol-sdk';
+import { expect } from 'vitest';
 import { LoggerFactory, LogType, Utils } from '../../src';
 import { ConfigPreset } from '../../src/model';
 import { ModifyMultisigParams, ModifyMultisigService, TransactionFactoryParams, TransactionUtils } from '../../src/service';
@@ -25,7 +25,7 @@ const logger = LoggerFactory.getLogger(LogType.Silent);
 describe('ModifyMultisigService', () => {
   let modifyMultisigService: ModifyMultisigService;
 
-  afterEach(restore);
+  afterEach(() => restore());
 
   const url = 'http://localhost:3000';
   const target = 'target/tests/testnet-dual';

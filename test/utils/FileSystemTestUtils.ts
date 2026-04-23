@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import { compareSync, Result } from 'dir-compare';
 import { readFileSync } from 'fs';
 import { join } from 'path';

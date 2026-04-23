@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import { it } from 'mocha';
+import { expect } from 'vitest';
+
 import { Account, NetworkType } from 'symbol-sdk';
 import { BootstrapAccountResolver, KeyName, LoggerFactory, LogType, Utils } from '../../src';
 // @ts-ignore

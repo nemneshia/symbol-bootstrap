@@ -1,0 +1,11 @@
+nodes:
+  - voting: true
+    host: mynode-symbollocal.io
+    mainPrivateKey: >-
+      ENCRYPTED:ddb74fd1a90273b3d4fa2c045c8bd35e484ccabfd23e2a4c21650d008891d807wACTVinxE7dC/ukTdnVAQpDcPUQa8JW1+/12vtEC+f+xgpEH1+BR+gi0gUOIN/W+J71KmZIW+qFP/YXOwZdCdky+HTs2+RACMtbNkANpUHQ=
+    transportPrivateKey: >-
+      ENCRYPTED:424c052ae09a9e58993289c9b43356b64f9aa65ce4608ea7d7e994e21a8734164TlrS94M54sn+9B8mfD1DVCBjlEht7bazy7j9vPsFzGNWFtmumFBsm1zF55VkWz3CWoDCZYKq7EVkQmhL8kkRWaJJvMkvyOXJDvxyPh6kNY=
+    vrfPrivateKey: >-
+      ENCRYPTED:c5355ac6ecd7e010cd79ffe1eac43b8fb058d49f4c5709ada2d8966e8aa5a749FJwYy/EDFYrccPXKBDaVppwRBmpW8/RW+70rNzyNHyBI0Hl52NMOu5ig44pK533YlF0PqmOyYRHGqAQ1NJNYs03+RZngrrINGR/XpSXt7Lg=
+    votingPrivateKey: >-
+      ENCRYPTED:07ca4935bcdb5755b1705b40a136897854c718245b8f05af5684cef08491561d7pX7xrEFBTC2FDFrvUc+9fFSJ6WehCPDNf08tlLu1r5RlsOfeIE2knM1cjTxexkLmc+B4kg5h3/mDLBq+nD1CWoeeVLKcFitYpS/K3u1GXo=

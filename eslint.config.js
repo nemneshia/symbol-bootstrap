@@ -8,7 +8,17 @@ export default [
     files: ['test/**/*.ts'],
     languageOptions: {
       globals: {
-        ...globals.mocha,
+        ...globals.node,
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        vi: 'readonly',
+        suite: 'readonly',
       },
     },
   },

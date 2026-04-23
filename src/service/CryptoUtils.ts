@@ -21,6 +21,7 @@ import { KnownError } from './KnownError.js';
 
 export class CryptoUtils {
   private static readonly ENCRYPT_PREFIX = 'ENCRYPTED:';
+  private static readonly ENCRYPT_PREFIX_V2 = 'ENCRYPTED_V2:';
   private static readonly ENCRYPTABLE_KEYS = ['privateKey', 'restSSLKeyBase64', 'privateFileContent'];
 
   public static encrypt(value: any, password: string, fieldName?: string): any {
@@ -36,7 +37,7 @@ export class CryptoUtils {
     }
 
     if (this.isEncryptableKeyField(value, fieldName)) {
-      return CryptoUtils.ENCRYPT_PREFIX + Crypto.encrypt(value, password);
+      return CryptoUtils.ENCRYPT_PREFIX_V2 + Crypto.encrypt(value, password);
     }
     return value;
   }
@@ -102,28 +103,45 @@ export class CryptoUtils {
     if (_.isObject(value)) {
       return _.mapValues(value, (value: any, name: string) => CryptoUtils.decrypt(value, password, name));
     }
-    if (this.isEncryptableKeyField(value, fieldName) && value.startsWith(CryptoUtils.ENCRYPT_PREFIX)) {
-      const encryptedValue = value.substring(CryptoUtils.ENCRYPT_PREFIX.length);
-      // 1) Try current symbol-sdk decryption first (crypto-js >= 4.2.0 compatible)
-      let decryptedValue: string | undefined;
-      try {
-        decryptedValue = Crypto.decrypt(encryptedValue, password);
-      } catch {
-        decryptedValue = undefined;
-      }
-      // 2) Fallback to legacy decryption (crypto-js 4.1.1 equivalent: PBKDF2-SHA1 + AES-256-CBC)
-      if (!decryptedValue) {
+    if (this.isEncryptableKeyField(value, fieldName)) {
+      if (value.startsWith(CryptoUtils.ENCRYPT_PREFIX_V2)) {
+        // New format (ENCRYPTED_V2:): always use Crypto.decrypt — no ambiguity
+        const encryptedValue = value.substring(CryptoUtils.ENCRYPT_PREFIX_V2.length);
         try {
-          decryptedValue = CryptoUtils.decryptLegacy(encryptedValue, password);
-          CryptoUtils._legacyUpgradeDetected = true;
+          const decryptedValue = Crypto.decrypt(encryptedValue, password);
+          if (!decryptedValue) throw new Error();
+          return decryptedValue;
         } catch {
           throw Error('Value could not be decrypted!');
         }
       }
-      if (!decryptedValue) {
+      if (value.startsWith(CryptoUtils.ENCRYPT_PREFIX)) {
+        // Old prefix (ENCRYPTED:): could be crypto-js 4.1.1 legacy OR old CryptoUtils format.
+        // Try legacy (PBKDF2-SHA1 + AES-256-CBC with explicit IV) FIRST — it throws reliably on
+        // wrong key thanks to PKCS7 padding check, whereas Crypto.decrypt can return garbage
+        // (~1/256 probability of spurious valid padding with the wrong key).
+        const encryptedValue = value.substring(CryptoUtils.ENCRYPT_PREFIX.length);
+        try {
+          const decryptedValue = CryptoUtils.decryptLegacy(encryptedValue, password);
+          if (decryptedValue) {
+            CryptoUtils._legacyUpgradeDetected = true;
+            return decryptedValue;
+          }
+        } catch {
+          // Not legacy format — fall through to Crypto.decrypt
+        }
+        // Fallback: old CryptoUtils format (Crypto.encrypt stored under ENCRYPTED: prefix)
+        try {
+          const decryptedValue = Crypto.decrypt(encryptedValue, password);
+          if (decryptedValue) {
+            CryptoUtils._legacyUpgradeDetected = true;
+            return decryptedValue;
+          }
+        } catch {
+          // fall through
+        }
         throw Error('Value could not be decrypted!');
       }
-      return decryptedValue;
     }
     return value;
   }
@@ -151,7 +169,10 @@ export class CryptoUtils {
     if (_.isObject(value)) {
       return _.sum(Object.entries(value).map(([fieldName, value]) => this.encryptedCount(value, fieldName)));
     }
-    if (this.isEncryptableKeyField(value, fieldName) && value.startsWith(CryptoUtils.ENCRYPT_PREFIX)) {
+    if (
+      this.isEncryptableKeyField(value, fieldName) &&
+      (value.startsWith(CryptoUtils.ENCRYPT_PREFIX) || value.startsWith(CryptoUtils.ENCRYPT_PREFIX_V2))
+    ) {
       return 1;
     }
     return 0;

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
+import { expect } from 'vitest';
 import _ from 'lodash';
-import 'mocha';
+
 import { join } from 'path';
 import { Assembly, CustomPreset, LoggerFactory, LogType, Utils } from '../../src';
 import { ConfigService, CryptoUtils, Preset } from '../../src/service';

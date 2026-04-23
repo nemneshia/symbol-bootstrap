@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { expect } from 'chai';
 import * as os from 'os';
 import * as semver from 'semver';
+import { expect } from 'vitest';
 import { AppVersionService, LoggerFactory, LogType, OSUtils, RuntimeService, VerifyReport } from '../../src';
 import { VerifyService } from '../../src/service';
 const logger = LoggerFactory.getLogger(LogType.Silent);
@@ -84,7 +84,7 @@ describe('VerifyService', () => {
     const expectedVersions = {
       node: '25.0.0',
       docker: '29.0.2',
-      dockerCompose: '3.29.5',
+      dockerCompose: '5.2.0',
     };
     const service = new VerifyService(logger, expectedVersions);
     const { currentDockerVersion, currentDockerComposeVersion } = await getCurrentVersions();

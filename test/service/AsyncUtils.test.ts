@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { expect } from 'chai';
-import { it } from 'mocha';
+import { expect } from 'vitest';
+
 import { AsyncUtils, LoggerFactory, LogType } from '../../src';
 
 const logger = LoggerFactory.getLogger(LogType.Silent);
