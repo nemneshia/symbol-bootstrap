@@ -15,9 +15,9 @@
  */
 import { Command, Flags } from '@oclif/core';
 import { Account } from 'symbol-sdk';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { CertificatePair, ConfigAccount } from '../../model/index.js';
-import { BootstrapAccountResolver, CertificateService, CommandUtils, ConfigLoader, Constants, RenewMode } from '../../service/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { CertificatePair, ConfigAccount } from '../model/index.js';
+import { BootstrapAccountResolver, CertificateService, CommandUtils, ConfigLoader, Constants, RenewMode } from '../service/index.js';
 
 export default class RenewCertificates extends Command {
   static description = `It renews the SSL certificates of the node regenerating the node.csr.pem files but reusing the current private keys.

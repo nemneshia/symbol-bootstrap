@@ -15,9 +15,9 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { BootstrapService, CommandUtils, RunService } from '../../service/index.js';
-import HealthCheck from '../healthCheck/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { BootstrapService, CommandUtils, RunService } from '../service/index.js';
+import HealthCheck from './healthCheck.js';
 
 export default class Run extends Command {
   static description =

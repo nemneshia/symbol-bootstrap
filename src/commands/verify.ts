@@ -15,8 +15,8 @@
  */
 
 import { Command } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { CommandUtils, VerifyService } from '../../service/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { CommandUtils, VerifyService } from '../service/index.js';
 
 export default class Verify extends Command {
   static description =

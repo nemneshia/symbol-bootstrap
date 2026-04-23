@@ -17,8 +17,8 @@
 import { Command, Flags } from '@oclif/core';
 import { existsSync } from 'fs';
 import { dirname } from 'path';
-import { LoggerFactory, LogType } from '../../logger/index.js';
-import { CommandUtils, CryptoUtils, FileSystemService, KnownError, YamlUtils } from '../../service/index.js';
+import { LoggerFactory, LogType } from '../logger/index.js';
+import { CommandUtils, CryptoUtils, FileSystemService, KnownError, YamlUtils } from '../service/index.js';
 
 export default class Encrypt extends Command {
   static description = `It encrypts a yml file using the provided password. The source files would be a custom preset file, a preset.yml file or an addresses.yml.

@@ -18,7 +18,7 @@ import { confirm } from '@inquirer/prompts';
 import { Command, Flags } from '@oclif/core';
 import { existsSync } from 'fs';
 import { dirname, join } from 'path';
-import { LoggerFactory, LogType } from '../../logger/index.js';
+import { LoggerFactory, LogType } from '../logger/index.js';
 import {
   BootstrapAccountResolver,
   BootstrapService,
@@ -29,10 +29,10 @@ import {
   YamlUtils,
   ZipItem,
   ZipUtils,
-} from '../../service/index.js';
-import Clean from '../clean/index.js';
-import Compose from '../compose/index.js';
-import Config from '../config/index.js';
+} from '../service/index.js';
+import Clean from './clean.js';
+import Compose from './compose.js';
+import Config from './config.js';
 
 export default class Pack extends Command {
   static description = 'It configures and packages your node into a zip file that can be uploaded to the final node machine.';

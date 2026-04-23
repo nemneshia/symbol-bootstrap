@@ -15,7 +15,7 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
 import {
   Assembly,
   BootstrapAccountResolver,
@@ -24,7 +24,7 @@ import {
   ConfigService,
   Constants,
   Preset,
-} from '../../service/index.js';
+} from '../service/index.js';
 
 export default class Config extends Command {
   static description = 'Command used to set up the configuration files and the nemesis block for the current network';

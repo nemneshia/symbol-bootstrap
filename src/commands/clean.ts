@@ -15,13 +15,13 @@
  */
 
 import { Command } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { BootstrapService, CommandUtils } from '../../service/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { CommandUtils, FileSystemService } from '../service/index.js';
 
-export default class Stop extends Command {
-  static description =
-    'It stops the docker compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker compose down` bash call.';
-  static examples = [`$ symbol-bootstrap stop`];
+export default class Clean extends Command {
+  static description = 'It removes the target folder deleting the generated configuration and data';
+
+  static examples = [`$ symbol-bootstrap clean`];
 
   static flags = {
     help: CommandUtils.helpFlag,
@@ -30,9 +30,9 @@ export default class Stop extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(Stop);
-    const logger = LoggerFactory.getLogger(flags.logger);
+    const { flags } = await this.parse(Clean);
     CommandUtils.showBanner();
-    return new BootstrapService(logger).stop(flags);
+    const logger = LoggerFactory.getLogger(flags.logger);
+    new FileSystemService(logger).deleteFolder(flags.target);
   }
 }

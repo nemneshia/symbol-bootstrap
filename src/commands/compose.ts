@@ -15,8 +15,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { BootstrapService, CommandUtils, ComposeService, Constants } from '../../service/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { BootstrapService, CommandUtils, ComposeService, Constants } from '../service/index.js';
 
 export default class Compose extends Command {
   static description = 'It generates the `compose.yml` file from the configured network.';

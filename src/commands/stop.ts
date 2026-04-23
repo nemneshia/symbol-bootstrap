@@ -15,21 +15,13 @@
  */
 
 import { Command } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { BootstrapService, CommandUtils } from '../../service/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { BootstrapService, CommandUtils } from '../service/index.js';
 
-export default class HealthCheck extends Command {
-  static description = `It checks if the services created with docker compose are up and running.
-
-This command checks:
-- Whether the docker containers are running.
-- Whether the services' exposed ports are listening.
-- Whether the rest gateways' /node/health are OK.
-
-The health check process handles 'repeat' and custom 'openPort' services.
-    `;
-
-  static examples = [`$ symbol-bootstrap healthCheck`];
+export default class Stop extends Command {
+  static description =
+    'It stops the docker compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker compose down` bash call.';
+  static examples = [`$ symbol-bootstrap stop`];
 
   static flags = {
     help: CommandUtils.helpFlag,
@@ -38,9 +30,9 @@ The health check process handles 'repeat' and custom 'openPort' services.
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(HealthCheck);
-    CommandUtils.showBanner();
+    const { flags } = await this.parse(Stop);
     const logger = LoggerFactory.getLogger(flags.logger);
-    await new BootstrapService(logger).healthCheck(flags);
+    CommandUtils.showBanner();
+    return new BootstrapService(logger).stop(flags);
   }
 }

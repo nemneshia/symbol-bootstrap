@@ -15,8 +15,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, LogType } from '../../logger/index.js';
-import { AnnounceService, BootstrapService, CommandUtils } from '../../service/index.js';
+import { LoggerFactory, LogType } from '../logger/index.js';
+import { AnnounceService, BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class ModifyMultisig extends Command {
   static description = `Create or modify a multisig account`;

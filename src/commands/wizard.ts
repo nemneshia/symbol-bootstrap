@@ -20,8 +20,8 @@ import { OptionFlag } from '@oclif/core/interfaces';
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { Account, NetworkType, PublicAccount } from 'symbol-sdk';
-import { Logger, LoggerFactory, LogType } from '../../logger/index.js';
-import { CustomPreset, PrivateKeySecurityMode } from '../../model/index.js';
+import { Logger, LoggerFactory, LogType } from '../logger/index.js';
+import { CustomPreset, PrivateKeySecurityMode } from '../model/index.js';
 import {
   Assembly,
   BootstrapService,
@@ -34,7 +34,7 @@ import {
   Preset,
   RuntimeService,
   YamlUtils,
-} from '../../service/index.js';
+} from '../service/index.js';
 
 export const assembliesDescriptions: Record<Assembly, string> = {
   [Assembly.dual]: 'Dual Node',

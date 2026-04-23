@@ -15,8 +15,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, LogType } from '../../logger/index.js';
-import { AnnounceService, BootstrapService, CommandUtils, LinkService } from '../../service/index.js';
+import { LoggerFactory, LogType } from '../logger/index.js';
+import { AnnounceService, BootstrapService, CommandUtils, LinkService } from '../service/index.js';
 
 export default class Link extends Command {
   static description = `It announces VRF and Voting Link transactions to the network for each node with 'Peer' or 'Voting' roles. This command finalizes the node registration to an existing network.`;

@@ -15,13 +15,13 @@
  */
 
 import { Command } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { CommandUtils, FileSystemService } from '../../service/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { BootstrapService, CommandUtils } from '../service/index.js';
 
-export default class Clean extends Command {
-  static description = 'It removes the target folder deleting the generated configuration and data';
+export default class ResetData extends Command {
+  static description = 'It removes the data keeping the generated configuration, certificates, keys and block 1.';
 
-  static examples = [`$ symbol-bootstrap clean`];
+  static examples = [`$ symbol-bootstrap resetData`];
 
   static flags = {
     help: CommandUtils.helpFlag,
@@ -30,9 +30,9 @@ export default class Clean extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(Clean);
+    const { flags } = await this.parse(ResetData);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
-    new FileSystemService(logger).deleteFolder(flags.target);
+    await new BootstrapService(logger).resetData(flags);
   }
 }

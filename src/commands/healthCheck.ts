@@ -15,13 +15,21 @@
  */
 
 import { Command } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { BootstrapService, CommandUtils } from '../../service/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { BootstrapService, CommandUtils } from '../service/index.js';
 
-export default class ResetData extends Command {
-  static description = 'It removes the data keeping the generated configuration, certificates, keys and block 1.';
+export default class HealthCheck extends Command {
+  static description = `It checks if the services created with docker compose are up and running.
 
-  static examples = [`$ symbol-bootstrap resetData`];
+This command checks:
+- Whether the docker containers are running.
+- Whether the services' exposed ports are listening.
+- Whether the rest gateways' /node/health are OK.
+
+The health check process handles 'repeat' and custom 'openPort' services.
+    `;
+
+  static examples = [`$ symbol-bootstrap healthCheck`];
 
   static flags = {
     help: CommandUtils.helpFlag,
@@ -30,9 +38,9 @@ export default class ResetData extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(ResetData);
+    const { flags } = await this.parse(HealthCheck);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
-    await new BootstrapService(logger).resetData(flags);
+    await new BootstrapService(logger).healthCheck(flags);
   }
 }

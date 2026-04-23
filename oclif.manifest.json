@@ -45,8 +45,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "clean",
-        "index.js"
+        "clean.js"
       ]
     },
     "compose": {
@@ -128,8 +127,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "compose",
-        "index.js"
+        "compose.js"
       ]
     },
     "config": {
@@ -247,8 +245,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "config",
-        "index.js"
+        "config.js"
       ]
     },
     "decrypt": {
@@ -312,8 +309,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "decrypt",
-        "index.js"
+        "decrypt.js"
       ]
     },
     "encrypt": {
@@ -377,8 +373,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "encrypt",
-        "index.js"
+        "encrypt.js"
       ]
     },
     "healthCheck": {
@@ -426,8 +421,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "healthCheck",
-        "index.js"
+        "healthCheck.js"
       ]
     },
     "link": {
@@ -539,8 +533,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "link",
-        "index.js"
+        "link.js"
       ]
     },
     "modifyMultisig": {
@@ -678,8 +671,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "modifyMultisig",
-        "index.js"
+        "modifyMultisig.js"
       ]
     },
     "pack": {
@@ -802,8 +794,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "pack",
-        "index.js"
+        "pack.js"
       ]
     },
     "renewCertificates": {
@@ -888,8 +879,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "renewCertificates",
-        "index.js"
+        "renewCertificates.js"
       ]
     },
     "resetData": {
@@ -937,8 +927,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "resetData",
-        "index.js"
+        "resetData.js"
       ]
     },
     "run": {
@@ -1033,8 +1022,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "run",
-        "index.js"
+        "run.js"
       ]
     },
     "start": {
@@ -1200,8 +1188,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "start",
-        "index.js"
+        "start.js"
       ]
     },
     "stop": {
@@ -1249,8 +1236,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "stop",
-        "index.js"
+        "stop.js"
       ]
     },
     "updateVotingKeys": {
@@ -1314,8 +1300,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "updateVotingKeys",
-        "index.js"
+        "updateVotingKeys.js"
       ]
     },
     "verify": {
@@ -1354,8 +1339,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "verify",
-        "index.js"
+        "verify.js"
       ]
     },
     "wizard": {
@@ -1444,8 +1428,7 @@
       "relativePath": [
         "lib",
         "commands",
-        "wizard",
-        "index.js"
+        "wizard.js"
       ]
     }
   },

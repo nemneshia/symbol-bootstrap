@@ -15,12 +15,12 @@
  */
 
 import { Command } from '@oclif/core';
-import { LoggerFactory } from '../../logger/index.js';
-import { BootstrapAccountResolver, BootstrapService, CommandUtils, Constants } from '../../service/index.js';
-import Clean from '../clean/index.js';
-import Compose from '../compose/index.js';
-import Config from '../config/index.js';
-import Run from '../run/index.js';
+import { LoggerFactory } from '../logger/index.js';
+import { BootstrapAccountResolver, BootstrapService, CommandUtils, Constants } from '../service/index.js';
+import Clean from './clean.js';
+import Compose from './compose.js';
+import Config from './config.js';
+import Run from './run.js';
 
 export default class Start extends Command {
   static description = 'Single command that aggregates config, compose and run in one line!';

@@ -15,8 +15,8 @@
  */
 
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, System } from '../../logger/index.js';
-import { ConfigPreset } from '../../model/index.js';
+import { LoggerFactory, System } from '../logger/index.js';
+import { ConfigPreset } from '../model/index.js';
 import {
   CommandUtils,
   ConfigLoader,
@@ -26,7 +26,7 @@ import {
   Utils,
   VotingService,
   YamlUtils,
-} from '../../service/index.js';
+} from '../service/index.js';
 
 export default class UpdateVotingKeys extends Command {
   static description = `It updates the voting files containing the voting keys when required.
