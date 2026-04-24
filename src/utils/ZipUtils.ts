@@ -20,6 +20,7 @@ import { Logger } from '../logger/index.js';
 import { AsyncUtils } from './AsyncUtils.js';
 import { Utils } from './Utils.js';
 
+/** ZIP 圧縮/解凍操作の対象アイテムを表すインターフェース */
 export interface ZipItem {
   from: string;
   directory: boolean;
@@ -27,6 +28,9 @@ export interface ZipItem {
   blacklist?: string[];
 }
 
+/**
+ * ZIP ファイルの圧縮・解凍を担当するユーティリティクラス。
+ */
 export class ZipUtils {
   constructor(private readonly logger: Logger) {}
   public async zip(destination: string, items: ZipItem[]): Promise<void> {

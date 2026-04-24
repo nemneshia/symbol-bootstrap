@@ -15,18 +15,19 @@
  */
 
 import { existsSync } from 'fs';
-import _ from 'lodash';
+
 import { join } from 'path';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigPreset, DockerCompose, DockerComposeService, DockerServicePreset } from '../model/index.js';
+import { INetworkPort } from '../sdk/index.js';
+import { Constants } from '../utils/Constants.js';
+import { HandlebarsUtils } from '../utils/HandlebarsUtils.js';
+import { Utils } from '../utils/Utils.js';
+import { Password, YamlUtils } from '../utils/YamlUtils.js';
 import { ConfigLoader } from './ConfigLoader.js';
-import { Constants } from './Constants.js';
 import { FileSystemService } from './FileSystemService.js';
-import { HandlebarsUtils } from './HandlebarsUtils.js';
 import { RemoteNodeService } from './RemoteNodeService.js';
 import { RuntimeService } from './RuntimeService.js';
-import { Utils } from './Utils.js';
-import { Password, YamlUtils } from './YamlUtils.js';
 
 export type ComposeParams = { target: string; user?: string; upgrade?: boolean; password?: Password; workingDir: string; offline: boolean };
 
@@ -60,6 +61,7 @@ export class ComposeService {
   constructor(
     private readonly logger: Logger,
     protected readonly params: ComposeParams,
+    private readonly networkPort: INetworkPort,
   ) {
     this.configLoader = new ConfigLoader(logger);
     this.fileSystemService = new FileSystemService(logger);
@@ -77,14 +79,14 @@ export class ComposeService {
 
   public async run(passedPresetData?: ConfigPreset, passedAddresses?: Addresses): Promise<DockerCompose> {
     const presetData = passedPresetData ?? this.configLoader.loadExistingPresetData(this.params.target, this.params.password || false);
-    const remoteNodeService = new RemoteNodeService(this.logger, presetData, this.params.offline);
+    const remoteNodeService = new RemoteNodeService(this.logger, presetData, this.params.offline, this.networkPort);
     const currentDir = process.cwd();
     const target = join(currentDir, this.params.target);
     const targetDocker = join(target, `docker`);
     if (this.params.upgrade) {
       this.fileSystemService.deleteFolder(targetDocker);
     }
-    const dockerFile = join(targetDocker, 'compose.yml');
+    const dockerFile = join(targetDocker, 'compose.yaml');
     if (existsSync(dockerFile)) {
       this.logger.info(dockerFile + ' already exist. Reusing. (run --upgrade to drop and upgrade)');
       return YamlUtils.loadYaml(dockerFile, false);
@@ -101,7 +103,7 @@ export class ComposeService {
       return `${hostFolder}:${imageFolder}:${readOnly ? 'ro' : 'rw'}`;
     };
 
-    this.logger.info(`Creating compose.yml from last used profile.`);
+    this.logger.info(`Creating compose.yaml from last used profile.`);
 
     const services: (DockerComposeService | undefined)[] = [];
 
@@ -135,7 +137,7 @@ export class ComposeService {
       if (servicePreset.ipv4_address) {
         service.networks!.default.ipv4_address = servicePreset.ipv4_address;
       }
-      return _.merge({}, service, servicePreset.compose);
+      return Utils.deepMerge({}, service, servicePreset.compose);
     };
 
     const containerNamePrefix = presetData.dockerComposeProjectName ? `${presetData.dockerComposeProjectName}-` : '';
@@ -342,7 +344,7 @@ export class ComposeService {
     );
 
     const validServices: DockerComposeService[] = services.filter((s) => s).map((s) => s as DockerComposeService);
-    const servicesMap: Record<string, DockerComposeService> = _.keyBy(validServices, 'container_name');
+    const servicesMap: Record<string, DockerComposeService> = Object.fromEntries(validServices.map((s) => [s.container_name, s]));
     let dockerCompose: DockerCompose = {
       services: servicesMap,
     };
@@ -360,9 +362,9 @@ export class ComposeService {
         },
       };
 
-    dockerCompose = Utils.pruneEmpty(_.merge({}, dockerCompose, presetData.compose));
+    dockerCompose = Utils.pruneEmpty(Utils.deepMerge({}, dockerCompose, presetData.compose));
     await YamlUtils.writeYaml(dockerFile, dockerCompose, undefined);
-    this.logger.info(`The compose.yml file created ${dockerFile}`);
+    this.logger.info(`The compose.yaml file created ${dockerFile}`);
     return dockerCompose;
   }
 

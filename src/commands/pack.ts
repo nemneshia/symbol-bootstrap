@@ -19,6 +19,7 @@ import { Command, Flags } from '@oclif/core';
 import { existsSync } from 'fs';
 import { dirname, join } from 'path';
 import { LoggerFactory, LogType } from '../logger/index.js';
+import { SymbolCryptoAdapter } from '../sdk/index.js';
 import {
   BootstrapAccountResolver,
   BootstrapService,
@@ -87,7 +88,7 @@ export default class Pack extends Command {
     const workingDir = Constants.defaultWorkingDir;
     const service = new BootstrapService(logger);
     const configOnlyCustomPresetFileName = 'config-only-custom-preset.yml';
-    const accountResolver = new BootstrapAccountResolver(logger);
+    const accountResolver = new BootstrapAccountResolver(logger, new SymbolCryptoAdapter());
     const configResult = await service.config({ ...flags, workingDir, accountResolver });
     await service.compose({ ...flags, workingDir }, configResult.presetData);
 

@@ -16,6 +16,8 @@
 import { confirm, password } from '@inquirer/prompts';
 import { Flags } from '@oclif/core';
 import { firstValueFrom } from 'rxjs';
+import { Logger } from '../logger/index.js';
+import { Addresses, ConfigPreset, NodeAccount, NodePreset } from '../model/index.js';
 import {
   Account,
   AccountInfo,
@@ -39,14 +41,13 @@ import {
   TransactionType,
   TransferTransaction,
   UInt64,
-} from 'symbol-sdk';
-import { Logger } from '../logger/index.js';
-import { Addresses, ConfigPreset, NodeAccount, NodePreset } from '../model/index.js';
+} from '../sdk/index.js';
 import { AccountResolver } from './AccountResolver.js';
-import { CommandUtils } from './CommandUtils.js';
+import { CommandUtils } from '../utils/CommandUtils.js';
 import { KeyName } from './ConfigService.js';
-import { TransactionUtils } from './TransactionUtils.js';
-import { Utils } from './Utils.js';
+import { RemoteNodeService } from './RemoteNodeService.js';
+import { TransactionUtils } from '../utils/TransactionUtils.js';
+import { Utils } from '../utils/Utils.js';
 
 export interface TransactionFactoryParams {
   presetData: ConfigPreset;
@@ -68,6 +69,7 @@ export class AnnounceService {
   constructor(
     private readonly logger: Logger,
     private readonly accountResolver: AccountResolver,
+    private readonly remoteNodeService: RemoteNodeService,
   ) {}
 
   private static onProcessListener = () => {
@@ -122,7 +124,7 @@ export class AnnounceService {
       return;
     }
     const url = providedUrl.replace(/\/$/, '');
-    const repositoryFactory = await TransactionUtils.getRepositoryFactory(this.logger, presetData, useKnownRestGateways ? undefined : url);
+    const repositoryFactory = await TransactionUtils.getRepositoryFactory(this.remoteNodeService, useKnownRestGateways ? undefined : url);
     const networkType = await firstValueFrom(repositoryFactory.getNetworkType());
     const transactionRepository = repositoryFactory.createTransactionRepository();
     const transactionService = new TransactionService(transactionRepository, repositoryFactory.createReceiptRepository());

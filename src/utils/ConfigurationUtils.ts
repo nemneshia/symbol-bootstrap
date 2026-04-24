@@ -1,20 +1,21 @@
 import { existsSync } from 'fs';
 import { join } from 'path';
-import { Account, NetworkType, PublicAccount } from 'symbol-sdk';
 import { ConfigAccount, ConfigPreset, NodePreset } from '../model/index.js';
+import { ICryptoPort, NetworkType } from '../sdk/index.js';
 import { Constants } from './Constants.js';
 import { YamlUtils } from './YamlUtils.js';
 
 /**
- * Utility class for bootstrap configuration related methods.
+ * ブートストラップ設定に関連するアカウント変換や Nemesis 判定を担当するユーティリティクラス。
  */
 export class ConfigurationUtils {
   public static toConfigAccountFomKeys(
     networkType: NetworkType,
     publicKey: string | undefined,
     privateKey: string | undefined,
+    cryptoPort: ICryptoPort,
   ): ConfigAccount | undefined {
-    const account = this.toAccount(networkType, publicKey, privateKey);
+    const account = this.toAccount(networkType, publicKey, privateKey, cryptoPort);
     if (!account) {
       return undefined;
     }
@@ -25,33 +26,32 @@ export class ConfigurationUtils {
     networkType: NetworkType,
     publicKey: string | undefined,
     privateKey: string | undefined,
-  ): PublicAccount | Account | undefined {
+    cryptoPort: ICryptoPort,
+  ): { publicKey: string; address: string; privateKey?: string } | undefined {
     if (privateKey) {
-      const account = Account.createFromPrivateKey(privateKey, networkType);
+      const account = cryptoPort.createAccountFromPrivateKey(privateKey, networkType);
       if (publicKey && account.publicKey.toUpperCase() != publicKey.toUpperCase()) {
         throw new Error('Invalid provided public key/private key!');
       }
       return account;
     }
     if (publicKey) {
-      return PublicAccount.createFromPublicKey(publicKey, networkType);
+      return cryptoPort.createPublicAccount(publicKey, networkType);
     }
     return undefined;
   }
 
-  public static toConfigAccount(account: PublicAccount | Account): ConfigAccount {
-    // isntanceof doesn't work when loaded in multiple libraries.
-    //https://stackoverflow.com/questions/59265098/instanceof-not-work-correctly-in-typescript-library-project
-    if (account.constructor.name === Account.name) {
+  public static toConfigAccount(account: { publicKey: string; address: string; privateKey?: string }): ConfigAccount {
+    if (account.privateKey) {
       return {
-        privateKey: (account as Account).privateKey,
+        privateKey: account.privateKey,
         publicKey: account.publicKey,
-        address: account.address.plain(),
+        address: account.address,
       };
     }
     return {
       publicKey: account.publicKey,
-      address: account.address.plain(),
+      address: account.address,
     };
   }
 
@@ -76,7 +76,7 @@ export class ConfigurationUtils {
     return (
       presetData.nemesis &&
       !presetData.nemesisSeedFolder &&
-      (YamlUtils.isYmlFile(presetData.preset) || !existsSync(join(Constants.ROOT_FOLDER, 'presets', presetData.preset, 'seed')))
+      (YamlUtils.isYamlFile(presetData.preset) || !existsSync(join(Constants.ROOT_FOLDER, 'presets', presetData.preset, 'seed')))
     );
   }
 }

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 import { Command, Flags } from '@oclif/core';
-import { Account } from 'symbol-sdk';
 import { LoggerFactory, System } from '../logger/index.js';
 import { CertificatePair, ConfigAccount } from '../model/index.js';
+import { ICryptoPort, SymbolCryptoAdapter } from '../sdk/index.js';
 import { BootstrapAccountResolver, CertificateService, CommandUtils, ConfigLoader, Constants, RenewMode } from '../service/index.js';
 
 export default class RenewCertificates extends Command {
@@ -67,6 +67,7 @@ It's recommended to backup the target folder before running this operation!
     );
     const target = flags.target;
     const configLoader = new ConfigLoader(logger);
+    const cryptoPort: ICryptoPort = new SymbolCryptoAdapter();
 
     const oldPresetData = configLoader.loadExistingPresetData(target, password);
     const presetData = configLoader.createPresetData({
@@ -77,11 +78,16 @@ It's recommended to backup the target folder before running this operation!
     });
     const addresses = configLoader.loadExistingAddresses(target, password);
     const networkType = presetData.networkType;
-    const accountResolver = new BootstrapAccountResolver(logger);
-    const certificateService = new CertificateService(logger, accountResolver, {
-      target,
-      user: flags.user,
-    });
+    const accountResolver = new BootstrapAccountResolver(logger, cryptoPort);
+    const certificateService = new CertificateService(
+      logger,
+      accountResolver,
+      {
+        target,
+        user: flags.user,
+      },
+      cryptoPort,
+    );
     const certificateUpgraded = (
       await Promise.all(
         (presetData.nodes || []).map((nodePreset, index) => {
@@ -91,8 +97,8 @@ It's recommended to backup the target folder before running this operation!
           }
           function resolveAccount(configAccount: ConfigAccount, providedPrivateKey: string | undefined): CertificatePair {
             if (providedPrivateKey) {
-              const account = Account.createFromPrivateKey(providedPrivateKey, networkType);
-              if (account.address.plain() == configAccount.address) {
+              const account = cryptoPort.createAccountFromPrivateKey(providedPrivateKey, networkType);
+              if (account.address == configAccount.address) {
                 return account;
               }
             }

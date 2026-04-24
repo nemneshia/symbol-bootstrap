@@ -1,7 +1,7 @@
-import { Account, NetworkType } from 'symbol-sdk';
 import { Logger } from '../logger/index.js';
 import { Addresses } from '../model/index.js';
-import { ConfigurationUtils } from './ConfigurationUtils.js';
+import { ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
+import { ConfigurationUtils } from '../utils/ConfigurationUtils.js';
 /**
  * The operation to migrate the data.
  */
@@ -15,7 +15,10 @@ export interface Migration {
  * Service used to migrate json objects like preset and addresses.
  */
 export class MigrationService {
-  constructor(private readonly logger: Logger) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter(),
+  ) {}
   public migrateAddresses(addresses: any): Addresses {
     const addressesFileName = 'addresses.yml';
     const networkType = addresses.networkType;
@@ -31,14 +34,14 @@ export class MigrationService {
       {
         description: 'Key names migration',
 
-        migrate(from: any): any {
+        migrate: (from: any): any => {
           (from.nodes || []).forEach((nodeAddresses: any): any => {
             if (nodeAddresses.signing) {
               nodeAddresses.main = nodeAddresses.signing;
             } else {
               if (nodeAddresses.ssl) {
                 nodeAddresses.main = ConfigurationUtils.toConfigAccount(
-                  Account.createFromPrivateKey(nodeAddresses.ssl.privateKey, networkType),
+                  this.cryptoPort.createAccountFromPrivateKey(nodeAddresses.ssl.privateKey, networkType),
                 );
               }
             }
@@ -46,9 +49,10 @@ export class MigrationService {
               networkType,
               nodeAddresses?.node?.publicKey,
               nodeAddresses?.node?.privateKey,
+              this.cryptoPort,
             );
             if (!nodeAddresses.transport) {
-              nodeAddresses.transport = ConfigurationUtils.toConfigAccount(Account.generateNewAccount(networkType));
+              nodeAddresses.transport = ConfigurationUtils.toConfigAccount(this.cryptoPort.generateAccount(networkType));
             }
             delete nodeAddresses.node;
             delete nodeAddresses.signing;

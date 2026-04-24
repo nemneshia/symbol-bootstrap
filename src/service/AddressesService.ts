@@ -1,24 +1,29 @@
-import { Account, Address, Convert, Crypto, MosaicId, MosaicNonce, NetworkType, PublicAccount } from 'symbol-sdk';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigAccount, ConfigPreset, MosaicAccounts, NodeAccount, NodePreset, PrivateKeySecurityMode } from '../model/index.js';
+import { ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
 import { AccountResolver } from './AccountResolver.js';
 import { KeyName } from './ConfigService.js';
-import { ConfigurationUtils } from './ConfigurationUtils.js';
-import { CryptoUtils } from './CryptoUtils.js';
+import { ConfigurationUtils } from '../utils/ConfigurationUtils.js';
+import { CryptoUtils } from '../utils/CryptoUtils.js';
 import { MigrationService } from './MigrationService.js';
-import { Utils } from './Utils.js';
-import { YamlUtils } from './YamlUtils.js';
+import { Utils } from '../utils/Utils.js';
+import { YamlUtils } from '../utils/YamlUtils.js';
 
 /**
  * Object in charge of resolving the address.yml and its accounts.
  */
 export class AddressesService {
   private readonly migrationService: MigrationService;
+  private readonly cryptoPort: ICryptoPort;
+
   constructor(
     private readonly logger: Logger,
     private readonly accountResolver: AccountResolver,
+    migrationService?: MigrationService,
+    cryptoPort?: ICryptoPort,
   ) {
-    this.migrationService = new MigrationService(this.logger);
+    this.cryptoPort = cryptoPort ?? new SymbolCryptoAdapter();
+    this.migrationService = migrationService ?? new MigrationService(logger, this.cryptoPort);
   }
 
   public async resolveAddresses(
@@ -31,16 +36,16 @@ export class AddressesService {
       version: this.migrationService.getAddressesMigration(presetData.networkType).length + 1,
       networkType: networkType,
       nemesisGenerationHashSeed:
-        presetData.nemesisGenerationHashSeed || oldAddresses?.nemesisGenerationHashSeed || Convert.uint8ToHex(Crypto.randomBytes(32)),
+        presetData.nemesisGenerationHashSeed || oldAddresses?.nemesisGenerationHashSeed || this.cryptoPort.randomHex(32),
       sinkAddress: presetData.sinkAddress || oldAddresses?.sinkAddress,
     };
 
     //Sync address is generated on demand only
     const resolveSyncAddress = (providedAddress: string | undefined): string => {
       if (providedAddress) {
-        return Address.createFromRawAddress(providedAddress).plain();
+        return this.cryptoPort.createAddressFromRawAddress(providedAddress);
       }
-      addresses.sinkAddress = addresses.sinkAddress || Account.generateNewAccount(networkType).address.plain();
+      addresses.sinkAddress = addresses.sinkAddress || this.cryptoPort.generateAccount(networkType).address;
       return addresses.sinkAddress;
     };
 
@@ -73,17 +78,16 @@ export class AddressesService {
       presetData.nemesis.nemesisSignerPrivateKey = nemesisSigner.privateKey;
     }
 
-    const nemesisSignerAddress = Address.createFromPublicKey(presetData.nemesisSignerPublicKey, networkType);
+    const nemesisSignerAddress = this.cryptoPort.getAddressFromPublicKey(presetData.nemesisSignerPublicKey, networkType);
 
-    if (!presetData.currencyMosaicId)
-      presetData.currencyMosaicId = MosaicId.createFromNonce(MosaicNonce.createFromNumber(0), nemesisSignerAddress).toHex();
+    if (!presetData.currencyMosaicId) presetData.currencyMosaicId = this.cryptoPort.createMosaicId(0, nemesisSignerAddress);
 
     if (!presetData.harvestingMosaicId) {
       if (!presetData.nemesis) {
         throw new Error('nemesis must be defined!');
       }
       if (presetData.nemesis.mosaics && presetData.nemesis.mosaics.length > 1) {
-        presetData.harvestingMosaicId = MosaicId.createFromNonce(MosaicNonce.createFromNumber(1), nemesisSignerAddress).toHex();
+        presetData.harvestingMosaicId = this.cryptoPort.createMosaicId(1, nemesisSignerAddress);
       } else {
         presetData.harvestingMosaicId = presetData.currencyMosaicId;
       }
@@ -124,10 +128,10 @@ export class AddressesService {
     const signerPrivateKey =
       presetData.nemesis.nemesisSignerPrivateKey ||
       oldAddresses?.nemesisSigner?.privateKey ||
-      Account.generateNewAccount(networkType).privateKey;
+      this.cryptoPort.generateAccount(networkType).privateKey;
 
     const signerPublicKey = presetData.nemesisSignerPublicKey || oldAddresses?.nemesisSigner?.publicKey;
-    const nemesisSigner = ConfigurationUtils.toConfigAccountFomKeys(networkType, signerPublicKey, signerPrivateKey);
+    const nemesisSigner = ConfigurationUtils.toConfigAccountFomKeys(networkType, signerPublicKey, signerPrivateKey, this.cryptoPort);
 
     if (!nemesisSigner) {
       throw new Error('Nemesis Signer should be resolved!');
@@ -135,13 +139,13 @@ export class AddressesService {
     return nemesisSigner;
   }
 
-  private processNemesisBalances(presetData: ConfigPreset, addresses: Addresses, nemesisSignerAddress: Address): MosaicAccounts[] {
+  private processNemesisBalances(presetData: ConfigPreset, addresses: Addresses, nemesisSignerAddress: string): MosaicAccounts[] {
     const privateKeySecurityMode = CryptoUtils.getPrivateKeySecurityMode(presetData.privateKeySecurityMode);
     const networkType = presetData.networkType;
     const mosaics: MosaicAccounts[] = [];
     presetData.nemesis.mosaics.forEach((m, mosaicIndex) => {
       const accounts = this.generateAddresses(networkType, privateKeySecurityMode, m.accounts);
-      const id = MosaicId.createFromNonce(MosaicNonce.createFromNumber(mosaicIndex), nemesisSignerAddress).toHex();
+      const id = this.cryptoPort.createMosaicId(mosaicIndex, nemesisSignerAddress);
       mosaics.push({
         id: id,
         name: m.name,
@@ -240,7 +244,7 @@ export class AddressesService {
       KeyName.Main,
       nodePreset.name,
       oldNodeAccount?.main,
-      ConfigurationUtils.toConfigAccountFomKeys(networkType, nodePreset.mainPublicKey, nodePreset.mainPrivateKey),
+      ConfigurationUtils.toConfigAccountFomKeys(networkType, nodePreset.mainPublicKey, nodePreset.mainPrivateKey, this.cryptoPort),
     );
     const transport = await this.resolveAccount(
       networkType,
@@ -248,7 +252,12 @@ export class AddressesService {
       KeyName.Transport,
       nodePreset.name,
       oldNodeAccount?.transport,
-      ConfigurationUtils.toConfigAccountFomKeys(networkType, nodePreset.transportPublicKey, nodePreset.transportPrivateKey),
+      ConfigurationUtils.toConfigAccountFomKeys(
+        networkType,
+        nodePreset.transportPublicKey,
+        nodePreset.transportPrivateKey,
+        this.cryptoPort,
+      ),
     );
 
     const friendlyName = nodePreset.friendlyName || main.publicKey.substr(0, 7);
@@ -270,7 +279,7 @@ export class AddressesService {
         KeyName.Remote,
         nodePreset.name,
         oldNodeAccount?.remote,
-        ConfigurationUtils.toConfigAccountFomKeys(networkType, nodePreset.remotePublicKey, nodePreset.remotePrivateKey),
+        ConfigurationUtils.toConfigAccountFomKeys(networkType, nodePreset.remotePublicKey, nodePreset.remotePrivateKey, this.cryptoPort),
       );
     if (nodePreset.harvesting)
       nodeAccount.vrf = await this.resolveAccount(
@@ -279,7 +288,7 @@ export class AddressesService {
         KeyName.VRF,
         nodePreset.name,
         oldNodeAccount?.vrf,
-        ConfigurationUtils.toConfigAccountFomKeys(networkType, nodePreset.vrfPublicKey, nodePreset.vrfPrivateKey),
+        ConfigurationUtils.toConfigAccountFomKeys(networkType, nodePreset.vrfPublicKey, nodePreset.vrfPrivateKey, this.cryptoPort),
       );
 
     return nodeAccount;
@@ -291,9 +300,9 @@ export class AddressesService {
     accounts: number | string[],
   ): ConfigAccount[] {
     if (typeof accounts == 'number') {
-      return [...Array(accounts).keys()].map(() => ConfigurationUtils.toConfigAccount(Account.generateNewAccount(networkType)));
+      return [...Array(accounts).keys()].map(() => ConfigurationUtils.toConfigAccount(this.cryptoPort.generateAccount(networkType)));
     } else {
-      return accounts.map((key) => ConfigurationUtils.toConfigAccount(PublicAccount.createFromPublicKey(key, networkType)));
+      return accounts.map((key) => ConfigurationUtils.toConfigAccount(this.cryptoPort.createPublicAccount(key, networkType)));
     }
   }
   public resolveGenerateErrorMessage(keyName: KeyName, privateKeySecurityMode: PrivateKeySecurityMode): string | undefined {
@@ -330,17 +339,19 @@ export class AddressesService {
       networkType,
       oldStoredAccount?.publicKey.toUpperCase(),
       oldStoredAccount?.privateKey?.toUpperCase(),
+      this.cryptoPort,
     );
     const newAccount = ConfigurationUtils.toAccount(
       networkType,
       newProvidedAccount?.publicKey?.toUpperCase(),
       newProvidedAccount?.privateKey?.toUpperCase(),
+      this.cryptoPort,
     );
 
-    const getAccountLog = (a: Account | PublicAccount) => `${keyName} Account ${a.address.plain()} Public Key ${a.publicKey} `;
+    const getAccountLog = (a: { address: string; publicKey: string }) => `${keyName} Account ${a.address} Public Key ${a.publicKey} `;
 
     if (oldAccount && newAccount) {
-      if (oldAccount.address.equals(newAccount.address)) {
+      if (oldAccount.address.toUpperCase() === newAccount.address.toUpperCase()) {
         this.logger.info(`Reusing ${getAccountLog(newAccount)}`);
         return { ...ConfigurationUtils.toConfigAccount(oldAccount), ...ConfigurationUtils.toConfigAccount(newAccount) };
       }
@@ -366,6 +377,10 @@ export class AddressesService {
       'initialization',
       generateErrorMessage,
     );
-    return ConfigurationUtils.toConfigAccount(account);
+    return ConfigurationUtils.toConfigAccount({
+      publicKey: account.publicKey,
+      address: account.address.plain(),
+      privateKey: account.privateKey,
+    });
   }
 }

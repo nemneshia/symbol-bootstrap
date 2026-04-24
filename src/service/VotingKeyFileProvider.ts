@@ -15,11 +15,11 @@
  */
 import { writeFileSync } from 'fs';
 import { join } from 'path';
-import { Account } from 'symbol-sdk';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset, NodeAccount, NodePreset } from '../model/index.js';
+import { ICryptoPort } from '../sdk/index.js';
 import { RuntimeService } from './RuntimeService.js';
-import { VotingUtils } from './VotingUtils.js';
+import { VotingUtils } from '../utils/VotingUtils.js';
 
 export interface VotingKeyParams {
   presetData: ConfigPreset;
@@ -41,7 +41,10 @@ export interface VotingKeyFileProvider {
 
 export class NativeVotingKeyFileProvider implements VotingKeyFileProvider {
   private readonly runtimeService: RuntimeService;
-  constructor(private readonly logger: Logger) {
+  constructor(
+    private readonly logger: Logger,
+    private readonly cryptoPort: ICryptoPort,
+  ) {
     this.runtimeService = new RuntimeService(logger);
   }
   public async createVotingFile({
@@ -51,9 +54,9 @@ export class NativeVotingKeyFileProvider implements VotingKeyFileProvider {
     votingKeyStartEpoch,
     votingKeyEndEpoch,
   }: VotingKeyParams): Promise<VotingKeyCreationResult> {
-    const votingAccount = Account.generateNewAccount(presetData.networkType);
+    const votingAccount = this.cryptoPort.generateAccount(presetData.networkType);
     const votingPrivateKey = votingAccount.privateKey;
-    const votingUtils = new VotingUtils();
+    const votingUtils = new VotingUtils(VotingUtils.nobleImplementation, this.cryptoPort);
     this.logger.info('Voting file is created using the native typescript voting key file generator!');
     const votingFile = await votingUtils.createVotingFile(votingPrivateKey, votingKeyStartEpoch, votingKeyEndEpoch);
     writeFileSync(join(votingKeysFolder, privateKeyTreeFileName), votingFile);
@@ -68,6 +71,7 @@ export class CatapultVotingKeyFileProvider implements VotingKeyFileProvider {
   constructor(
     private readonly logger: Logger,
     private readonly user: string,
+    private readonly cryptoPort: ICryptoPort,
   ) {
     this.runtimeService = new RuntimeService(logger);
   }
@@ -79,7 +83,7 @@ export class CatapultVotingKeyFileProvider implements VotingKeyFileProvider {
     votingKeyEndEpoch,
   }: VotingKeyParams): Promise<VotingKeyCreationResult> {
     this.logger.info(`Voting file is created using docker and catapult.tools.votingkey`);
-    const votingAccount = Account.generateNewAccount(presetData.networkType);
+    const votingAccount = this.cryptoPort.generateAccount(presetData.networkType);
     const votingPrivateKey = votingAccount.privateKey;
     const symbolServerImage = presetData.symbolServerImage;
     const binds = [`${votingKeysFolder}:/votingKeys:rw`];

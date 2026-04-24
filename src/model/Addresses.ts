@@ -14,8 +14,8 @@
  * limitations under the License.
  */
 
-import { NetworkType } from 'symbol-sdk';
-import { VotingKeyFile } from '../service/index.js';
+import { NetworkType } from '../sdk/index.js';
+import { VotingKeyFile } from '../utils/VotingUtils.js';
 
 export interface CertificatePair {
   privateKey?: string;

@@ -16,12 +16,16 @@
 import { password } from '@inquirer/prompts';
 import { Flags } from '@oclif/core';
 import figlet from 'figlet';
-import { Convert, PublicAccount } from 'symbol-sdk';
 import { Logger, LoggerFactory, LogType } from '../logger/index.js';
+import { Convert, PublicAccount } from '../sdk/index.js';
 import { Constants } from './Constants.js';
 import { Password } from './YamlUtils.js';
 
+/**
+ * CLI フラグ定義、パスワードバリデーション・プロンプトなど CLI 関連のユーティリティを提供するクラス。
+ */
 export class CommandUtils {
+  /** パスワードプロンプトのデフォルトメッセージ */
   public static passwordPromptDefaultMessage = `Enter the password used to encrypt and decrypt custom presets, addresses.yml, and preset.yml files. When providing a password, private keys will be encrypted. Keep this password in a secure place!`;
   public static helpFlag = Flags.help({ char: 'h', description: 'It shows the help of this command.' });
 

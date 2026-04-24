@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-import { NetworkType } from 'symbol-sdk';
+import { NetworkType } from '../sdk/index.js';
 import { DockerCompose, DockerComposeService } from './DockerCompose.js';
 
 export enum PrivateKeySecurityMode {

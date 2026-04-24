@@ -17,8 +17,8 @@
 import { exec as callbackExec, spawn } from 'child_process';
 import * as util from 'util';
 import { Logger } from '../logger/index.js';
-import { OSUtils } from './OSUtils.js';
-import { Utils } from './Utils.js';
+
+import { Utils } from '../utils/Utils.js';
 const exec = util.promisify(callbackExec);
 
 export interface SpawnParams {
@@ -141,7 +141,7 @@ export class RuntimeService {
     }
   }
   public async getDockerUserGroup(): Promise<string | undefined> {
-    const isWin = OSUtils.isWindows();
+    const isWin = Utils.isWindows();
     if (isWin) {
       // ホストがWindowsの場合はパーミッションがないためrootで起動
       return 'root:root';

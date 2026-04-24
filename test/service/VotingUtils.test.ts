@@ -14,10 +14,11 @@
  * limitations under the License.
  */
 
-import { expect } from 'vitest';
 import { readFileSync } from 'fs';
+import { expect } from 'vitest';
 
 import { Convert, KeyPair } from 'symbol-sdk';
+import { SymbolCryptoAdapter } from '../../src/sdk/index.js';
 import { VotingKeyAccount, VotingUtils } from '../../src/service';
 describe('VotingUtils', () => {
   async function assertVotingKey(
@@ -43,7 +44,7 @@ describe('VotingUtils', () => {
       unitTestPrivateKeys.push(unitTestPrivateKey);
     }
 
-    const service = new VotingUtils();
+    const service = new VotingUtils(VotingUtils.nobleImplementation, new SymbolCryptoAdapter());
     const votingKeyFile = await service.createVotingFile(privateKey, votingKeyStartEpoch, votingKeyEndEpoch, unitTestPrivateKeys);
     expect(votingKeyFile.length).eq(expectedVotingKeyFile.length);
     const header = votingKeyFile.subarray(0, headerSize);

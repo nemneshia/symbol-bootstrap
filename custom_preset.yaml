@@ -1,0 +1,4 @@
+assembly: dual
+preset: testnet
+nodes:
+  - host: localhost

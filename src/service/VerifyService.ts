@@ -16,9 +16,9 @@
 import * as os from 'os';
 import * as semver from 'semver';
 import { Logger } from '../logger/index.js';
-import { OSUtils } from './OSUtils.js';
+
 import { RuntimeService } from './RuntimeService.js';
-import { Utils } from './Utils.js';
+import { Utils } from '../utils/Utils.js';
 export interface VerifyReport {
   platform: string;
   lines: ReportLine[];
@@ -175,7 +175,7 @@ export class DockerRunVerifyAction implements VerifyAction {
 export class SudoRunVerifyAction implements VerifyAction {
   async verify(): Promise<ReportLine> {
     const header = 'Sudo User Test';
-    if (OSUtils.isRoot()) {
+    if (Utils.isRoot()) {
       return {
         header,
         message: `Your are running with the sudo user!`,
@@ -185,7 +185,7 @@ export class SudoRunVerifyAction implements VerifyAction {
     return { header, message: `Your are not the sudo user!` };
   }
   shouldRun(): boolean {
-    return !OSUtils.isWindows();
+    return !Utils.isWindows();
   }
 }
 

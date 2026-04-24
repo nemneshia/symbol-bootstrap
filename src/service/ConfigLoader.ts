@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 import { existsSync, promises as fs } from 'fs';
-import _ from 'lodash';
+
 import { join } from 'path';
-import { Account, PublicAccount } from 'symbol-sdk';
+import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigAccount, ConfigPreset, CustomPreset, NodePreset } from '../model/index.js';
+import { Account, ICryptoPort, PublicAccount, SymbolCryptoAdapter } from '../sdk/index.js';
+import { Constants } from '../utils/Constants.js';
+import { HandlebarsUtils } from '../utils/HandlebarsUtils.js';
+import { Utils } from '../utils/Utils.js';
+import { Password, YamlUtils } from '../utils/YamlUtils.js';
 import { Assembly, defaultAssembly } from './ConfigService.js';
-import { Constants } from './Constants.js';
-import { HandlebarsUtils } from './HandlebarsUtils.js';
-import { KnownError } from './KnownError.js';
 import { MigrationService } from './MigrationService.js';
-import { Utils } from './Utils.js';
-import { Password, YamlUtils } from './YamlUtils.js';
 
 /**
  * Helper object that knows how to load addresses and preset files.
@@ -33,7 +33,10 @@ import { Password, YamlUtils } from './YamlUtils.js';
 export class ConfigLoader {
   public static presetInfoLogged = false;
 
-  constructor(private readonly logger: Logger) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly cryptoPort?: ICryptoPort,
+  ) {}
 
   public loadCustomPreset(customPreset: string | undefined, password: Password): CustomPreset {
     if (!customPreset) {
@@ -48,19 +51,19 @@ export class ConfigLoader {
   }
 
   public static loadAssembly(preset: string, assembly: string, workingDir: string): CustomPreset {
-    const fileLocation = join(Constants.ROOT_FOLDER, 'presets', 'assemblies', `assembly-${assembly}.yml`);
+    const fileLocation = join(Constants.ROOT_FOLDER, 'presets', 'assemblies', `assembly-${assembly}.yaml`);
     const errorMessage = `Assembly '${assembly}' is not valid for preset '${preset}'. Have you provided the right --preset <preset> --assembly <assembly> ?`;
     return this.loadBundledPreset(assembly, fileLocation, workingDir, errorMessage);
   }
 
   public static loadNetworkPreset(preset: string, workingDir: string): CustomPreset {
-    const fileLocation = join(Constants.ROOT_FOLDER, 'presets', preset, `network.yml`);
+    const fileLocation = join(Constants.ROOT_FOLDER, 'presets', preset, `network.yaml`);
     const errorMessage = `Preset '${preset}' does not exist. Have you provided the right --preset <preset> ?`;
     return this.loadBundledPreset(preset, fileLocation, workingDir, errorMessage);
   }
 
   private static loadBundledPreset(presetFile: string, bundledLocation: string, workingDir: string, errorMessage: string): CustomPreset {
-    if (YamlUtils.isYmlFile(presetFile)) {
+    if (YamlUtils.isYamlFile(presetFile)) {
       const assemblyFile = Utils.resolveWorkingDirPath(workingDir, presetFile);
       if (!existsSync(assemblyFile)) {
         throw new KnownError(errorMessage);
@@ -74,15 +77,15 @@ export class ConfigLoader {
   }
 
   public static loadSharedPreset(): CustomPreset {
-    return YamlUtils.loadYaml(join(Constants.ROOT_FOLDER, 'presets', 'shared.yml'), false) as ConfigPreset;
+    return YamlUtils.loadYaml(join(Constants.ROOT_FOLDER, 'presets', 'shared.yaml'), false) as ConfigPreset;
   }
   public mergePresets<T extends CustomPreset>(object: T | undefined, ...otherArgs: (CustomPreset | undefined)[]): T {
     const presets = [object, ...otherArgs];
     const reversed = [...presets].reverse();
-    const presetData = _.merge({}, ...presets);
-    const inflation = reversed.find((p) => !_.isEmpty(p?.inflation))?.inflation;
-    const knownRestGateways = reversed.find((p) => !_.isEmpty(p?.knownRestGateways))?.knownRestGateways;
-    const knownPeers = reversed.find((p) => !_.isEmpty(p?.knownPeers))?.knownPeers;
+    const presetData = Utils.deepMerge({}, ...presets);
+    const inflation = reversed.find((p) => p?.inflation && Object.keys(p.inflation).length > 0)?.inflation;
+    const knownRestGateways = reversed.find((p) => p?.knownRestGateways && p.knownRestGateways.length > 0)?.knownRestGateways;
+    const knownPeers = reversed.find((p) => p?.knownPeers && p.knownPeers.length > 0)?.knownPeers;
     if (inflation) presetData.inflation = inflation;
     if (knownRestGateways) presetData.knownRestGateways = knownRestGateways;
     if (knownPeers) presetData.knownPeers = knownPeers;
@@ -127,7 +130,8 @@ export class ConfigLoader {
 
     const assemblyPreset = ConfigLoader.loadAssembly(preset, assembly, params.workingDir);
     const providedCustomPreset = this.mergePresets(customPresetFileObject, customPresetObject);
-    const resolvedCustomPreset = _.isEmpty(providedCustomPreset) ? oldPresetData?.customPresetCache || {} : providedCustomPreset;
+    const resolvedCustomPreset =
+      providedCustomPreset && Object.keys(providedCustomPreset).length > 0 ? providedCustomPreset : oldPresetData?.customPresetCache || {};
     const presetData = this.mergePresets(sharedPreset, networkPreset, assemblyPreset, resolvedCustomPreset) as ConfigPreset;
 
     if (!ConfigLoader.presetInfoLogged) {
@@ -155,7 +159,7 @@ export class ConfigLoader {
   }
 
   public dynamicDefaultNodeConfiguration(nodes?: Partial<NodePreset>[]): NodePreset[] {
-    return _.map(nodes || [], (node) => {
+    return (nodes || []).map((node) => {
       return { ...this.getDefaultConfiguration(node), ...node } as NodePreset;
     });
   }
@@ -225,15 +229,17 @@ export class ConfigLoader {
     if (!value) {
       return value;
     }
-    if (_.isArray(value)) {
+    if (Array.isArray(value)) {
       return this.expandServicesRepeat(context, value as []);
     }
 
-    if (_.isObject(value)) {
-      return _.mapValues(value, (v: any) => this.applyValueTemplate({ ...context, ...value }, v));
+    if (typeof value === 'object' && value !== null) {
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]: [string, any]) => [k, this.applyValueTemplate({ ...context, ...value }, v)]),
+      );
     }
 
-    if (!_.isString(value)) {
+    if (typeof value !== 'string') {
       return value;
     }
     return HandlebarsUtils.runTemplate(value, context);
@@ -241,10 +247,12 @@ export class ConfigLoader {
 
   public expandServicesRepeat(context: any, services: any[]): any[] {
     return (services || []).map((service) => {
-      if (!_.isObject(service)) {
+      if (typeof service !== 'object' || service === null) {
         return service;
       }
-      return _.mapValues(service, (v: any) => this.applyValueTemplate({ ...context, ...service }, v));
+      return Object.fromEntries(
+        Object.entries(service).map(([k, v]: [string, any]) => [k, this.applyValueTemplate({ ...context, ...service }, v)]),
+      );
     });
   }
 
@@ -276,7 +284,7 @@ export class ConfigLoader {
     const generatedAddressLocation = this.getGeneratedAddressLocation(target);
     if (existsSync(generatedAddressLocation)) {
       const result = YamlUtils.loadYamlWithUpgradeInfo(generatedAddressLocation, password);
-      const addresses = new MigrationService(this.logger).migrateAddresses(result.data);
+      const addresses = new MigrationService(this.logger, this.cryptoPort ?? new SymbolCryptoAdapter()).migrateAddresses(result.data);
 
       // If legacy encryption was upgraded, re-save the file with stronger encryption
       if (result.hasLegacyUpgrade && password) {

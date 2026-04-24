@@ -17,18 +17,27 @@
 import { copyFileSync, promises as fsPromises, readFileSync } from 'fs';
 import * as yaml from 'js-yaml';
 import { dirname } from 'path';
+import { KnownError } from '../errors/KnownError.js';
 import { CryptoUtils } from './CryptoUtils.js';
-import { KnownError } from './KnownError.js';
 import { Utils } from './Utils.js';
 
 export type Password = string | false | undefined;
 
 /**
- * Utility methods in charge of loading and saving yaml files (and text files).
+ * YAML / テキストファイルの読み書きを担当するユーティリティクラス。
+ * 暗号化・復号化（パスワード対応）およびレガシー暗号化の自動アップグレード機能を含む。
  */
 export class YamlUtils {
-  public static isYmlFile(string: string): boolean {
+  /**
+   * 文字列が YAML ファイル（.yml または .yaml 拡張子）かどうかを判定する。
+   */
+  public static isYamlFile(string: string): boolean {
     return string.toLowerCase().endsWith('.yml') || string.toLowerCase().endsWith('.yaml');
+  }
+
+  /** @deprecated isYamlFile を使用してください */
+  public static isYmlFile(string: string): boolean {
+    return YamlUtils.isYamlFile(string);
   }
 
   public static async writeYaml(path: string, object: unknown, password: Password): Promise<void> {

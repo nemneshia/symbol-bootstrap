@@ -16,7 +16,16 @@
 
 import * as net from 'net';
 
-export class PortService {
+/**
+ * ネットワークポートへの接続可能性を確認するユーティリティクラス。
+ */
+export class PortUtils {
+  /**
+   * 指定したホスト・ポートへ TCP 接続を試み、到達可能かどうかを返す。
+   * @param port 確認するポート番号
+   * @param host 接続先ホスト
+   * @param timeout タイムアウト(ミリ秒)。デフォルトは 1000ms。
+   */
   public static async isReachable(port: number, host: string, timeout = 1000): Promise<boolean> {
     const promise = new Promise<void>((resolve, reject) => {
       const socket = new net.Socket();

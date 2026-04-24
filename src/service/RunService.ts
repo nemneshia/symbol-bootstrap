@@ -15,24 +15,22 @@
  */
 
 import { chmodSync, existsSync } from 'fs';
-import _ from 'lodash';
+
 import { join } from 'path';
-import { firstValueFrom } from 'rxjs';
-import { NodeStatusEnum } from 'symbol-openapi-typescript-fetch-client';
-import { RepositoryFactoryHttp } from 'symbol-sdk';
 import { Logger } from '../logger/index.js';
 import { DockerCompose, DockerComposeService } from '../model/index.js';
+import { ICryptoPort, INetworkPort, SymbolCryptoAdapter } from '../sdk/index.js';
+import { AsyncUtils } from '../utils/AsyncUtils.js';
+import { Constants } from '../utils/Constants.js';
 import { DefaultAccountResolver } from './AccountResolver.js';
-import { AsyncUtils } from './AsyncUtils.js';
 import { CertificateService } from './CertificateService.js';
 import { ConfigLoader } from './ConfigLoader.js';
-import { Constants } from './Constants.js';
 import { FileSystemService } from './FileSystemService.js';
-import { OSUtils } from './OSUtils.js';
-import { PortService } from './PortService.js';
+
+import { PortUtils } from '../utils/PortUtils.js';
+import { Utils } from '../utils/Utils.js';
+import { YamlUtils } from '../utils/YamlUtils.js';
 import { RuntimeService } from './RuntimeService.js';
-import { Utils } from './Utils.js';
-import { YamlUtils } from './YamlUtils.js';
 /**
  * params necessary to run the docker compose network.
  */
@@ -62,6 +60,8 @@ export class RunService {
   constructor(
     private readonly logger: Logger,
     protected readonly params: RunParams,
+    private readonly networkPort: INetworkPort,
+    private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter(),
   ) {
     this.configLoader = new ConfigLoader(this.logger);
     this.fileSystemService = new FileSystemService(this.logger);
@@ -81,7 +81,7 @@ export class RunService {
       basicArgs.push('--build');
     }
     if (this.params.args) {
-      basicArgs.push(..._.flatMap(this.params.args, (s) => s.split(' ').map((internal) => internal.trim())));
+      basicArgs.push(...(this.params.args ?? []).flatMap((s) => s.split(' ').map((internal) => internal.trim())));
     }
 
     await this.beforeRun(basicArgs, false);
@@ -96,7 +96,7 @@ export class RunService {
   }
 
   public async healthCheck(pollIntervalMs = 10000): Promise<void> {
-    const dockerFile = join(this.params.target, `docker`, `compose.yml`);
+    const dockerFile = join(this.params.target, `docker`, `compose.yaml`);
     if (!existsSync(dockerFile)) {
       this.logger.info(`Docker compose ${dockerFile} does not exist. Cannot check the status of the service.`);
       return;
@@ -117,10 +117,15 @@ export class RunService {
 
   private async checkCertificates(): Promise<boolean> {
     const presetData = this.configLoader.loadExistingPresetData(this.params.target, false);
-    const service = new CertificateService(this.logger, new DefaultAccountResolver(), {
-      target: this.params.target,
-      user: Constants.CURRENT_USER,
-    });
+    const service = new CertificateService(
+      this.logger,
+      new DefaultAccountResolver(),
+      {
+        target: this.params.target,
+        user: Constants.CURRENT_USER,
+      },
+      this.cryptoPort,
+    );
     const allServicesChecks: Promise<boolean>[] = (presetData.nodes || []).map(async (nodePreset) => {
       const name = nodePreset.name;
       const certFolder = this.fileSystemService.getTargetNodesFolder(this.params.target, false, name, 'cert');
@@ -158,7 +163,7 @@ export class RunService {
             const ports = portBind.split(':');
             const externalPort = parseInt(ports[0]);
             const internalPort = ports.length > 1 ? parseInt(ports[1]) : externalPort;
-            const portOpen = await PortService.isReachable(externalPort, 'localhost');
+            const portOpen = await PortUtils.isReachable(externalPort, 'localhost');
             if (portOpen) {
               this.logger.info(`Container ${service.container_name} port ${externalPort} -> ${internalPort} is open`);
             } else {
@@ -167,15 +172,12 @@ export class RunService {
             }
             if (service.container_name.indexOf('rest-gateway') > -1) {
               const url = 'http://localhost:' + externalPort;
-              const repositoryFactory = new RepositoryFactoryHttp(url);
-              const nodeRepository = repositoryFactory.createNodeRepository();
               if (service.command !== undefined && service.command.indexOf('start-light') > -1) {
                 // light rest
                 const testUrl = `${url}/node/info`;
                 this.logger.info(`Testing ${testUrl}`);
                 try {
-                  // 取得出来ればOK
-                  await firstValueFrom(nodeRepository.getNodeInfo());
+                  await this.networkPort.getNodeInfo(url);
                   this.logger.info(`Rest ${testUrl} is up and running...`);
                   return true;
                 } catch (e) {
@@ -186,12 +188,12 @@ export class RunService {
                 const testUrl = `${url}/node/health`;
                 this.logger.info(`Testing ${testUrl}`);
                 try {
-                  const healthStatus = await firstValueFrom(nodeRepository.getNodeHealth());
-                  if (healthStatus.apiNode === NodeStatusEnum.Down) {
+                  const health = await this.networkPort.getNodeHealth(url);
+                  if (health.apiNodeStatus === 'Down') {
                     this.logger.warn(`Rest ${testUrl} is NOT up and running YET: Api Node is still Down!`);
                     return false;
                   }
-                  if (healthStatus.db === NodeStatusEnum.Down) {
+                  if (health.dbStatus === 'Down') {
                     this.logger.warn(`Rest ${testUrl} is NOT up and running YET: DB is still Down!`);
                     return false;
                   }
@@ -238,7 +240,7 @@ export class RunService {
   }
 
   private async beforeRun(extraArgs: string[], ignoreIfNotFound: boolean): Promise<boolean> {
-    const dockerFile = join(this.params.target, `docker`, `compose.yml`);
+    const dockerFile = join(this.params.target, `docker`, `compose.yaml`);
     const dockerComposeArgs = ['-f', dockerFile];
     const args = [...dockerComposeArgs, ...extraArgs];
     if (!existsSync(dockerFile)) {
@@ -254,13 +256,13 @@ export class RunService {
     const dockerCompose: DockerCompose = await YamlUtils.loadYaml(dockerFile, false);
     if (!ignoreIfNotFound && this.params.pullImages) await this.pullImages(dockerCompose);
 
-    const volumenList = _.flatMap(Object.values(dockerCompose?.services), (s) => s.volumes?.map((v) => v.split(':')[0]) || []) || [];
+    const volumenList = Object.values(dockerCompose?.services).flatMap((s) => s.volumes?.map((v) => v.split(':')[0]) ?? []);
 
     await Promise.all(
       volumenList.map(async (v) => {
         const volumenPath = join(this.params.target, `docker`, v);
         if (!existsSync(volumenPath)) await this.fileSystemService.mkdir(volumenPath);
-        if (v.startsWith('../databases') && OSUtils.isRoot()) {
+        if (v.startsWith('../databases') && Utils.isRoot()) {
           this.logger.info(`Chmod 777 folder ${volumenPath}`);
           chmodSync(volumenPath, '777');
         }
@@ -270,7 +272,7 @@ export class RunService {
   }
 
   private async basicRun(extraArgs: string[]): Promise<string> {
-    const dockerFile = join(this.params.target, `docker`, `compose.yml`);
+    const dockerFile = join(this.params.target, `docker`, `compose.yaml`);
     let dockerComposeArgs = ['compose', '-f', dockerFile];
     // docker compose project
     const presetData = this.configLoader.loadExistingPresetData(this.params.target, false);
@@ -283,12 +285,13 @@ export class RunService {
   }
 
   private async pullImages(dockerCompose: DockerCompose) {
-    const images = _.uniq(
-      Object.values(dockerCompose.services)
-        .map((s) => s.image)
-        .filter((s) => s)
-        .map((s) => s as string),
-    );
+    const images = [
+      ...new Set(
+        Object.values(dockerCompose.services)
+          .map((s) => s.image)
+          .filter((s): s is string => !!s),
+      ),
+    ];
     await Promise.all(images.map((image) => this.runtimeService.pullImage(image)));
   }
 }

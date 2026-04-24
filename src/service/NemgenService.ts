@@ -19,7 +19,7 @@ import { join } from 'path';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset } from '../model/index.js';
 import { ConfigParams } from './ConfigService.js';
-import { Constants } from './Constants.js';
+import { Constants } from '../utils/Constants.js';
 import { FileSystemService } from './FileSystemService.js';
 import { RuntimeService } from './RuntimeService.js';
 

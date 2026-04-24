@@ -2,12 +2,16 @@ import { expect } from 'vitest';
 
 import { Account, NetworkType } from 'symbol-sdk';
 import { DefaultAccountResolver, KeyName, LoggerFactory, LogType, PrivateKeySecurityMode, Utils } from '../../src';
+import { SymbolCryptoAdapter } from '../../src/sdk/index.js';
 import { AddressesService } from '../../src/service/AddressesService';
+import { MigrationService } from '../../src/service/MigrationService';
 
 const accountResolver = new DefaultAccountResolver();
 const nodeName = 'node';
 const logger = LoggerFactory.getLogger(LogType.Silent);
-const service = new AddressesService(logger, accountResolver);
+const cryptoPort = new SymbolCryptoAdapter();
+const migrationService = new MigrationService(logger, cryptoPort);
+const service = new AddressesService(logger, accountResolver, migrationService, cryptoPort);
 
 describe('', () => {
   it('should resolveAccount when old and new are different', async () => {

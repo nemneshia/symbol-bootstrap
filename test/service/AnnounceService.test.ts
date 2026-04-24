@@ -48,6 +48,7 @@ import {
   TransactionUtils,
   YamlUtils,
 } from '../../src';
+import { SymbolNetworkAdapter } from '../../src/sdk/index.js';
 const logger = LoggerFactory.getLogger(LogType.Silent);
 describe('Announce Service', () => {
   let announceService: AnnounceService;
@@ -55,7 +56,9 @@ describe('Announce Service', () => {
 
   beforeEach(() => {
     accountResolver = new DefaultAccountResolver();
-    announceService = new AnnounceService(logger, accountResolver);
+    const networkPort = new SymbolNetworkAdapter();
+    const remoteNodeService = new RemoteNodeService(logger, {} as any, false, networkPort);
+    announceService = new AnnounceService(logger, accountResolver, remoteNodeService);
   });
 
   afterEach(() => restore());

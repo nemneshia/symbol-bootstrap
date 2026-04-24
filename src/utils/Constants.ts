@@ -9,7 +9,8 @@ const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf-8'));
 const version = packageJson.version;
 
 /**
- * Bootstrap constants.
+ * ブートストラップ全体で使用するグローバル定数を定義するクラス。
+ * ROOT_FOLDER はモジュールインストール先ディレクトリを指す。
  */
 export class Constants {
   public static readonly defaultTargetFolder = 'target';
@@ -31,7 +32,7 @@ export class Constants {
 
   public static resolveRootFolder(): string {
     const rootFolder = resolve(__dirname, '../..');
-    if (!existsSync(join(rootFolder, 'presets', 'shared.yml'))) {
+    if (!existsSync(join(rootFolder, 'presets', 'shared.yaml'))) {
       throw new Error(`Root Folder ${rootFolder} does not look right!`);
     }
     return rootFolder;

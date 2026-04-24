@@ -15,23 +15,28 @@
  */
 
 import { confirm } from '@inquirer/prompts';
+import { Logger } from '../logger/index.js';
+import { Addresses, ConfigPreset, NodeAccount } from '../model/index.js';
 import {
   AccountInfo,
   AccountKeyLinkTransaction,
   Deadline,
+  ICryptoPort,
+  INetworkPort,
   LinkAction,
   Transaction,
   UInt64,
   VotingKeyLinkTransaction,
   VrfKeyLinkTransaction,
-} from 'symbol-sdk';
-import { Logger } from '../logger/index.js';
-import { Addresses, ConfigPreset, NodeAccount } from '../model/index.js';
-import { AccountResolver, BootstrapAccountResolver, Password } from '../service/index.js';
+} from '../sdk/index.js';
+import { Constants } from '../utils/Constants.js';
+import { VotingKeyAccount } from '../utils/VotingUtils.js';
+import { Password } from '../utils/YamlUtils.js';
+import { AccountResolver } from './AccountResolver.js';
 import { AnnounceService, TransactionFactory } from './AnnounceService.js';
+import { BootstrapAccountResolver } from './BootstrapAccountResolver.js';
 import { ConfigLoader } from './ConfigLoader.js';
-import { Constants } from './Constants.js';
-import { VotingKeyAccount } from './VotingUtils.js';
+import { RemoteNodeService } from './RemoteNodeService.js';
 
 /**
  * params necessary to announce link transactions network.
@@ -82,6 +87,8 @@ export class LinkService implements TransactionFactory {
   constructor(
     private readonly logger: Logger,
     protected readonly params: LinkParams,
+    private readonly cryptoPort: ICryptoPort,
+    private readonly networkPort: INetworkPort,
   ) {
     this.configLoader = new ConfigLoader(logger);
   }
@@ -91,8 +98,14 @@ export class LinkService implements TransactionFactory {
     const addresses = passedAddresses ?? this.configLoader.loadExistingAddresses(this.params.target, this.params.password);
     const customPreset = this.configLoader.loadCustomPreset(this.params.customPreset, this.params.password);
     this.logger.info(`${this.params.unlink ? 'Unlinking' : 'Linking'} nodes`);
-    const accountResolver = this.params.accountResolver || new BootstrapAccountResolver(this.logger);
-    await new AnnounceService(this.logger, accountResolver).announce(
+    const accountResolver = this.params.accountResolver || new BootstrapAccountResolver(this.logger, this.cryptoPort);
+    const remoteNodeService = new RemoteNodeService(
+      this.logger,
+      this.configLoader.mergePresets(presetData, customPreset),
+      false,
+      this.networkPort,
+    );
+    await new AnnounceService(this.logger, accountResolver, remoteNodeService).announce(
       this.params.url,
       this.params.maxFee,
       this.params.useKnownRestGateways,

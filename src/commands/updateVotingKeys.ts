@@ -17,6 +17,7 @@
 import { Command, Flags } from '@oclif/core';
 import { LoggerFactory, System } from '../logger/index.js';
 import { ConfigPreset } from '../model/index.js';
+import { SymbolCryptoAdapter, SymbolNetworkAdapter } from '../sdk/index.js';
 import {
   CommandUtils,
   ConfigLoader,
@@ -82,8 +83,10 @@ When a new voting file is created, Bootstrap will advise running the \`link\` co
     const addresses = configLoader.loadExistingAddresses(target, password);
     const privateKeySecurityMode = CryptoUtils.getPrivateKeySecurityMode(presetData.privateKeySecurityMode);
 
+    const cryptoPort = new SymbolCryptoAdapter();
+    const networkPort = new SymbolNetworkAdapter();
     const finalizationEpoch =
-      flags.finalizationEpoch || (await new RemoteNodeService(logger, presetData, false).resolveCurrentFinalizationEpoch());
+      flags.finalizationEpoch || (await new RemoteNodeService(logger, presetData, false, networkPort).resolveCurrentFinalizationEpoch());
 
     const votingKeyUpgrade = (
       await Promise.all(
@@ -92,10 +95,14 @@ When a new voting file is created, Bootstrap will advise running the \`link\` co
           if (!nodeAccount) {
             throw new Error(`There is not node in addresses at index ${index}`);
           }
-          return new VotingService(logger, {
-            target,
-            user: flags.user,
-          }).run(presetData, nodeAccount, nodePreset, finalizationEpoch, true, false);
+          return new VotingService(
+            logger,
+            {
+              target,
+              user: flags.user,
+            },
+            cryptoPort,
+          ).run(presetData, nodeAccount, nodePreset, finalizationEpoch, true, false);
         }),
       )
     ).find((f) => f);

@@ -16,17 +16,17 @@
 
 import { existsSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
-import { Convert, Crypto, NetworkType } from 'symbol-sdk';
 import { Logger } from '../logger/index.js';
 import { CertificatePair } from '../model/index.js';
+import { Convert, ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
 import { AccountResolver } from './AccountResolver.js';
 import { KeyName } from './ConfigService.js';
-import { Constants } from './Constants.js';
+import { Constants } from '../utils/Constants.js';
 import { FileSystemService } from './FileSystemService.js';
-import { HandlebarsUtils } from './HandlebarsUtils.js';
+import { HandlebarsUtils } from '../utils/HandlebarsUtils.js';
 import { RuntimeService } from './RuntimeService.js';
-import { Utils } from './Utils.js';
-import { YamlUtils } from './YamlUtils.js';
+import { Utils } from '../utils/Utils.js';
+import { YamlUtils } from '../utils/YamlUtils.js';
 
 export interface CertificateParams {
   readonly target: string;
@@ -69,6 +69,7 @@ export class CertificateService {
     private readonly logger: Logger,
     private readonly accountResolver: AccountResolver,
     protected readonly params: CertificateParams,
+    private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter(),
   ) {
     this.runtimeService = new RuntimeService(this.logger);
     this.fileSystemService = new FileSystemService(logger);
@@ -83,7 +84,7 @@ export class CertificateService {
     randomSerial?: string,
   ): Promise<boolean> {
     const certFolder = customCertFolder || this.fileSystemService.getTargetNodesFolder(this.params.target, false, name, 'cert');
-    const metadataFile = join(certFolder, 'metadata.yml');
+    const metadataFile = join(certFolder, 'metadata.yaml');
     if (!(await this.shouldGenerateCertificate(metadataFile, providedCertificates))) {
       const willExpireReport = await this.willCertificateExpire(
         presetData.symbolServerImage,
@@ -166,7 +167,7 @@ export class CertificateService {
     CertificateService.createDerFile(transportAccount.privateKey, join(certFolder, 'node.der'));
     await YamlUtils.writeTextFile(
       join(certFolder, 'serial.dat'),
-      (randomSerial?.trim() || Convert.uint8ToHex(Crypto.randomBytes(19))).toLowerCase() + '\n',
+      (randomSerial?.trim() || this.cryptoPort.randomHex(19)).toLowerCase() + '\n',
     );
 
     const command = this.createCertCommands(renew, presetData.caCertificateExpirationInDays, presetData.nodeCertificateExpirationInDays);

@@ -15,23 +15,28 @@
  */
 
 import { input, number } from '@inquirer/prompts';
+import { Logger } from '../logger/index.js';
+import { Addresses, ConfigPreset } from '../model/index.js';
 import {
   Address,
+  ICryptoPort,
+  INetworkPort,
   MultisigAccountInfo,
   MultisigAccountModificationTransaction,
   NetworkType,
+  SymbolCryptoAdapter,
+  SymbolNetworkAdapter,
   Transaction,
   UnresolvedAddress,
-} from 'symbol-sdk';
-import { Logger } from '../logger/index.js';
-import { Addresses, ConfigPreset } from '../model/index.js';
+} from '../sdk/index.js';
 import { AccountResolver } from './AccountResolver.js';
 import { AnnounceService, TransactionFactory, TransactionFactoryParams } from './AnnounceService.js';
 import { BootstrapAccountResolver } from './BootstrapAccountResolver.js';
 import { ConfigLoader } from './ConfigLoader.js';
-import { Constants } from './Constants.js';
-import { TransactionUtils } from './TransactionUtils.js';
-import { Password } from './YamlUtils.js';
+import { Constants } from '../utils/Constants.js';
+import { RemoteNodeService } from './RemoteNodeService.js';
+import { TransactionUtils } from '../utils/TransactionUtils.js';
+import { Password } from '../utils/YamlUtils.js';
 
 /**
  * params necessary to announce multisig account modification transaction to network.
@@ -66,6 +71,8 @@ export class ModifyMultisigService implements TransactionFactory {
   constructor(
     private readonly logger: Logger,
     protected readonly params: ModifyMultisigParams,
+    private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter(),
+    private readonly networkPort: INetworkPort = new SymbolNetworkAdapter(),
   ) {
     this.configLoader = new ConfigLoader(logger);
   }
@@ -74,8 +81,14 @@ export class ModifyMultisigService implements TransactionFactory {
     const presetData = passedPresetData ?? this.configLoader.loadExistingPresetData(this.params.target, this.params.password);
     const addresses = passedAddresses ?? this.configLoader.loadExistingAddresses(this.params.target, this.params.password);
     const customPreset = this.configLoader.loadCustomPreset(this.params.customPreset, this.params.password);
-    const accountResolver = this.params.accountResolver || new BootstrapAccountResolver(this.logger);
-    await new AnnounceService(this.logger, accountResolver).announce(
+    const accountResolver = this.params.accountResolver || new BootstrapAccountResolver(this.logger, this.cryptoPort);
+    const remoteNodeService = new RemoteNodeService(
+      this.logger,
+      this.configLoader.mergePresets(presetData, customPreset),
+      false,
+      this.networkPort,
+    );
+    await new AnnounceService(this.logger, accountResolver, remoteNodeService).announce(
       this.params.url,
       this.params.maxFee,
       this.params.useKnownRestGateways,
@@ -98,10 +111,11 @@ export class ModifyMultisigService implements TransactionFactory {
     const minRemovalDelta = await this.resolveMinRemovalDelta(this.params.minRemovalDelta);
 
     const url = this.params.url.replace(/\/$/, '');
-    const repositoryFactory = await TransactionUtils.getRepositoryFactory(
+    const repositoryFactory = await TransactionUtils.getRepositoryFactoryLegacy(
       this.logger,
       presetData,
       this.params.useKnownRestGateways ? undefined : url,
+      this.networkPort,
     );
     const multisigInfo = await TransactionUtils.getMultisigAccount(repositoryFactory, mainAccount.address);
     this.validateParams(addressAdditions, addressDeletions, minRemovalDelta, minApprovalDelta, multisigInfo);

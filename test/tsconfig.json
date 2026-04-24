@@ -3,5 +3,13 @@
   "compilerOptions": {
     "noEmit": true
   },
-  "references": [{ "path": ".." }]
+  "include": [
+    "**/*",
+    "../src/**/*"
+  ],
+  "references": [
+    {
+      "path": ".."
+    }
+  ]
 }

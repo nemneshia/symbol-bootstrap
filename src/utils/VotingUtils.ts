@@ -17,15 +17,17 @@ import * as noble from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha2.js';
 import { existsSync, lstatSync, readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
-import { Convert, Crypto } from 'symbol-sdk';
 import nacl from 'tweetnacl';
+import { ICryptoPort } from '../sdk/index.js';
 
 (noble as any).hashes.sha512 = sha512;
 
+/** キーペア（秘密鍵と公開鍵のバイト列）のインターフェース */
 export interface KeyPair {
   privateKey: Uint8Array;
   publicKey: Uint8Array;
 }
+/** 暗号化実装の抽象インターフェース */
 export interface CryptoImplementation {
   name: string;
   createKeyPairFromPrivateKey: (privateKey: Uint8Array) => Promise<KeyPair>;
@@ -40,6 +42,10 @@ export interface VotingKeyAccount {
 
 export type VotingKeyFile = VotingKeyAccount & { filename: string };
 
+/**
+ * 投票キーファイルの生成・読み込みを担当するユーティリティクラス。
+ * noble と TweetNaCl の 2 つの暗号化実装を提供する。
+ */
 export class VotingUtils {
   public static nobleImplementation: CryptoImplementation = {
     name: 'Noble',
@@ -69,7 +75,10 @@ export class VotingUtils {
 
   public static implementations = [VotingUtils.nobleImplementation, VotingUtils.tweetNaClImplementation];
 
-  constructor(private readonly implementation: CryptoImplementation = VotingUtils.nobleImplementation) {}
+  constructor(
+    private readonly implementation: CryptoImplementation = VotingUtils.nobleImplementation,
+    private readonly cryptoPort: ICryptoPort,
+  ) {}
   public insert(result: Uint8Array, value: Uint8Array, index: number): number {
     result.set(value, index);
     return index + value.length;
@@ -85,35 +94,35 @@ export class VotingUtils {
     const headerSize = 64 + 16;
     const itemSize = 32 + 64;
     const totalSize = headerSize + items * itemSize;
-    const rootPrivateKey = await this.implementation.createKeyPairFromPrivateKey(Convert.hexToUint8(secret));
+    const rootPrivateKey = await this.implementation.createKeyPairFromPrivateKey(this.cryptoPort.hexToUint8(secret));
     const result = new Uint8Array(totalSize);
     //start-epoch (8b),
     let index = 0;
-    index = this.insert(result, Convert.numberToUint8Array(votingKeyStartEpoch, 8), index);
+    index = this.insert(result, this.cryptoPort.numberToUint8Array(votingKeyStartEpoch, 8), index);
 
     //end-epoch (8b),
-    index = this.insert(result, Convert.numberToUint8Array(votingKeyEndEpoch, 8), index);
+    index = this.insert(result, this.cryptoPort.numberToUint8Array(votingKeyEndEpoch, 8), index);
 
     // could it have other values????
     //last key identifier (8b) - for fresh file this is 0xFFFF'FFFF'FFFF'FFFF (a.k.a. Invalid_Id)
-    index = this.insert(result, Convert.hexToUint8('FFFFFFFFFFFFFFFF'), index);
+    index = this.insert(result, this.cryptoPort.hexToUint8('FFFFFFFFFFFFFFFF'), index);
 
     //last wipe key identifier (8b) - again, for fresh file this is 0xFFFF'FFFF'FFFF'FFFF (Invalid_Id)
-    index = this.insert(result, Convert.hexToUint8('FFFFFFFFFFFFFFFF'), index);
+    index = this.insert(result, this.cryptoPort.hexToUint8('FFFFFFFFFFFFFFFF'), index);
 
     // root public key (32b) - this is root public key that is getting announced via vote link tx
     index = this.insert(result, rootPrivateKey.publicKey, index);
     // start-epoch (8b), \ those two are exactly same one, as top level, reason is this was earlier a tree,
-    index = this.insert(result, Convert.numberToUint8Array(votingKeyStartEpoch, 8), index);
+    index = this.insert(result, this.cryptoPort.numberToUint8Array(votingKeyStartEpoch, 8), index);
 
     //end-epoch (8b), / and each level holds this separately, so we left it as is
-    index = this.insert(result, Convert.numberToUint8Array(votingKeyEndEpoch, 8), index);
+    index = this.insert(result, this.cryptoPort.numberToUint8Array(votingKeyEndEpoch, 8), index);
     /// what follows are bound keys, there are (end - start + 1) of them.
 
     // each key is:
     for (let i = 0; i < items; i++) {
       // random PRIVATE key (32b)
-      const randomPrivateKey = unitTestPrivateKeys ? unitTestPrivateKeys[i] : Crypto.randomBytes(32);
+      const randomPrivateKey = unitTestPrivateKeys ? unitTestPrivateKeys[i] : this.cryptoPort.randomBytes(32);
       if (randomPrivateKey.length != 32) {
         throw new Error(`Invalid private key size ${randomPrivateKey.length}!`);
       }
@@ -126,7 +135,7 @@ export class VotingUtils {
       //   identifier is simply epoch, but, most importantly keys are written in REVERSE order.
       //
       //   i.e. say your start-epoch = 2, end-epoch = 42
-      const identifier = Convert.numberToUint8Array(votingKeyEndEpoch - i, 8);
+      const identifier = this.cryptoPort.numberToUint8Array(votingKeyEndEpoch - i, 8);
       const signature = await this.implementation.sign(rootPrivateKey, Uint8Array.from([...randomKeyPar.publicKey, ...identifier]));
       index = this.insert(result, signature, index);
     }
@@ -144,10 +153,10 @@ export class VotingUtils {
 
   public readVotingFile(file: Uint8Array): VotingKeyAccount {
     //start-epoch (8b),
-    const votingKeyStartEpoch = Convert.uintArray8ToNumber(file.slice(0, 8));
+    const votingKeyStartEpoch = this.cryptoPort.uintArray8ToNumber(file.slice(0, 8));
     //end-epoch (8b),
-    const votingKeyEndEpoch = Convert.uintArray8ToNumber(file.slice(8, 16));
-    const votingPublicKey = Convert.uint8ToHex(file.slice(32, 64));
+    const votingKeyEndEpoch = this.cryptoPort.uintArray8ToNumber(file.slice(8, 16));
+    const votingPublicKey = this.cryptoPort.uint8ToHex(file.slice(32, 64));
 
     const items = votingKeyEndEpoch - votingKeyStartEpoch + 1;
     const headerSize = 64 + 16;

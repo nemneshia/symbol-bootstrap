@@ -17,9 +17,10 @@
 import { join } from 'path';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset, NodeAccount, NodePreset } from '../model/index.js';
+import { ICryptoPort } from '../sdk/index.js';
 import { FileSystemService } from './FileSystemService.js';
 import { CatapultVotingKeyFileProvider, NativeVotingKeyFileProvider, VotingKeyFileProvider } from './VotingKeyFileProvider.js';
-import { VotingUtils } from './VotingUtils.js';
+import { VotingUtils } from '../utils/VotingUtils.js';
 
 export interface VotingParams {
   target: string;
@@ -32,6 +33,7 @@ export class VotingService {
   constructor(
     private readonly logger: Logger,
     protected readonly params: VotingParams,
+    private readonly cryptoPort: ICryptoPort,
   ) {
     this.fileSystemService = new FileSystemService(logger);
   }
@@ -64,8 +66,8 @@ export class VotingService {
       );
     }
     await this.fileSystemService.mkdir(votingKeysFolder);
-    const votingUtils = new VotingUtils();
-    this.fileSystemService.deleteFile(join(votingKeysFolder, 'metadata.yml'));
+    const votingUtils = new VotingUtils(VotingUtils.nobleImplementation, this.cryptoPort);
+    this.fileSystemService.deleteFile(join(votingKeysFolder, 'metadata.yaml'));
     const currentVotingFiles = votingUtils.loadVotingFiles(votingKeysFolder);
     const maxVotingKeyEndEpoch = Math.max(currentVotingFiles[currentVotingFiles.length - 1]?.endEpoch || 0, networkEpoch - 1);
 
@@ -91,8 +93,8 @@ export class VotingService {
     const provider =
       this.params.votingKeyFileProvider ||
       (presetData.useExperimentalNativeVotingKeyGeneration
-        ? new NativeVotingKeyFileProvider(logger)
-        : new CatapultVotingKeyFileProvider(logger, this.params.user));
+        ? new NativeVotingKeyFileProvider(logger, this.cryptoPort)
+        : new CatapultVotingKeyFileProvider(logger, this.params.user, this.cryptoPort));
     const { publicKey } = await provider.createVotingFile({
       presetData: presetData,
       nodeAccount: nodeAccount,

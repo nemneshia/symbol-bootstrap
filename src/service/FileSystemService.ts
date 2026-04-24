@@ -2,9 +2,9 @@ import { createWriteStream, existsSync, lstatSync, promises as fsPromises, readd
 import { default as https } from 'https';
 import { basename, dirname, join } from 'path';
 import { Logger } from '../logger/index.js';
-import { Constants } from './Constants.js';
-import { KnownError } from './KnownError.js';
-import { Utils } from './Utils.js';
+import { Constants } from '../utils/Constants.js';
+import { KnownError } from '../errors/KnownError.js';
+import { Utils } from '../utils/Utils.js';
 
 /**
  * Service handling files and how to store and load them on the file system.

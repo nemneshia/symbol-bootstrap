@@ -17,9 +17,10 @@
 import { Logger } from '../logger/index.js';
 
 /**
- * Async related utility methods.
+ * 非同期処理（スリープ・ポーリング・SIGINT ハンドリング）を担当するユーティリティクラス。
  */
 export class AsyncUtils {
+  /** SIGINT シグナルによりプロセス停止が要求された場合に true になる。 */
   public static stopProcess = false;
 
   private static onProcessListener = (() => {
@@ -28,6 +29,7 @@ export class AsyncUtils {
     });
   })();
 
+  /** 指定ミリ秒待機する。stopProcess フラグが立った場合は早期リターンする。 */
   public static sleep(ms: number): Promise<any> {
     // Check if stopProcess is already true before entering the sleep cycle
     if (AsyncUtils.stopProcess) {
@@ -51,6 +53,10 @@ export class AsyncUtils {
     });
   }
 
+  /**
+   * 指定した関数を一定間隔でポーリングし、true が返るまで繰り返す。
+   * タイムアウトした場合は false を返す。
+   */
   public static poll(
     logger: Logger,
     promiseFunction: () => Promise<boolean>,

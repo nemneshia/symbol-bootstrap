@@ -14,16 +14,21 @@
  * limitations under the License.
  */
 import { password } from '@inquirer/prompts';
-import { Account, NetworkType, PublicAccount } from 'symbol-sdk';
+import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { CertificatePair } from '../model/index.js';
-import { AccountResolver, CommandUtils, KeyName, KnownError } from './index.js';
+import { Account, ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
+import { CommandUtils } from '../utils/CommandUtils.js';
+import { AccountResolver, KeyName } from './AccountResolver.js';
 
 /**
  * Prompt ready implementation of the account resolver.
  */
 export class BootstrapAccountResolver implements AccountResolver {
-  constructor(private readonly logger: Logger) {}
+  constructor(
+    private readonly logger: Logger,
+    private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter(),
+  ) {}
 
   public async resolveAccount(
     networkType: NetworkType,
@@ -48,7 +53,7 @@ export class BootstrapAccountResolver implements AccountResolver {
     while (true) {
       this.logger.info('');
       this.logger.info(`${keyName} private key is required when ${operationDescription}.`);
-      const address = PublicAccount.createFromPublicKey(account.publicKey, networkType).address.plain();
+      const address = this.cryptoPort.getAddressFromPublicKey(account.publicKey, networkType);
       const nodeDescription = nodeName === '' ? `of` : `of the Node's '${nodeName}'`;
       const responses = await password({
         message: `Enter the 64 HEX private key ${nodeDescription} ${keyName} account with Address: ${address} and Public Key: ${account.publicKey}:`,

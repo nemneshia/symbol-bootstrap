@@ -13,9 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Account, NetworkType } from 'symbol-sdk';
 import { CertificatePair } from '../model/index.js';
-import { KeyName } from '../service/index.js';
+import { Account, NetworkType } from '../sdk/index.js';
+
+/**
+ * ノードのアカウント（キー）の種別を識別する列挙型。
+ * ConfigService やアカウント解決処理全般で使用する。
+ */
+export enum KeyName {
+  Main = 'Main',
+  Remote = 'Remote',
+  Transport = 'Transport',
+  Voting = 'Voting',
+  VRF = 'VRF',
+  NemesisAccount = 'Nemesis Account',
+  ServiceProvider = 'Service Provider',
+}
 
 /**
  * Delegate that knows how to retrieve or generate accounts.

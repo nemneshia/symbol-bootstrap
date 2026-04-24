@@ -14,24 +14,24 @@
  * limitations under the License.
  */
 import { lookup } from 'dns';
-import _ from 'lodash';
-import { firstValueFrom } from 'rxjs';
-import { ChainInfo, RepositoryFactory, RepositoryFactoryHttp, RoleType } from 'symbol-sdk';
+
+import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset, NodewatchPeer, PeerInfo } from '../model/index.js';
-import { KnownError } from './KnownError.js';
-import { Utils } from './Utils.js';
+import { ChainInfoDto, INetworkPort, RepositoryFactory, RepositoryFactoryHttp, RoleType, SymbolNetworkAdapter } from '../sdk/index.js';
+import { Utils } from '../utils/Utils.js';
 
 export interface RepositoryInfo {
   repositoryFactory: RepositoryFactory;
   restGatewayUrl: string;
-  chainInfo: ChainInfo;
+  chainInfo: ChainInfoDto;
 }
 export class RemoteNodeService {
   constructor(
     private readonly logger: Logger,
     private readonly presetData: ConfigPreset,
     private readonly offline: boolean,
+    private readonly networkPort: INetworkPort = new SymbolNetworkAdapter(),
   ) {}
   private restUrls: string[] | undefined;
 
@@ -52,7 +52,7 @@ export class RemoteNodeService {
       return undefined;
     }
     const repositoryInfo = this.sortByHeight(await this.getKnownNodeRepositoryInfos(urls)).find((i) => i);
-    const finalizationEpoch = repositoryInfo?.chainInfo.latestFinalizedBlock.finalizationEpoch;
+    const finalizationEpoch = repositoryInfo?.chainInfo.finalizationEpoch;
     if (finalizationEpoch) {
       this.logger.info(`The current network finalization epoch is ${finalizationEpoch}`);
     }
@@ -73,13 +73,9 @@ export class RemoteNodeService {
     return repos
       .filter((b) => b.chainInfo)
       .sort((a, b) => {
-        if (!a.chainInfo) {
-          return 1;
-        }
-        if (!b.chainInfo) {
-          return -1;
-        }
-        return b.chainInfo.height.compare(a.chainInfo.height);
+        const hA = a.chainInfo.height;
+        const hB = b.chainInfo.height;
+        return hB > hA ? 1 : hB < hA ? -1 : 0;
       });
   }
 
@@ -103,14 +99,11 @@ export class RemoteNodeService {
     return (
       await Promise.all(
         urls.map(async (restGatewayUrl): Promise<RepositoryInfo | undefined> => {
-          const repositoryFactory = new RepositoryFactoryHttp(restGatewayUrl);
           try {
-            const chainInfo = await firstValueFrom(repositoryFactory.createChainRepository().getChainInfo());
-            return {
-              restGatewayUrl,
-              repositoryFactory,
-              chainInfo,
-            };
+            const chainInfo = await this.networkPort.getChainInfo(restGatewayUrl);
+            // RepositoryFactoryHttp is lazy – no connection is made until a repository method is called.
+            const repositoryFactory = new RepositoryFactoryHttp(restGatewayUrl);
+            return { restGatewayUrl, repositoryFactory, chainInfo };
           } catch (e) {
             const message = `There has been an error talking to node ${restGatewayUrl}. Error: ${Utils.getMessage(e)}`;
             this.logger.warn(message);
@@ -234,7 +227,7 @@ export class RemoteNodeService {
     if (!defaultNode) {
       throw new Error('Rest node could not be resolved!');
     }
-    return { restNodes: _.uniq(restNodes), defaultNode: defaultNode };
+    return { restNodes: [...new Set(restNodes)], defaultNode: defaultNode };
   }
 
   public async getNodes(nodewatchUrl: string, limit: number, order: string): Promise<NodewatchPeer[]> {

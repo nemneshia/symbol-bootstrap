@@ -16,13 +16,16 @@
 
 import { promises as fsPromises } from 'fs';
 import Handlebars from 'handlebars';
-import _ from 'lodash';
+
 import { totalmem } from 'os';
 import { basename, join } from 'path';
-import { DtoMapping } from 'symbol-sdk';
+import { DtoMapping } from '../sdk/index.js';
 import { Utils } from './Utils.js';
 import { YamlUtils } from './YamlUtils.js';
 
+/**
+ * Handlebars テンプレートを使用した設定ファイル生成とカスタムヘルパー登録を担当するユーティリティクラス。
+ */
 export class HandlebarsUtils {
   public static async generateConfiguration(
     templateContext: any,
@@ -96,8 +99,9 @@ export class HandlebarsUtils {
     Handlebars.registerHelper('computerMemory', HandlebarsUtils.computerMemory);
   })();
 
+  /** 加算ヘルパー: 数値同士の場合は数値加算、文字列同士の場合は文字列連結を返す。 */
   private static add(a: any, b: any): string | number {
-    if (_.isNumber(a) && _.isNumber(b)) {
+    if (typeof a === 'number' && typeof b === 'number') {
       return Number(a) + Number(b);
     }
     if (typeof a === 'string' && typeof b === 'string') {
@@ -106,11 +110,12 @@ export class HandlebarsUtils {
     return '';
   }
 
+  /** 減算ヘルパー: 数値の差分を返す。非数値の場合は TypeError を投げる。 */
   private static minus(a: any, b: any): number {
-    if (!_.isNumber(a)) {
+    if (typeof a !== 'number') {
       throw new TypeError('expected the first argument to be a number');
     }
-    if (!_.isNumber(b)) {
+    if (typeof b !== 'number') {
       throw new TypeError('expected the second argument to be a number');
     }
     return Number(a) - Number(b);
