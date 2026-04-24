@@ -18,7 +18,7 @@ import { lookup } from 'dns';
 import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset, NodewatchPeer, PeerInfo } from '../model/index.js';
-import { ChainInfoDto, INetworkPort, RoleType, SymbolNetworkAdapter } from '../sdk/index.js';
+import { ChainInfoDto, INetworkPort, SymbolNetworkAdapter } from '../sdk/index.js';
 import { Utils } from '../utils/Utils.js';
 
 export interface RepositoryInfo {
@@ -146,13 +146,13 @@ export class RemoteNodeService {
    */
   public static getNodeRoles(role: number): string {
     const roles: string[] = [];
-    if ((RoleType.PeerNode.valueOf() & role) != 0) {
+    if ((1 & role) != 0) {
       roles.push('Peer');
     }
-    if ((RoleType.ApiNode.valueOf() & role) != 0) {
+    if ((2 & role) != 0) {
       roles.push('Api');
     }
-    if ((RoleType.VotingNode.valueOf() & role) != 0) {
+    if ((4 & role) != 0) {
       roles.push('Voting');
     }
     return roles.join(',');

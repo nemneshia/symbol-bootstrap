@@ -18,15 +18,15 @@ import { existsSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
 import { Logger } from '../logger/index.js';
 import { CertificatePair } from '../model/index.js';
-import { Convert, ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
-import { AccountResolver } from './AccountResolver.js';
-import { KeyName } from './ConfigService.js';
+import { ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
 import { Constants } from '../utils/Constants.js';
-import { FileSystemService } from './FileSystemService.js';
 import { HandlebarsUtils } from '../utils/HandlebarsUtils.js';
-import { RuntimeService } from './RuntimeService.js';
 import { Utils } from '../utils/Utils.js';
 import { YamlUtils } from '../utils/YamlUtils.js';
+import { AccountResolver } from './AccountResolver.js';
+import { KeyName } from './ConfigService.js';
+import { FileSystemService } from './FileSystemService.js';
+import { RuntimeService } from './RuntimeService.js';
 
 export interface CertificateParams {
   readonly target: string;
@@ -370,7 +370,7 @@ echo "Certificate Created"
   }
 
   public static createDerFile(privateKey: string, file: string): void {
-    writeFileSync(file, Convert.hexToUint8(this.toAns1(privateKey)));
+    writeFileSync(file, new SymbolCryptoAdapter().hexToUint8(this.toAns1(privateKey)));
   }
   public static toAns1(privateKey: string): string {
     const prefix = '302e020100300506032b657004220420';

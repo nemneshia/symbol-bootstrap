@@ -17,7 +17,7 @@ import { password } from '@inquirer/prompts';
 import { Flags } from '@oclif/core';
 import figlet from 'figlet';
 import { Logger, LoggerFactory, LogType } from '../logger/index.js';
-import { Convert, PublicAccount } from '../sdk/index.js';
+import { PublicAccountInfo, SymbolCryptoAdapter } from '../sdk/index.js';
 import { Constants } from './Constants.js';
 import { Password } from './YamlUtils.js';
 
@@ -73,7 +73,7 @@ export class CommandUtils {
   }
 
   public static isValidPrivateKey(input: string): boolean | string {
-    return Convert.isHexString(input, 64) ? true : 'Invalid private key. It must have 64 hex characters.';
+    return new SymbolCryptoAdapter().isHexString(input, 64) ? true : 'Invalid private key. It must have 64 hex characters.';
   }
 
   public static async resolvePassword(
@@ -107,8 +107,8 @@ export class CommandUtils {
   /**
    * Returns account details formatted (ready to print)
    */
-  public static formatAccount(account: PublicAccount, wrapped = true): string {
-    const log = `Address: ${account.address.plain()}`;
+  public static formatAccount(account: PublicAccountInfo, wrapped = true): string {
+    const log = `Address: ${account.address}`;
     return wrapped ? `[${log}]` : log;
   }
 

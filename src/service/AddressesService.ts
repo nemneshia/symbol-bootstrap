@@ -1,13 +1,13 @@
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigAccount, ConfigPreset, MosaicAccounts, NodeAccount, NodePreset, PrivateKeySecurityMode } from '../model/index.js';
 import { ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
-import { AccountResolver } from './AccountResolver.js';
-import { KeyName } from './ConfigService.js';
 import { ConfigurationUtils } from '../utils/ConfigurationUtils.js';
 import { CryptoUtils } from '../utils/CryptoUtils.js';
-import { MigrationService } from './MigrationService.js';
 import { Utils } from '../utils/Utils.js';
 import { YamlUtils } from '../utils/YamlUtils.js';
+import { AccountResolver } from './AccountResolver.js';
+import { KeyName } from './ConfigService.js';
+import { MigrationService } from './MigrationService.js';
 
 /**
  * Object in charge of resolving the address.yml and its accounts.
@@ -379,7 +379,7 @@ export class AddressesService {
     );
     return ConfigurationUtils.toConfigAccount({
       publicKey: account.publicKey,
-      address: account.address.plain(),
+      address: account.address,
       privateKey: account.privateKey,
     });
   }

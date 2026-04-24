@@ -17,7 +17,7 @@ import { password } from '@inquirer/prompts';
 import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { CertificatePair } from '../model/index.js';
-import { Account, ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
+import { GeneratedAccount, ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
 import { CommandUtils } from '../utils/CommandUtils.js';
 import { AccountResolver, KeyName } from './AccountResolver.js';
 
@@ -37,17 +37,17 @@ export class BootstrapAccountResolver implements AccountResolver {
     nodeName: string,
     operationDescription: string,
     generateErrorMessage: string | undefined,
-  ): Promise<Account> {
+  ): Promise<GeneratedAccount> {
     if (!account) {
       if (generateErrorMessage) {
         throw new KnownError(generateErrorMessage);
       }
       this.logger.info(`Generating ${keyName} account...`);
-      return Account.generateNewAccount(networkType);
+      return this.cryptoPort.generateAccount(networkType);
     }
 
     if (account.privateKey) {
-      return Account.createFromPrivateKey(account.privateKey, networkType);
+      return this.cryptoPort.createAccountFromPrivateKey(account.privateKey, networkType);
     }
 
     while (true) {
@@ -64,10 +64,10 @@ export class BootstrapAccountResolver implements AccountResolver {
       if (!privateKey) {
         this.logger.info('Please provide the private key.');
       } else {
-        const enteredAccount = Account.createFromPrivateKey(privateKey, networkType);
+        const enteredAccount = this.cryptoPort.createAccountFromPrivateKey(privateKey, networkType);
         if (enteredAccount.publicKey.toUpperCase() !== account.publicKey.toUpperCase()) {
           this.logger.info(
-            `Invalid private key. Expected address is ${address} but you provided the private key for address ${enteredAccount.address.plain()}.\n`,
+            `Invalid private key. Expected address is ${address} but you provided the private key for address ${enteredAccount.address}.\n`,
           );
           this.logger.info(`Please re-enter private key.`);
         } else {

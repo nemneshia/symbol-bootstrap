@@ -19,7 +19,7 @@ import Handlebars from 'handlebars';
 
 import { totalmem } from 'os';
 import { basename, join } from 'path';
-import { DtoMapping } from '../sdk/index.js';
+import { SymbolCryptoAdapter } from '../sdk/index.js';
 import { Utils } from './Utils.js';
 import { YamlUtils } from './YamlUtils.js';
 
@@ -169,6 +169,6 @@ export class HandlebarsUtils {
   }
 
   public static toSeconds(serverDuration: string): number {
-    return DtoMapping.parseServerDuration(serverDuration).seconds();
+    return new SymbolCryptoAdapter().parseServerDurationToSeconds(serverDuration);
   }
 }

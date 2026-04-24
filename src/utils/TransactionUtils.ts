@@ -14,45 +14,43 @@
  * limitations under the License.
  */
 
-import { firstValueFrom } from 'rxjs';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset } from '../model/index.js';
-import { Address, INetworkPort, MultisigAccountInfo, RepositoryFactory, RepositoryFactoryHttp } from '../sdk/index.js';
+import { INetworkPort, MultisigInfoDto } from '../sdk/index.js';
 import { RemoteNodeService } from '../service/RemoteNodeService.js';
 
 /**
- * RepositoryFactory の解決やマルチシグアカウント情報の取得を担当するユーティリティクラス。
+ * ネットワークアクセス関連のユーティリティクラス。
+ * v3移行後は INetworkPort / ITransactionPort を使用する。
  */
 export class TransactionUtils {
   /**
-   * 指定した URL（または既知のゲートウェイから自動選択）に対して最適な RepositoryFactory を返す。
-   *
-   * @param remoteNodeService  注入された RemoteNodeService
+   * 指定した URL（または既知のゲートウェイから自動選択）に対して最適な REST URL を返す。
    */
-  public static async getRepositoryFactory(remoteNodeService: RemoteNodeService, url: string | undefined): Promise<RepositoryFactory> {
+  public static async getBestUrl(remoteNodeService: RemoteNodeService, url: string | undefined): Promise<string> {
     const repositoryInfo = await remoteNodeService.getBestRepositoryInfo(url);
-    return new RepositoryFactoryHttp(repositoryInfo.restGatewayUrl);
+    return repositoryInfo.restGatewayUrl;
   }
 
-  /** @deprecated Use the overload that accepts RemoteNodeService instead. */
-  public static async getRepositoryFactoryLegacy(
+  /** @deprecated Use getBestUrl instead. */
+  public static async getBestUrlLegacy(
     logger: Logger,
     presetData: ConfigPreset,
     url: string | undefined,
     networkPort: INetworkPort,
-  ): Promise<RepositoryFactory> {
+  ): Promise<string> {
     const remoteNodeService = new RemoteNodeService(logger, presetData, false, networkPort);
     const repositoryInfo = await remoteNodeService.getBestRepositoryInfo(url);
-    return new RepositoryFactoryHttp(repositoryInfo.restGatewayUrl);
+    return repositoryInfo.restGatewayUrl;
   }
 
-  public static async getMultisigAccount(
-    repositoryFactory: RepositoryFactory,
-    accountAddress: Address,
-  ): Promise<MultisigAccountInfo | undefined> {
+  public static async getMultisigInfo(
+    networkPort: INetworkPort,
+    url: string,
+    accountAddress: string,
+  ): Promise<MultisigInfoDto | undefined> {
     try {
-      const info = await firstValueFrom(repositoryFactory.createMultisigRepository().getMultisigAccountInfo(accountAddress));
-      return info.isMultisig() ? info : undefined;
+      return await networkPort.getMultisigInfo(url, accountAddress);
     } catch {
       return undefined;
     }

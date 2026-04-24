@@ -20,18 +20,7 @@ import { join } from 'path';
 import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigPreset, NodeAccount } from '../model/index.js';
-import {
-  AccountKeyLinkTransaction,
-  Convert,
-  Deadline,
-  ICryptoPort,
-  LinkAction,
-  Transaction,
-  TransactionMapping,
-  UInt64,
-  VotingKeyLinkTransaction,
-  VrfKeyLinkTransaction,
-} from '../sdk/index.js';
+import { ICryptoPort, ITransactionPort, SymbolTransactionAdapter } from '../sdk/index.js';
 import { ConfigurationUtils } from '../utils/ConfigurationUtils.js';
 import { Constants } from '../utils/Constants.js';
 import { HandlebarsUtils } from '../utils/HandlebarsUtils.js';
@@ -52,6 +41,7 @@ export class NemesisConfigurationService {
     private readonly params: ConfigParams,
     private readonly cryptoPort: ICryptoPort,
     private readonly fileSystemService: FileSystemService,
+    private readonly transactionPort: ITransactionPort = new SymbolTransactionAdapter(),
   ) {}
 
   /**
@@ -169,9 +159,10 @@ export class NemesisConfigurationService {
         await Promise.all(
           Object.entries(presetData.nemesis.transactions || {})
             .map(([key, payload]) => {
-              const transactionHash = Transaction.createTransactionHash(
+              const transactionHash = this.transactionPort.computeTransactionHash(
                 payload,
-                Array.from(Convert.hexToUint8(presetData.nemesisGenerationHashSeed)),
+                presetData.nemesisGenerationHashSeed,
+                presetData.networkType,
               );
               if (transactionHashes.indexOf(transactionHash) > -1) {
                 this.logger.warn(`Transaction ${key} wth hash ${transactionHash} already exist. Excluded from folder.`);
@@ -193,11 +184,9 @@ export class NemesisConfigurationService {
   /**
    * VRF キーリンクトランザクションを作成してファイルに保存する。
    */
-  private async createVrfTransaction(transactionsDirectory: string, presetData: ConfigPreset, node: NodeAccount): Promise<Transaction> {
+  private async createVrfTransaction(transactionsDirectory: string, presetData: ConfigPreset, node: NodeAccount): Promise<void> {
     if (!node.vrf) throw new Error('VRF keys should have been generated!!');
     if (!node.main) throw new Error('Main keys should have been generated!!');
-    const deadline = Deadline.createFromDTO('1');
-    const vrf = VrfKeyLinkTransaction.create(deadline, node.vrf.publicKey, LinkAction.Link, presetData.networkType, UInt64.fromUint(0));
     const account = await this.params.accountResolver.resolveAccount(
       presetData.networkType,
       node.main,
@@ -206,28 +195,22 @@ export class NemesisConfigurationService {
       'creating the vrf key link transactions',
       'Should not generate!',
     );
-    const signedTransaction = account.sign(vrf, presetData.nemesisGenerationHashSeed);
-    return this.storeTransaction(transactionsDirectory, `vrf_${node.name}`, signedTransaction.payload);
+    const descriptor = this.transactionPort.createVrfKeyLinkDescriptor(node.vrf.publicKey, 'link', node.main.publicKey);
+    const payload = await this.transactionPort.buildSignedPayload(
+      descriptor,
+      account.privateKey,
+      presetData.networkType,
+      presetData.nemesisGenerationHashSeed,
+    );
+    return this.storeTransaction(transactionsDirectory, `vrf_${node.name}`, payload);
   }
 
   /**
    * アカウントキーリンクトランザクション（リモートキー）を作成してファイルに保存する。
    */
-  private async createAccountKeyLinkTransaction(
-    transactionsDirectory: string,
-    presetData: ConfigPreset,
-    node: NodeAccount,
-  ): Promise<Transaction> {
+  private async createAccountKeyLinkTransaction(transactionsDirectory: string, presetData: ConfigPreset, node: NodeAccount): Promise<void> {
     if (!node.remote) throw new Error('Remote keys should have been generated!!');
     if (!node.main) throw new Error('Main keys should have been generated!!');
-    const deadline = Deadline.createFromDTO('1');
-    const akl = AccountKeyLinkTransaction.create(
-      deadline,
-      node.remote.publicKey,
-      LinkAction.Link,
-      presetData.networkType,
-      UInt64.fromUint(0),
-    );
     const account = await this.params.accountResolver.resolveAccount(
       presetData.networkType,
       node.main,
@@ -236,18 +219,20 @@ export class NemesisConfigurationService {
       'creating the account link transactions',
       'Should not generate!',
     );
-    const signedTransaction = account.sign(akl, presetData.nemesisGenerationHashSeed);
-    return this.storeTransaction(transactionsDirectory, `remote_${node.name}`, signedTransaction.payload);
+    const descriptor = this.transactionPort.createAccountKeyLinkDescriptor(node.remote.publicKey, 'link', node.main.publicKey);
+    const payload = await this.transactionPort.buildSignedPayload(
+      descriptor,
+      account.privateKey,
+      presetData.networkType,
+      presetData.nemesisGenerationHashSeed,
+    );
+    return this.storeTransaction(transactionsDirectory, `remote_${node.name}`, payload);
   }
 
   /**
    * 投票キーリンクトランザクションを全投票キーファイル分作成してファイルに保存する。
    */
-  private async createVotingKeyTransactions(
-    transactionsDirectory: string,
-    presetData: ConfigPreset,
-    node: NodeAccount,
-  ): Promise<Transaction[]> {
+  private async createVotingKeyTransactions(transactionsDirectory: string, presetData: ConfigPreset, node: NodeAccount): Promise<void[]> {
     const votingFiles = node.voting || [];
     const account = await this.params.accountResolver.resolveAccount(
       presetData.networkType,
@@ -259,28 +244,22 @@ export class NemesisConfigurationService {
     );
     return Promise.all(
       votingFiles.map(async (votingFile) => {
-        const voting = VotingKeyLinkTransaction.create(
-          Deadline.createFromDTO('1'),
-          votingFile.publicKey,
-          votingFile.startEpoch,
-          votingFile.endEpoch,
-          LinkAction.Link,
+        const descriptor = this.transactionPort.createVotingKeyLinkDescriptor(votingFile, 'link', node.main.publicKey);
+        const payload = await this.transactionPort.buildSignedPayload(
+          descriptor,
+          account.privateKey,
           presetData.networkType,
-          1,
-          UInt64.fromUint(0),
+          presetData.nemesisGenerationHashSeed,
         );
-        const signedTransaction = account.sign(voting, presetData.nemesisGenerationHashSeed);
-        return this.storeTransaction(transactionsDirectory, `voting_${node.name}`, signedTransaction.payload);
+        return this.storeTransaction(transactionsDirectory, `voting_${node.name}`, payload);
       }),
     );
   }
 
   /**
-   * トランザクションのペイロードを .bin ファイルに保存し、Transaction オブジェクトを返す。
+   * トランザクションのペイロードを .bin ファイルに保存する。
    */
-  private async storeTransaction(transactionsDirectory: string, name: string, payload: string): Promise<Transaction> {
-    const transaction = TransactionMapping.createFromPayload(payload);
-    await fs.promises.writeFile(`${transactionsDirectory}/${name}.bin`, Convert.hexToUint8(payload));
-    return transaction as Transaction;
+  private async storeTransaction(transactionsDirectory: string, name: string, payload: string): Promise<void> {
+    await fs.promises.writeFile(`${transactionsDirectory}/${name}.bin`, this.cryptoPort.hexToUint8(payload));
   }
 }

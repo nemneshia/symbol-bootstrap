@@ -19,7 +19,7 @@ import { join } from 'path';
 import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigAccount, ConfigPreset, CustomPreset, NodePreset } from '../model/index.js';
-import { Account, ICryptoPort, PublicAccount, SymbolCryptoAdapter } from '../sdk/index.js';
+import { GeneratedAccount, ICryptoPort, PublicAccountInfo, SymbolCryptoAdapter } from '../sdk/index.js';
 import { Constants } from '../utils/Constants.js';
 import { HandlebarsUtils } from '../utils/HandlebarsUtils.js';
 import { Utils } from '../utils/Utils.js';
@@ -199,17 +199,17 @@ export class ConfigLoader {
     };
   }
 
-  public static toConfig(account: Account | PublicAccount): ConfigAccount {
-    if (account instanceof Account) {
+  public static toConfig(account: GeneratedAccount | PublicAccountInfo): ConfigAccount {
+    if ('privateKey' in account && account.privateKey) {
       return {
         privateKey: account.privateKey,
-        publicKey: account.publicAccount.publicKey,
-        address: account.address.plain(),
+        publicKey: account.publicKey,
+        address: account.address,
       };
     } else {
       return {
         publicKey: account.publicKey,
-        address: account.address.plain(),
+        address: account.address,
       };
     }
   }

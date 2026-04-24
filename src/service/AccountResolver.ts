@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 import { CertificatePair } from '../model/index.js';
-import { Account, NetworkType } from '../sdk/index.js';
+import { GeneratedAccount, ICryptoPort, NetworkType, SymbolCryptoAdapter } from '../sdk/index.js';
 
 /**
  * ノードのアカウント（キー）の種別を識別する列挙型。
@@ -43,13 +43,15 @@ export interface AccountResolver {
     nodeName: string | undefined,
     operationDescription: string,
     generateErrorMessage: string | undefined,
-  ): Promise<Account>;
+  ): Promise<GeneratedAccount>;
 }
 
 /**
  * Basic no prompt implementation. If the account cannot be resolved, it won't be prompted.
  */
 export class DefaultAccountResolver implements AccountResolver {
+  private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter();
+
   async resolveAccount(
     networkType: NetworkType,
     account: CertificatePair | undefined,
@@ -57,7 +59,7 @@ export class DefaultAccountResolver implements AccountResolver {
     nodeName: string,
     operationDescription: string,
     generateErrorMessage: string | undefined,
-  ): Promise<Account> {
+  ): Promise<GeneratedAccount> {
     if (!account) {
       if (generateErrorMessage) {
         throw new Error(generateErrorMessage);
@@ -65,12 +67,12 @@ export class DefaultAccountResolver implements AccountResolver {
       return this.generateNewAccount(networkType);
     }
     if (account?.privateKey) {
-      return Account.createFromPrivateKey(account.privateKey, networkType);
+      return this.cryptoPort.createAccountFromPrivateKey(account.privateKey, networkType);
     }
     throw new Error('Private key not provided');
   }
 
-  generateNewAccount(networkType: NetworkType): Account {
-    return Account.generateNewAccount(networkType);
+  generateNewAccount(networkType: NetworkType): GeneratedAccount {
+    return this.cryptoPort.generateAccount(networkType);
   }
 }

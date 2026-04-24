@@ -16,7 +16,9 @@
 import { createDecipheriv, pbkdf2Sync } from 'crypto';
 import { KnownError } from '../errors/KnownError.js';
 import { PrivateKeySecurityMode } from '../model/index.js';
-import { Crypto } from '../sdk/index.js';
+import { SymbolCryptoAdapter } from '../sdk/index.js';
+
+const _cryptoAdapter = new SymbolCryptoAdapter();
 
 /**
  * 秘密鍵の暗号化・復号化・セキュリティモード管理を担当するユーティリティクラス。
@@ -38,7 +40,7 @@ export class CryptoUtils {
       value,
       (v, fn) => {
         if (CryptoUtils.isEncryptableKeyField(v, fn)) {
-          return CryptoUtils.ENCRYPT_PREFIX_V2 + Crypto.encrypt(v, password);
+          return CryptoUtils.ENCRYPT_PREFIX_V2 + _cryptoAdapter.encrypt(v, password);
         }
         return v;
       },
@@ -121,7 +123,7 @@ export class CryptoUtils {
           // 新形式（ENCRYPTED_V2:）: Crypto.decrypt を使用—曖昧性なし
           const encryptedValue = v.substring(CryptoUtils.ENCRYPT_PREFIX_V2.length);
           try {
-            const decryptedValue = Crypto.decrypt(encryptedValue, password);
+            const decryptedValue = _cryptoAdapter.decrypt(encryptedValue, password);
             if (!decryptedValue) throw new Error();
             return decryptedValue;
           } catch {
@@ -142,9 +144,9 @@ export class CryptoUtils {
           } catch {
             // レガシー形式でない— Crypto.decrypt をフォールバック
           }
-          // フォールバック: 旧 CryptoUtils 形式（Crypto.encrypt で保存された ENCRYPTED: プレフィックス）
+          // フォールバック: 旧 CryptoUtils 形式（_cryptoAdapter.encrypt で保存された ENCRYPTED: プレフィックス）
           try {
-            const decryptedValue = Crypto.decrypt(encryptedValue, password);
+            const decryptedValue = _cryptoAdapter.decrypt(encryptedValue, password);
             if (decryptedValue) {
               CryptoUtils._legacyUpgradeDetected = true;
               return decryptedValue;

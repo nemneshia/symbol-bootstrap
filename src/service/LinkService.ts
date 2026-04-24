@@ -18,22 +18,18 @@ import { confirm } from '@inquirer/prompts';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigPreset, NodeAccount } from '../model/index.js';
 import {
-  AccountInfo,
-  AccountKeyLinkTransaction,
-  Deadline,
+  AccountInfoDto,
   ICryptoPort,
   INetworkPort,
-  LinkAction,
-  Transaction,
-  UInt64,
-  VotingKeyLinkTransaction,
-  VrfKeyLinkTransaction,
+  ITransactionPort,
+  SymbolTransactionAdapter,
+  TransactionDescriptor,
 } from '../sdk/index.js';
 import { Constants } from '../utils/Constants.js';
 import { VotingKeyAccount } from '../utils/VotingUtils.js';
 import { Password } from '../utils/YamlUtils.js';
 import { AccountResolver } from './AccountResolver.js';
-import { AnnounceService, TransactionFactory } from './AnnounceService.js';
+import { AnnounceService, TransactionFactory, TransactionFactoryParams } from './AnnounceService.js';
 import { BootstrapAccountResolver } from './BootstrapAccountResolver.js';
 import { ConfigLoader } from './ConfigLoader.js';
 import { RemoteNodeService } from './RemoteNodeService.js';
@@ -47,7 +43,7 @@ export type LinkParams = {
   url: string;
   maxFee?: number | undefined;
   unlink: boolean;
-  useKnownRestGateways: boolean;
+  useKnownRestGateways?: boolean;
   ready?: boolean;
   customPreset?: string;
   serviceProviderPublicKey?: string;
@@ -60,10 +56,8 @@ export type KeyAccount = { publicKey: string };
 export interface LinkServiceTransactionFactoryParams {
   presetData: ConfigPreset;
   nodeAccount: NodeAccount;
-  mainAccountInfo?: AccountInfo;
-  deadline: Deadline;
-  maxFee: UInt64;
-  latestFinalizedBlockEpoch?: number;
+  mainAccountInfo?: AccountInfoDto;
+  networkConfig?: { latestFinalizedBlockEpoch?: number };
 }
 
 export interface GenericNodeAccount {
@@ -89,6 +83,7 @@ export class LinkService implements TransactionFactory {
     protected readonly params: LinkParams,
     private readonly cryptoPort: ICryptoPort,
     private readonly networkPort: INetworkPort,
+    private readonly transactionPort: ITransactionPort = new SymbolTransactionAdapter(),
   ) {
     this.configLoader = new ConfigLoader(logger);
   }
@@ -108,7 +103,7 @@ export class LinkService implements TransactionFactory {
     await new AnnounceService(this.logger, accountResolver, remoteNodeService).announce(
       this.params.url,
       this.params.maxFee,
-      this.params.useKnownRestGateways,
+      this.params.useKnownRestGateways ?? false,
       this.params.ready,
       this.params.target,
       this.configLoader.mergePresets(presetData, customPreset),
@@ -122,47 +117,42 @@ export class LinkService implements TransactionFactory {
     presetData,
     nodeAccount,
     mainAccountInfo,
-    deadline,
-    maxFee,
-    latestFinalizedBlockEpoch,
-  }: LinkServiceTransactionFactoryParams): Promise<Transaction[]> {
-    const networkType = presetData.networkType;
+    networkConfig,
+  }: TransactionFactoryParams): Promise<TransactionDescriptor[]> {
+    const latestFinalizedBlockEpoch = networkConfig?.latestFinalizedBlockEpoch ?? presetData.lastKnownNetworkEpoch;
     const mainAccountAddress = nodeAccount.main.address;
     const nodeName = nodeAccount.name;
+    const signerPublicKey = nodeAccount.main.publicKey;
 
-    const remoteTransactionFactory = ({ publicKey }: KeyAccount, action: LinkAction): AccountKeyLinkTransaction =>
-      AccountKeyLinkTransaction.create(deadline, publicKey, action, networkType, maxFee);
-    const vrfTransactionFactory = ({ publicKey }: KeyAccount, action: LinkAction): VrfKeyLinkTransaction =>
-      VrfKeyLinkTransaction.create(deadline, publicKey, action, networkType, maxFee);
-    const votingKeyTransactionFactory = (account: VotingKeyAccount, action: LinkAction): VotingKeyLinkTransaction => {
-      return VotingKeyLinkTransaction.create(
-        deadline,
-        account.publicKey,
-        account.startEpoch,
-        account.endEpoch,
-        action,
-        networkType,
-        1,
-        maxFee,
-      );
-    };
+    type LinkActionStr = 'link' | 'unlink';
+    const remoteTransactionFactory = ({ publicKey }: KeyAccount, action: LinkActionStr): TransactionDescriptor =>
+      this.transactionPort.createAccountKeyLinkDescriptor(publicKey, action, signerPublicKey);
+    const vrfTransactionFactory = ({ publicKey }: KeyAccount, action: LinkActionStr): TransactionDescriptor =>
+      this.transactionPort.createVrfKeyLinkDescriptor(publicKey, action, signerPublicKey);
+    const votingKeyTransactionFactory = (account: VotingKeyAccount, action: LinkActionStr): TransactionDescriptor =>
+      this.transactionPort.createVotingKeyLinkDescriptor(account, action, signerPublicKey);
+
+    const spk = mainAccountInfo?.supplementalPublicKeys;
 
     this.logger.info(`Creating transactions for node: ${nodeName}, ca/main account: ${mainAccountAddress}`);
     const transactions = await new LinkTransactionGenericFactory(this.logger, this.params).createGenericTransactions(
       nodeName,
       {
-        vrf: mainAccountInfo?.supplementalPublicKeys.vrf,
-        remote: mainAccountInfo?.supplementalPublicKeys.linked,
-        voting: mainAccountInfo?.supplementalPublicKeys.voting || [],
+        vrf: spk?.vrf ? { publicKey: spk.vrf } : undefined,
+        remote: spk?.linked ? { publicKey: spk.linked } : undefined,
+        voting: spk?.voting ? spk.voting.map((v) => ({ publicKey: v.publicKey, startEpoch: v.startEpoch, endEpoch: v.endEpoch })) : [],
       },
       nodeAccount,
-      latestFinalizedBlockEpoch || presetData.lastKnownNetworkEpoch,
+      latestFinalizedBlockEpoch,
       remoteTransactionFactory,
       vrfTransactionFactory,
       votingKeyTransactionFactory,
     );
-    //Unlink transactions go first.
-    return transactions.sort((t1, t2) => t1.linkAction - t2.linkAction);
+    // Unlink transactions go first
+    return transactions.sort((t1, t2) => {
+      const order = (d: TransactionDescriptor) => (d.linkAction === 'unlink' ? 0 : 1);
+      return order(t1) - order(t2);
+    });
   }
 }
 
@@ -177,9 +167,9 @@ export class LinkTransactionGenericFactory {
     currentMainAccountKeys: GenericNodeAccount,
     nodeAccount: GenericNodeAccount,
     latestFinalizedBlockEpoch: number,
-    remoteTransactionFactory: (keyAccount: KeyAccount, action: LinkAction) => AccountKL,
-    vrfTransactionFactory: (keyAccount: KeyAccount, action: LinkAction) => VRFKL,
-    votingKeyTransactionFactory: (account: VotingKeyAccount, action: LinkAction) => VotingKL,
+    remoteTransactionFactory: (keyAccount: KeyAccount, action: 'link' | 'unlink') => AccountKL,
+    vrfTransactionFactory: (keyAccount: KeyAccount, action: 'link' | 'unlink') => VRFKL,
+    votingKeyTransactionFactory: (account: VotingKeyAccount, action: 'link' | 'unlink') => VotingKL,
   ): Promise<(AccountKL | VRFKL | VotingKL)[]> {
     const transactions: (AccountKL | VRFKL | VotingKL)[] = [];
     const print = (account: { publicKey: string }) => `public key ${account.publicKey}`;
@@ -233,7 +223,7 @@ export class LinkTransactionGenericFactory {
     votingKeyFiles: VotingKeyAccount[],
     nodeName: string,
     lastKnownNetworkEpoch: number,
-    transactionFactory: (transaction: VotingKeyAccount, action: LinkAction) => T,
+    transactionFactory: (transaction: VotingKeyAccount, action: 'link' | 'unlink') => T,
     print: (account: VotingKeyAccount) => string,
   ): Promise<T[]> {
     const transactions: T[] = [];
@@ -241,7 +231,7 @@ export class LinkTransactionGenericFactory {
     let remainingVotingKeys: VotingKeyAccount[] = linkedVotingKeyAccounts;
     for (const alreadyLinkedAccount of linkedVotingKeyAccounts) {
       if (alreadyLinkedAccount.endEpoch < lastKnownNetworkEpoch && (await this.confirmUnlink(accountName, alreadyLinkedAccount, print))) {
-        const unlinkTransaction = transactionFactory(alreadyLinkedAccount, LinkAction.Unlink);
+        const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
         this.logger.info(
           `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
         );
@@ -267,7 +257,7 @@ export class LinkTransactionGenericFactory {
           )} which is different from the configured ${print(accountTobeLinked)}.`,
         );
         if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
-          const unlinkTransaction = transactionFactory(alreadyLinkedAccount, LinkAction.Unlink);
+          const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
           this.logger.info(
             `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
           );
@@ -279,7 +269,7 @@ export class LinkTransactionGenericFactory {
       }
 
       if (remainingVotingKeys.length < 3 && addTransaction) {
-        const transaction = transactionFactory(accountTobeLinked, LinkAction.Link);
+        const transaction = transactionFactory(accountTobeLinked, 'link');
         this.logger.info(`Creating Link ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`);
         transactions.push(transaction);
         remainingVotingKeys.push(accountTobeLinked);
@@ -292,7 +282,7 @@ export class LinkTransactionGenericFactory {
     linkedVotingKeyAccounts: VotingKeyAccount[],
     votingKeyFiles: VotingKeyAccount[],
     nodeName: string,
-    transactionFactory: (transaction: VotingKeyAccount, action: LinkAction) => T,
+    transactionFactory: (transaction: VotingKeyAccount, action: 'link' | 'unlink') => T,
     print: (account: VotingKeyAccount) => string,
   ): Promise<T[]> {
     const transactions: T[] = [];
@@ -309,7 +299,7 @@ export class LinkTransactionGenericFactory {
 
       if (alreadyLinkedAccount && isAlreadyLinkedSameAccount) {
         if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
-          const unlinkTransaction = transactionFactory(alreadyLinkedAccount, LinkAction.Unlink);
+          const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
           this.logger.info(
             `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
           );
@@ -327,7 +317,7 @@ export class LinkTransactionGenericFactory {
 
   private async addTransaction<A extends KeyAccount, T>(
     alreadyLinkedAccount: A | undefined,
-    transactionFactory: (transaction: A, action: LinkAction) => T,
+    transactionFactory: (transaction: A, action: 'link' | 'unlink') => T,
     nodeName: string,
     accountName: string,
     accountTobeLinked: A,
@@ -338,7 +328,7 @@ export class LinkTransactionGenericFactory {
     if (this.params.unlink) {
       if (alreadyLinkedAccount) {
         if (isAlreadyLinkedSameAccount) {
-          const transaction = transactionFactory(accountTobeLinked, LinkAction.Unlink);
+          const transaction = transactionFactory(accountTobeLinked, 'unlink');
           this.logger.info(
             `Creating Unlink ${accountName} Transaction for node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`,
           );
@@ -351,7 +341,7 @@ export class LinkTransactionGenericFactory {
           );
 
           if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
-            const transaction = transactionFactory(alreadyLinkedAccount, LinkAction.Unlink);
+            const transaction = transactionFactory(alreadyLinkedAccount, 'unlink');
             this.logger.info(
               `Creating Unlink ${accountName} Transaction  for node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
             );
@@ -373,13 +363,13 @@ export class LinkTransactionGenericFactory {
           );
 
           if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
-            const unlinkTransaction = transactionFactory(alreadyLinkedAccount, LinkAction.Unlink);
+            const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
             this.logger.info(
               `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
             );
             transactions.push(unlinkTransaction);
 
-            const linkTransaction = transactionFactory(accountTobeLinked, LinkAction.Link);
+            const linkTransaction = transactionFactory(accountTobeLinked, 'link');
             this.logger.info(
               `Creating Link ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`,
             );
@@ -387,7 +377,7 @@ export class LinkTransactionGenericFactory {
           }
         }
       } else {
-        const transaction = transactionFactory(accountTobeLinked, LinkAction.Link);
+        const transaction = transactionFactory(accountTobeLinked, 'link');
         this.logger.info(`Creating Link ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`);
         transactions.push(transaction);
       }
