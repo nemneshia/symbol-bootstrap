@@ -150,51 +150,56 @@ describe('Announce Service', () => {
   const stubCommon = (networkType: NetworkType, epochAdjustment: number, currencyMosaicId: MosaicId, networkGenerationHash: string) => {
     stub(RemoteNodeService.prototype, 'getBestRepositoryInfo').callsFake(() =>
       Promise.resolve({
-        repositoryFactory: {
-          getNetworkType() {
-            return of(networkType);
-          },
-          createTransactionRepository: stub(),
-          createReceiptRepository: stub(),
-          getEpochAdjustment() {
-            return of(epochAdjustment);
-          },
-          createListener() {
-            return {
-              open: stub(),
-              close: stub(),
-            };
-          },
-          getCurrencies() {
-            return of({
-              currency: new Currency({
-                mosaicId: currencyMosaicId,
-                divisibility: 6,
-                transferable: true,
-                supplyMutable: false,
-                restrictable: false,
-              }),
-            });
-          },
-          createNetworkRepository() {
-            return {
-              getTransactionFees() {
-                return of({ minFeeMultiplier: 10 });
-              },
-            };
-          },
-          createChainRepository() {
-            return {
-              getChainInfo() {
-                return of({ latestFinalizedBlock: 10 });
-              },
-            };
-          },
-          getGenerationHash() {
-            return of(networkGenerationHash);
-          },
-        },
+        restGatewayUrl: url,
+        chainInfo: { height: 1n, finalizationEpoch: 1 },
       } as unknown as RepositoryInfo),
+    );
+
+    stub(TransactionUtils, <any>'getRepositoryFactory').callsFake(() =>
+      Promise.resolve({
+        getNetworkType() {
+          return of(networkType);
+        },
+        createTransactionRepository: stub(),
+        createReceiptRepository: stub(),
+        getEpochAdjustment() {
+          return of(epochAdjustment);
+        },
+        createListener() {
+          return {
+            open: stub(),
+            close: stub(),
+          };
+        },
+        getCurrencies() {
+          return of({
+            currency: new Currency({
+              mosaicId: currencyMosaicId,
+              divisibility: 6,
+              transferable: true,
+              supplyMutable: false,
+              restrictable: false,
+            }),
+          });
+        },
+        createNetworkRepository() {
+          return {
+            getTransactionFees() {
+              return of({ minFeeMultiplier: 10 });
+            },
+          };
+        },
+        createChainRepository() {
+          return {
+            getChainInfo() {
+              return of({ latestFinalizedBlock: 10 });
+            },
+          };
+        },
+        getGenerationHash() {
+          return of(networkGenerationHash);
+        },
+      }),
     );
 
     stub(announceService, <any>'getAccountInfo').returns(

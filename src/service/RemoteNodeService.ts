@@ -18,11 +18,10 @@ import { lookup } from 'dns';
 import { KnownError } from '../errors/KnownError.js';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset, NodewatchPeer, PeerInfo } from '../model/index.js';
-import { ChainInfoDto, INetworkPort, RepositoryFactory, RepositoryFactoryHttp, RoleType, SymbolNetworkAdapter } from '../sdk/index.js';
+import { ChainInfoDto, INetworkPort, RoleType, SymbolNetworkAdapter } from '../sdk/index.js';
 import { Utils } from '../utils/Utils.js';
 
 export interface RepositoryInfo {
-  repositoryFactory: RepositoryFactory;
   restGatewayUrl: string;
   chainInfo: ChainInfoDto;
 }
@@ -101,9 +100,7 @@ export class RemoteNodeService {
         urls.map(async (restGatewayUrl): Promise<RepositoryInfo | undefined> => {
           try {
             const chainInfo = await this.networkPort.getChainInfo(restGatewayUrl);
-            // RepositoryFactoryHttp is lazy – no connection is made until a repository method is called.
-            const repositoryFactory = new RepositoryFactoryHttp(restGatewayUrl);
-            return { restGatewayUrl, repositoryFactory, chainInfo };
+            return { restGatewayUrl, chainInfo };
           } catch (e) {
             const message = `There has been an error talking to node ${restGatewayUrl}. Error: ${Utils.getMessage(e)}`;
             this.logger.warn(message);

@@ -17,7 +17,7 @@
 import { firstValueFrom } from 'rxjs';
 import { Logger } from '../logger/index.js';
 import { ConfigPreset } from '../model/index.js';
-import { Address, INetworkPort, MultisigAccountInfo, RepositoryFactory } from '../sdk/index.js';
+import { Address, INetworkPort, MultisigAccountInfo, RepositoryFactory, RepositoryFactoryHttp } from '../sdk/index.js';
 import { RemoteNodeService } from '../service/RemoteNodeService.js';
 
 /**
@@ -31,7 +31,7 @@ export class TransactionUtils {
    */
   public static async getRepositoryFactory(remoteNodeService: RemoteNodeService, url: string | undefined): Promise<RepositoryFactory> {
     const repositoryInfo = await remoteNodeService.getBestRepositoryInfo(url);
-    return repositoryInfo.repositoryFactory;
+    return new RepositoryFactoryHttp(repositoryInfo.restGatewayUrl);
   }
 
   /** @deprecated Use the overload that accepts RemoteNodeService instead. */
@@ -43,7 +43,7 @@ export class TransactionUtils {
   ): Promise<RepositoryFactory> {
     const remoteNodeService = new RemoteNodeService(logger, presetData, false, networkPort);
     const repositoryInfo = await remoteNodeService.getBestRepositoryInfo(url);
-    return repositoryInfo.repositoryFactory;
+    return new RepositoryFactoryHttp(repositoryInfo.restGatewayUrl);
   }
 
   public static async getMultisigAccount(
