@@ -456,20 +456,26 @@
           "type": "boolean"
         },
         "password": {
-          "description": "A password used to encrypt and decrypt private keys in preset files like addresses.yml and preset.yml. Bootstrap prompts for a password by default, can be provided in the command line (--password=XXXX) or disabled in the command line (--noPassword).",
+          "description": "Prevents the prompting of the password by providing the password. Note that it's not recommended to use this feature.",
           "name": "password",
+          "required": false,
           "hasDynamicHelp": false,
           "multiple": false,
           "type": "option"
         },
         "noPassword": {
-          "description": "When provided, Bootstrap will not use a password, so private keys will be stored in plain text. Use with caution.",
+          "description": "When provided, bootstrap will not use a password, so private keys will be stored in plain text. Use with caution, only for testing.",
           "name": "noPassword",
           "allowNo": false,
           "type": "boolean"
         },
+        "ready": {
+          "description": "If --ready is provided, announcements won't be prompted for confirmation, just executed. This flag resolves \"Do you want to announce? (y/N)\" prompts.",
+          "name": "ready",
+          "allowNo": false,
+          "type": "boolean"
+        },
         "url": {
-          "char": "u",
           "description": "the network url",
           "name": "url",
           "default": "http://localhost:3000",
@@ -477,27 +483,15 @@
           "multiple": false,
           "type": "option"
         },
-        "useKnownRestGateways": {
-          "description": "Use the best NEM node available when announcing. Otherwise the command will use the node provided by the --url parameter.",
-          "name": "useKnownRestGateways",
-          "allowNo": false,
-          "type": "boolean"
-        },
-        "ready": {
-          "description": "If --ready is provided, the command will not ask for confirmation when announcing transactions.",
-          "name": "ready",
-          "allowNo": false,
-          "type": "boolean"
-        },
         "maxFee": {
-          "description": "the max fee used when announcing (absolute). The node min multiplier will be used if it is not provided.",
+          "description": "the max fee used to announce (absolute). The node min multiplier will be used if it is not provided.",
           "name": "maxFee",
+          "required": false,
           "hasDynamicHelp": false,
           "multiple": false,
           "type": "option"
         },
         "customPreset": {
-          "char": "c",
           "description": "This command uses the encrypted addresses.yml to resolve the main private key. If the main private is only stored in the custom preset, you can provide it using this param. Otherwise, the command may ask for it when required.",
           "name": "customPreset",
           "required": false,
@@ -594,20 +588,26 @@
           "type": "option"
         },
         "password": {
-          "description": "A password used to encrypt and decrypt private keys in preset files like addresses.yml and preset.yml. Bootstrap prompts for a password by default, can be provided in the command line (--password=XXXX) or disabled in the command line (--noPassword).",
+          "description": "Prevents the prompting of the password by providing the password. Note that it's not recommended to use this feature.",
           "name": "password",
+          "required": false,
           "hasDynamicHelp": false,
           "multiple": false,
           "type": "option"
         },
         "noPassword": {
-          "description": "When provided, Bootstrap will not use a password, so private keys will be stored in plain text. Use with caution.",
+          "description": "When provided, bootstrap will not use a password, so private keys will be stored in plain text. Use with caution, only for testing.",
           "name": "noPassword",
           "allowNo": false,
           "type": "boolean"
         },
+        "ready": {
+          "description": "If --ready is provided, announcements won't be prompted for confirmation, just executed. This flag resolves \"Do you want to announce? (y/N)\" prompts.",
+          "name": "ready",
+          "allowNo": false,
+          "type": "boolean"
+        },
         "url": {
-          "char": "u",
           "description": "the network url",
           "name": "url",
           "default": "http://localhost:3000",
@@ -615,27 +615,15 @@
           "multiple": false,
           "type": "option"
         },
-        "useKnownRestGateways": {
-          "description": "Use the best NEM node available when announcing. Otherwise the command will use the node provided by the --url parameter.",
-          "name": "useKnownRestGateways",
-          "allowNo": false,
-          "type": "boolean"
-        },
-        "ready": {
-          "description": "If --ready is provided, the command will not ask for confirmation when announcing transactions.",
-          "name": "ready",
-          "allowNo": false,
-          "type": "boolean"
-        },
         "maxFee": {
-          "description": "the max fee used when announcing (absolute). The node min multiplier will be used if it is not provided.",
+          "description": "the max fee used to announce (absolute). The node min multiplier will be used if it is not provided.",
           "name": "maxFee",
+          "required": false,
           "hasDynamicHelp": false,
           "multiple": false,
           "type": "option"
         },
         "customPreset": {
-          "char": "c",
           "description": "This command uses the encrypted addresses.yml to resolve the main private key. If the main private is only stored in the custom preset, you can provide it using this param. Otherwise, the command may ask for it when required.",
           "name": "customPreset",
           "required": false,
