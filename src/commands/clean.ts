@@ -26,6 +26,7 @@ export default class Clean extends Command {
   static flags = {
     help: CommandUtils.helpFlag,
     target: CommandUtils.targetFlag,
+    yes: CommandUtils.yesFlag,
     logger: CommandUtils.getLoggerFlag(...System),
   };
 
@@ -33,6 +34,15 @@ export default class Clean extends Command {
     const { flags } = await this.parse(Clean);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
+    if (!flags.yes) {
+      const confirmed = await CommandUtils.confirmDangerousAction(
+        `対象フォルダ ${flags.target} を削除してもよいですか？`
+      );
+      if (!confirmed) {
+        logger.info('削除をキャンセルしました。');
+        return;
+      }
+    }
     new BootstrapService(logger).clean(flags);
   }
 }

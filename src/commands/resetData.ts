@@ -26,6 +26,7 @@ export default class ResetData extends Command {
   static flags = {
     help: CommandUtils.helpFlag,
     target: CommandUtils.targetFlag,
+    yes: CommandUtils.yesFlag,
     logger: CommandUtils.getLoggerFlag(...System),
   };
 
@@ -33,6 +34,15 @@ export default class ResetData extends Command {
     const { flags } = await this.parse(ResetData);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
+    if (!flags.yes) {
+      const confirmed = await CommandUtils.confirmDangerousAction(
+        `対象フォルダ ${flags.target} のデータを削除してもよいですか？`
+      );
+      if (!confirmed) {
+        logger.info('削除をキャンセルしました。');
+        return;
+      }
+    }
     await new BootstrapService(logger).resetData(flags);
   }
 }

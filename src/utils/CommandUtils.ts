@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { isCancel, password } from '@clack/prompts';
+import { confirm, isCancel, password } from '@clack/prompts';
 import { Flags } from '@oclif/core';
 import cfonts from 'cfonts';
 
@@ -53,6 +53,22 @@ export class CommandUtils {
     description: '--offline を指定すると、稼働中ネットワークへ問い合わせずに設定を解決します。',
     default: false,
   });
+
+  public static yesFlag = Flags.boolean({
+    description: '確認プロンプトを表示せずに実行します。',
+    default: false,
+  });
+
+  /**
+   * 危険な操作を実行してよいか確認する。
+   */
+  public static async confirmDangerousAction(message: string): Promise<boolean> {
+    const response = await confirm({
+      message,
+      initialValue: false,
+    });
+    return isCancel(response) ? false : response;
+  }
 
   /**
    * CLI 起動時にバナー文字列を表示する。

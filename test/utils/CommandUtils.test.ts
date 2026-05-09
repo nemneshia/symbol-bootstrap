@@ -1,10 +1,11 @@
-import { password } from '@clack/prompts';
+import { confirm, password } from '@clack/prompts';
 import cfonts from 'cfonts';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CommandUtils } from '../../src/utils/CommandUtils.js';
 
 vi.mock('@clack/prompts', () => ({
+  confirm: vi.fn(),
   password: vi.fn(),
   isCancel: (value: unknown) => value === 'cancel',
 }));
@@ -224,6 +225,43 @@ describe('CommandUtils', () => {
       expect(result).toBeUndefined();
       expect(logger.warn).not.toHaveBeenCalled();
       expect(logger.info).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('confirmDangerousAction', () => {
+    it('confirm=true の場合は true を返すこと', async () => {
+      vi.mocked(confirm).mockResolvedValueOnce(true);
+
+      const result = await CommandUtils.confirmDangerousAction('削除してもよいですか？');
+
+      expect(result).toBe(true);
+      expect(confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: '削除してもよいですか？',
+          initialValue: false,
+        })
+      );
+    });
+
+    it('confirm=false の場合は false を返すこと', async () => {
+      vi.mocked(confirm).mockResolvedValueOnce(false);
+
+      const result = await CommandUtils.confirmDangerousAction('削除してもよいですか？');
+
+      expect(result).toBe(false);
+      expect(confirm).toHaveBeenCalledWith(
+        expect.objectContaining({
+          initialValue: false,
+        })
+      );
+    });
+
+    it('confirm が cancel の場合は false を返すこと', async () => {
+      vi.mocked(confirm).mockResolvedValueOnce('cancel' as any);
+
+      const result = await CommandUtils.confirmDangerousAction('削除してもよいですか？');
+
+      expect(result).toBe(false);
     });
   });
 

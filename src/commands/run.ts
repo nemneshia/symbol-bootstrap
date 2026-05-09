@@ -28,6 +28,7 @@ export default class Run extends Command {
   static flags = {
     help: CommandUtils.helpFlag,
     target: CommandUtils.targetFlag,
+    yes: CommandUtils.yesFlag,
     detached: Flags.boolean({
       char: 'd',
       description:
@@ -71,6 +72,15 @@ export default class Run extends Command {
     const { flags } = await this.parse(Run);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
+    if (flags.resetData && !flags.yes) {
+      const confirmed = await CommandUtils.confirmDangerousAction(
+        `起動前に対象フォルダ ${flags.target} のデータを削除してもよいですか？`
+      );
+      if (!confirmed) {
+        logger.info('削除をキャンセルしました。ネットワーク起動は行いません。');
+        return;
+      }
+    }
     return new BootstrapService(logger).run(flags);
   }
 }
