@@ -17,7 +17,6 @@ import { confirm, isCancel } from '@clack/prompts';
 import { Command, Flags } from '@oclif/core';
 
 import { LogType, LoggerFactory } from '../logger/index.js';
-import { SymbolCryptoAdapter } from '../sdk/index.js';
 import {
   BootstrapAccountResolver,
   BootstrapService,
@@ -75,7 +74,7 @@ export default class Pack extends Command {
       true
     );
     const workingDir = Constants.defaultWorkingDir;
-    const accountResolver = new BootstrapAccountResolver(logger, new SymbolCryptoAdapter());
+    const accountResolver = new BootstrapAccountResolver(logger);
     const { targetZip } = await new BootstrapService(logger).pack({
       ...flags,
       workingDir,

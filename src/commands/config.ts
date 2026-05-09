@@ -16,7 +16,6 @@
 import { Command, Flags } from '@oclif/core';
 
 import { LoggerFactory, System } from '../logger/index.js';
-import { SymbolCryptoAdapter } from '../sdk/index.js';
 import {
   Assembly,
   BootstrapAccountResolver,
@@ -92,7 +91,7 @@ export default class Config extends Command {
       true
     );
     const workingDir = Constants.defaultWorkingDir;
-    const accountResolver = new BootstrapAccountResolver(logger, new SymbolCryptoAdapter());
+    const accountResolver = new BootstrapAccountResolver(logger);
     await new BootstrapService(logger).config({ ...flags, workingDir, accountResolver });
   }
 }
