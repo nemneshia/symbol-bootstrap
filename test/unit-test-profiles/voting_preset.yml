@@ -1,5 +1,0 @@
-databases:
-  - compose:
-      mem_limit: ~
-nodes:
-  - voting: true

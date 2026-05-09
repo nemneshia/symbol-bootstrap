@@ -13,21 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, LogType } from '../logger/index.js';
+
+import { LogType, LoggerFactory } from '../logger/index.js';
 import { AnnounceService, BootstrapService, CommandUtils, LinkService } from '../service/index.js';
 
 export default class Link extends Command {
-  static description = `It announces VRF and Voting Link transactions to the network for each node with 'Peer' or 'Voting' roles. This command finalizes the node registration to an existing network.`;
+  static description = `各ノードの 'Peer' または 'Voting' ロールに対して、VRF と Voting Link トランザクションをネットワークへアナウンスします。既存ネットワークへのノード登録を完了するためのコマンドです。`;
 
-  static examples = [`$ symbol-bootstrap link`, `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap link --unlink --useKnownRestGateways`];
+  static examples = [
+    `$ symbol-bootstrap link`,
+    `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap link --unlink --useKnownRestGateways`,
+  ];
 
   static flags = {
     help: CommandUtils.helpFlag,
     target: CommandUtils.targetFlag,
     unlink: Flags.boolean({
-      description: 'Perform "Unlink" transactions unlinking the voting and VRF keys from the node signer account',
+      description:
+        'Voting キーと VRF キーをノード署名アカウントから解除する "Unlink" トランザクションを実行します。',
       default: LinkService.defaultParams.unlink,
     }),
     ...AnnounceService.flags,
@@ -36,14 +40,14 @@ export default class Link extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Link);
-    const logger = LoggerFactory.getLogger(flags.logger);
     CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
     flags.password = await CommandUtils.resolvePassword(
       logger,
       flags.password,
       flags.noPassword,
       CommandUtils.passwordPromptDefaultMessage,
-      true,
+      true
     );
     return new BootstrapService(logger).link(flags);
   }

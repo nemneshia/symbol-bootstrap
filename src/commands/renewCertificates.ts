@@ -14,19 +14,18 @@
  * limitations under the License.
  */
 import { Command, Flags } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
-import { CertificatePair, ConfigAccount } from '../model/index.js';
-import { ICryptoPort, SymbolCryptoAdapter } from '../sdk/index.js';
-import { BootstrapAccountResolver, CertificateService, CommandUtils, ConfigLoader, Constants, RenewMode } from '../service/index.js';
+import { BootstrapService, CommandUtils, Constants } from '../service/index.js';
 
 export default class RenewCertificates extends Command {
-  static description = `It renews the SSL certificates of the node regenerating the node.csr.pem files but reusing the current private keys.
+  static description = `ノードの SSL 証明書を更新します。node.csr.pem は再生成しますが、既存の秘密鍵は再利用します。
 
-The certificates are only regenerated when they are closed to expiration (30 days). If you want to renew anyway, use the --force param.
+証明書は有効期限が近い場合（30 日以内）にのみ再生成されます。期限に関係なく更新したい場合は --force を指定してください。
 
-This command does not change the node private key (yet). This change would require a harvesters.dat migration and relinking the node key.
+このコマンドはノード秘密鍵自体は変更しません（現時点）。秘密鍵を変更するには harvesters.dat の移行とノードキーの再リンクが必要です。
 
-It's recommended to backup the target folder before running this operation!
+実行前に target フォルダをバックアップすることを推奨します。
 `;
 
   static examples = [`$ symbol-bootstrap renewCertificates`];
@@ -38,17 +37,17 @@ It's recommended to backup the target folder before running this operation!
     noPassword: CommandUtils.noPasswordFlag,
     customPreset: Flags.string({
       char: 'c',
-      description: `This command uses the encrypted addresses.yml to resolve the main and transport private key. If the main and transport privates are only stored in the custom preset, you can provide them using this param. Otherwise, the command may ask for them when required.`,
+      description: `このコマンドは暗号化された addresses.yaml から main/transport の秘密鍵を解決します。main/transport の秘密鍵が custom preset にのみ保存されている場合は、このパラメータで指定してください。未指定の場合は必要時に入力を求めることがあります。`,
       required: false,
     }),
     user: Flags.string({
       char: 'u',
-      description: `User used to run docker images when generating the certificates. "${Constants.CURRENT_USER}" means the current user.`,
+      description: `証明書生成時に Docker イメージを実行するユーザーを指定します。"${Constants.CURRENT_USER}" は現在のユーザーを意味します。`,
       default: Constants.CURRENT_USER,
     }),
 
     force: Flags.boolean({
-      description: `Renew the certificates even though they are not close to expire.`,
+      description: `有効期限が近くなくても証明書を更新します。`,
       default: false,
     }),
     logger: CommandUtils.getLoggerFlag(...System),
@@ -63,69 +62,23 @@ It's recommended to backup the target folder before running this operation!
       flags.password,
       flags.noPassword,
       CommandUtils.passwordPromptDefaultMessage,
-      true,
+      true
     );
     const target = flags.target;
-    const configLoader = new ConfigLoader(logger);
-    const cryptoPort: ICryptoPort = new SymbolCryptoAdapter();
-
-    const oldPresetData = configLoader.loadExistingPresetData(target, password);
-    const presetData = configLoader.createPresetData({
-      workingDir: Constants.defaultWorkingDir,
+    const certificateUpgraded = await new BootstrapService(logger).renewCertificates({
+      target,
+      password,
       customPreset: flags.customPreset,
-      password: password,
-      oldPresetData,
+      user: flags.user,
+      force: flags.force,
     });
-    const addresses = configLoader.loadExistingAddresses(target, password);
-    const networkType = presetData.networkType;
-    const accountResolver = new BootstrapAccountResolver(logger, cryptoPort);
-    const certificateService = new CertificateService(
-      logger,
-      accountResolver,
-      {
-        target,
-        user: flags.user,
-      },
-      cryptoPort,
-    );
-    const certificateUpgraded = (
-      await Promise.all(
-        (presetData.nodes || []).map((nodePreset, index) => {
-          const nodeAccount = addresses.nodes?.[index];
-          if (!nodeAccount) {
-            throw new Error(`There is not node in addresses at index ${index}`);
-          }
-          function resolveAccount(configAccount: ConfigAccount, providedPrivateKey: string | undefined): CertificatePair {
-            if (providedPrivateKey) {
-              const account = cryptoPort.createAccountFromPrivateKey(providedPrivateKey, networkType);
-              if (account.address == configAccount.address) {
-                return account;
-              }
-            }
-            return configAccount;
-          }
-          const providedCertificates = {
-            main: resolveAccount(nodeAccount.main, nodePreset.mainPrivateKey),
-            transport: resolveAccount(nodeAccount.transport, nodePreset.transportPrivateKey),
-          };
-          // Docker Compose プロジェクト名のプレフィックスを追加
-          const containerNamePrefix = presetData.dockerComposeProjectName ? `${presetData.dockerComposeProjectName}-` : '';
-          return certificateService.run(
-            presetData,
-            containerNamePrefix + nodePreset.name,
-            providedCertificates,
-            flags.force ? RenewMode.ALWAYS : RenewMode.WHEN_REQUIRED,
-          );
-        }),
-      )
-    ).find((f) => f);
     if (certificateUpgraded) {
       logger.warn('');
-      logger.warn('Bootstrap has created new SSL certificates. Review the logs!');
+      logger.warn('Bootstrap が新しい SSL 証明書を作成しました。ログを確認してください。');
       logger.warn('');
     } else {
       logger.info('');
-      logger.info('The SSL certificates are up-to-date. There is nothing to upgrade.');
+      logger.info('SSL 証明書は最新です。アップグレードの必要はありません。');
       logger.info('');
     }
   }

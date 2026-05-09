@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
-import { CommandUtils, VerifyService } from '../service/index.js';
+import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class Verify extends Command {
   static description =
-    'It tests the installed software in the current computer reporting if there is any missing dependency, invalid version, or software related issue.';
+    '現在のコンピュータにインストールされたソフトウェアを検証し、依存不足・バージョン不一致・関連する問題を報告します。';
   static examples = [`$ symbol-bootstrap verify`];
 
   static flags = {
@@ -29,12 +29,9 @@ export default class Verify extends Command {
   };
 
   public async run(): Promise<void> {
-    CommandUtils.showBanner();
     const { flags } = await this.parse(Verify);
+    CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
-    const service = new VerifyService(logger);
-    const report = await service.createReport();
-    service.logReport(report);
-    service.validateReport(report);
+    await new BootstrapService(logger).verify();
   }
 }

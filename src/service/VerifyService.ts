@@ -13,12 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import * as os from 'os';
-import * as semver from 'semver';
-import { Logger } from '../logger/index.js';
+import { compareVersions } from 'compare-versions';
 
-import { RuntimeService } from './RuntimeService.js';
+import * as os from 'node:os';
+
+import { Logger } from '../logger/index.js';
 import { Utils } from '../utils/Utils.js';
+import { RuntimeService } from './RuntimeService.js';
+
 export interface VerifyReport {
   platform: string;
   lines: ReportLine[];
@@ -48,19 +50,16 @@ export interface VerifyAction {
 }
 
 export class AppVersionService {
-  public static readonly semverOptions = { loose: true };
-  constructor(
-    private readonly logger: Logger,
-    private readonly runtimeService: RuntimeService,
-  ) {}
+  constructor(private readonly runtimeService: RuntimeService) {}
+
+  /**
+   * アプリ出力文字列から最初に見つかったバージョン文字列を抽出する。
+   */
   public loadVersion(text: string): string | undefined {
     return text
       .replace(',', '')
       .split(' ')
-      .map((word) => {
-        const coerce = semver.coerce(word.trim(), AppVersionService.semverOptions);
-        return coerce?.raw;
-      })
+      .map((word) => this.normalizeVersion(word.trim()))
       .find((a) => a)
       ?.trim();
   }
@@ -69,29 +68,29 @@ export class AppVersionService {
     return this.loadVersion((await this.runtimeService.exec(command)).stdout.trim());
   }
 
+  /**
+   * 指定アプリのバージョンを検証し、レポート行を返す。
+   */
   public async verifyInstalledApp(
     versionLoader: () => Promise<string | undefined>,
     header: string,
     minVersion: string,
-    recommendationUrl: string,
+    recommendationUrl: string
   ): Promise<ReportLine> {
     const recommendationPrefix = `At least version ${minVersion} is required.`;
     const recommendationSuffix = `Check ${recommendationUrl}`;
     try {
       const version = await versionLoader();
       if (!version) {
-        return {
-          header,
-          message: `Version could not be found! Output: ${versionLoader}`,
-          recommendation: `${recommendationPrefix} ${recommendationSuffix}`,
-        };
+        return this.createMissingVersionLine(header, recommendationPrefix, recommendationSuffix);
       }
-      if (semver.lt(version, minVersion, AppVersionService.semverOptions)) {
-        return {
+      if (this.isVersionLowerThan(version, minVersion)) {
+        return this.createOldVersionLine(
           header,
-          message: version,
-          recommendation: `${recommendationPrefix} Currently installed version is ${version}. ${recommendationSuffix}`,
-        };
+          version,
+          recommendationPrefix,
+          recommendationSuffix
+        );
       }
       return { header, message: version };
     } catch (e) {
@@ -101,6 +100,47 @@ export class AppVersionService {
         recommendation: `${recommendationPrefix} ${recommendationSuffix}`,
       };
     }
+  }
+
+  private normalizeVersion(value: string): string | undefined {
+    const match = value.match(/(\d+)(?:\.(\d+))?(?:\.(\d+))?/);
+    if (!match) {
+      return undefined;
+    }
+    return [match[1], match[2] ?? '0', match[3] ?? '0'].join('.');
+  }
+
+  private isVersionLowerThan(version: string, minVersion: string): boolean {
+    const normalizedMinVersion = this.normalizeVersion(minVersion);
+    if (!normalizedMinVersion) {
+      throw new Error(`最低バージョン '${minVersion}' を解釈できません。`);
+    }
+    return compareVersions(version, normalizedMinVersion) < 0;
+  }
+
+  private createMissingVersionLine(
+    header: string,
+    recommendationPrefix: string,
+    recommendationSuffix: string
+  ): ReportLine {
+    return {
+      header,
+      message: 'Version could not be found!',
+      recommendation: `${recommendationPrefix} ${recommendationSuffix}`,
+    };
+  }
+
+  private createOldVersionLine(
+    header: string,
+    version: string,
+    recommendationPrefix: string,
+    recommendationSuffix: string
+  ): ReportLine {
+    return {
+      header,
+      message: version,
+      recommendation: `${recommendationPrefix} Currently installed version is ${version}. ${recommendationSuffix}`,
+    };
   }
 }
 
@@ -113,7 +153,7 @@ export class AppVersionVerifyAction implements VerifyAction {
       command?: string;
       recommendationUrl: string;
       expectedVersion: string;
-    },
+    }
   ) {}
 
   verify(): Promise<ReportLine> {
@@ -125,11 +165,11 @@ export class AppVersionVerifyAction implements VerifyAction {
         if (this.params.command) {
           return this.service.loadVersionFromCommand(this.params.command);
         }
-        throw new Error('Either version or command must be provided!');
+        throw new Error('version または command のいずれかを指定してください。');
       },
       this.params.header,
       this.params.expectedVersion,
-      this.params.recommendationUrl,
+      this.params.recommendationUrl
     );
   }
 
@@ -141,7 +181,7 @@ export class AppVersionVerifyAction implements VerifyAction {
 export class DockerRunVerifyAction implements VerifyAction {
   constructor(
     private readonly logger: Logger,
-    private readonly runtimeService: RuntimeService,
+    private readonly runtimeService: RuntimeService
   ) {}
   async verify(): Promise<ReportLine> {
     const header = 'Docker Run Test';
@@ -151,19 +191,19 @@ export class DockerRunVerifyAction implements VerifyAction {
     try {
       const output = (await this.runtimeService.exec(command)).stdout.trim();
       const expectedText = 'Hello from Docker!';
-      if (output.indexOf(expectedText) == -1) {
+      if (!output.includes(expectedText)) {
         return {
           header,
-          message: `Command '${command}' could not be executed: Error: '${expectedText}' not in output text \n${output}`,
-          recommendation: `Please check ${recommendationUrl}`,
+          message: `コマンド '${command}' を実行できませんでした。'${expectedText}' が出力に含まれていません。\n${output}`,
+          recommendation: `${recommendationUrl} を確認してください。`,
         };
       }
-      return { header, message: `Command '${command}' executed!` };
+      return { header, message: `コマンド '${command}' を実行しました。` };
     } catch (e) {
       return {
         header,
-        message: `Command '${command}' could not be executed: Error: ${Utils.getMessage(e)}`,
-        recommendation: `Please check ${recommendationUrl}`,
+        message: `コマンド '${command}' を実行できませんでした。詳細: ${Utils.getMessage(e)}`,
+        recommendation: `${recommendationUrl} を確認してください。`,
       };
     }
   }
@@ -178,11 +218,11 @@ export class SudoRunVerifyAction implements VerifyAction {
     if (Utils.isRoot()) {
       return {
         header,
-        message: `Your are running with the sudo user!`,
-        recommendation: `Either don't use sudo or create a non sudo user to run Bootstrap.`,
+        message: `sudo ユーザーで実行しています。`,
+        recommendation: `sudo を使わないか、Bootstrap 実行用の非 sudo ユーザーを作成してください。`,
       };
     }
-    return { header, message: `Your are not the sudo user!` };
+    return { header, message: `sudo ユーザーではありません。` };
   }
   shouldRun(): boolean {
     return !Utils.isWindows();
@@ -197,37 +237,11 @@ export class VerifyService {
 
   constructor(
     private readonly logger: Logger,
-    expectedVersions: Partial<ExpectedVersions> = {},
+    expectedVersions: Partial<ExpectedVersions> = {}
   ) {
     this.runtimeService = new RuntimeService(logger);
     this.expectedVersions = { ...defaultExpectedVersions, ...expectedVersions };
-
-    const appVersionService = new AppVersionService(this.logger, this.runtimeService);
-    this.actions.push(
-      new AppVersionVerifyAction(appVersionService, {
-        header: 'NodeVersion',
-        version: VerifyService.currentNodeJsVersion,
-        recommendationUrl: `https://nodejs.org/en/download/package-manager/`,
-        expectedVersion: this.expectedVersions.node,
-      }),
-    );
-    this.actions.push(
-      new AppVersionVerifyAction(appVersionService, {
-        header: 'Docker Version',
-        command: 'docker --version',
-        recommendationUrl: `https://docs.docker.com/get-docker/`,
-        expectedVersion: this.expectedVersions.docker,
-      }),
-    );
-
-    this.actions.push(
-      new AppVersionVerifyAction(appVersionService, {
-        header: 'Docker Compose Version',
-        command: 'docker compose version',
-        recommendationUrl: `https://docs.docker.com/compose/install/`,
-        expectedVersion: this.expectedVersions.dockerCompose,
-      }),
-    );
+    this.actions.push(...this.createAppVersionActions());
     this.actions.push(new DockerRunVerifyAction(this.logger, this.runtimeService));
     this.actions.push(new SudoRunVerifyAction());
   }
@@ -243,22 +257,61 @@ export class VerifyService {
 
   public logReport(report: VerifyReport): void {
     this.logger.info(`OS: ${report.platform}`);
-    report.lines.forEach((line) => {
-      if (line.recommendation) {
-        this.logger.error(`${line.header}  - Error! - ${line.message} - ${line.recommendation}`);
-      } else {
-        this.logger.info(`${line.header} - OK! - ${line.message}`);
-      }
-    });
+    for (const line of report.lines) {
+      this.logReportLine(line);
+    }
   }
 
   public validateReport(report: VerifyReport): void {
     const errors = report.lines.filter((r) => r.recommendation);
     if (errors.length) {
       throw new Error(
-        'There has been an error. Check the report:\n' +
-          errors.map((line) => ` - ${line.header}  - Error! - ${line.message} - ${line.recommendation}`).join('\n'),
+        'エラーが発生しました。レポートを確認してください:\n' +
+          errors
+            .map((line) => ` - ${line.header} - エラー - ${line.message} - ${line.recommendation}`)
+            .join('\n')
       );
     }
+  }
+
+  private createAppVersionActions(): VerifyAction[] {
+    const appVersionService = new AppVersionService(this.runtimeService);
+    return [
+      new AppVersionVerifyAction(appVersionService, {
+        header: 'NodeVersion',
+        version: VerifyService.currentNodeJsVersion,
+        recommendationUrl: `https://nodejs.org/en/download/package-manager/`,
+        expectedVersion: this.expectedVersions.node,
+      }),
+      new AppVersionVerifyAction(appVersionService, {
+        header: 'Docker Version',
+        command: 'docker --version',
+        recommendationUrl: `https://docs.docker.com/get-docker/`,
+        expectedVersion: this.expectedVersions.docker,
+      }),
+      new AppVersionVerifyAction(appVersionService, {
+        header: 'Docker Compose Version',
+        command: 'docker compose version',
+        recommendationUrl: `https://docs.docker.com/compose/install/`,
+        expectedVersion: this.expectedVersions.dockerCompose,
+      }),
+    ];
+  }
+
+  private logReportLine(line: ReportLine): void {
+    if (line.recommendation) {
+      this.logger.error(`${line.header} - エラー - ${line.message} - ${line.recommendation}`);
+      return;
+    }
+    this.logger.info(`${line.header} - OK - ${line.message}`);
+  }
+
+  /**
+   * 検証レポートの生成・出力・妥当性確認を一括で実行する。
+   */
+  public async run(): Promise<void> {
+    const report = await this.createReport();
+    this.logReport(report);
+    this.validateReport(report);
   }
 }

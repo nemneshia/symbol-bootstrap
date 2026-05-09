@@ -13,11 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import archiver from 'archiver';
-import { createWriteStream } from 'fs';
+import * as archiverModule from 'archiver';
+import { Archiver, ArchiverError } from 'archiver';
 import StreamZip from 'node-stream-zip';
+
+import { WriteStream, createWriteStream } from 'node:fs';
+
 import { Logger } from '../logger/index.js';
-import { AsyncUtils } from './AsyncUtils.js';
 import { Utils } from './Utils.js';
 
 /** ZIP 圧縮/解凍操作の対象アイテムを表すインターフェース */
@@ -28,102 +30,126 @@ export interface ZipItem {
   blacklist?: string[];
 }
 
+type ZipArchiveConstructor = new (options: unknown) => Archiver;
+const ZipArchive = (archiverModule as unknown as { ZipArchive: ZipArchiveConstructor }).ZipArchive;
+const zipCompressionLevel = 9;
+
 /**
  * ZIP ファイルの圧縮・解凍を担当するユーティリティクラス。
  */
 export class ZipUtils {
   constructor(private readonly logger: Logger) {}
+
+  /**
+   * 指定したアイテムを ZIP ファイルに圧縮する。
+   *
+   * @param destination 出力先の ZIP ファイルパス
+   * @param items 圧縮対象アイテムのリスト
+   */
   public async zip(destination: string, items: ZipItem[]): Promise<void> {
     const output = createWriteStream(destination);
-    const archive = archiver('zip', {
-      zlib: { level: 9 }, // Sets the compression level.
-    });
+    const archive = new ZipArchive({ zlib: { level: zipCompressionLevel } });
     archive.pipe(output);
-    // eslint-disable-next-line no-async-promise-executor
-    return new Promise<void>(async (resolve, reject) => {
+    this.addItemsToArchive(archive, items);
+    this.registerProgressHandler(archive);
+    return this.waitForArchiveCompletion(archive, output, destination);
+  }
+
+  /**
+   * アーカイブにアイテムを追加し、進捗イベントハンドラを設定する。
+   *
+   * @param archive アーカイブインスタンス
+   * @param items 追加対象アイテムのリスト
+   */
+  private addItemsToArchive(archive: Archiver, items: ZipItem[]): void {
+    for (const item of items) {
+      if (item.directory) {
+        archive.directory(item.from, item.to, (entry) =>
+          this.shouldSkipEntry(item.blacklist, entry.name) ? false : entry
+        );
+      } else {
+        archive.file(item.from, { name: item.to });
+      }
+    }
+  }
+
+  /**
+   * 進捗ログを 1 行更新で出力するハンドラを登録する。
+   */
+  private registerProgressHandler(archive: Archiver): void {
+    archive.on('progress', (progress) => {
+      Utils.logSameLineMessage(`${progress.entries.processed} entries zipped!`);
+    });
+  }
+
+  /**
+   * ZIP 化対象から除外すべきエントリーかを判定する。
+   */
+  private shouldSkipEntry(blacklist: string[] | undefined, entryName: string): boolean {
+    return blacklist?.includes(entryName) ?? false;
+  }
+
+  /**
+   * アーカイブ完了・警告・エラーイベントを監視し、完了時に resolve する Promise を返す。
+   * 内部で `archive.finalize()` を呼び出す。
+   *
+   * @param archive アーカイブインスタンス
+   * @param output 出力ストリーム
+   * @param destination 出力先の ZIP ファイルパス
+   */
+  private waitForArchiveCompletion(
+    archive: Archiver,
+    output: WriteStream,
+    destination: string
+  ): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       output.on('close', () => {
         this.logger.info('');
-        this.logger.info(`Zip file ${destination} size ${Math.floor(archive.pointer() / 1024)} KB has been created.`);
+        this.logger.info(
+          `ZIP ファイル '${destination}' (${Math.floor(archive.pointer() / 1024)} KB) を作成しました。`
+        );
         resolve();
       });
 
-      output.on('end', () => {
-        this.logger.info('');
-        this.logger.info('Data has been drained');
-      });
-
-      // good practice to catch warnings (ie stat failures and other non-blocking errors)
-      archive.on('warning', (err: any) => {
-        this.logger.info('');
+      archive.on('warning', (err: ArchiverError) => {
         if (err.code === 'ENOENT') {
-          // log warning
-          this.logger.info(`There has been an warning creating ZIP file '${destination}' ${err.message || err}`);
+          // ファイルが見つからない場合は警告ログを出すが処理は続行する
+          this.logger.info(`ZIP 作成の警告 '${destination}': ${err.message}`);
         } else {
-          // throw error
-          this.logger.info(`There has been an error creating ZIP file '${destination}' ${err.message || err}`);
           reject(err);
         }
       });
 
-      // good practice to catch this error explicitly
-      archive.on('error', (err: any) => {
-        this.logger.info(`There has been an error creating ZIP file '${destination}' ${err.message || err}`);
+      archive.on('error', (err: ArchiverError) => {
+        this.logger.info(`ZIP 作成のエラー '${destination}': ${err.message}`);
         reject(err);
       });
 
-      for (const item of items) {
-        if (item.directory) {
-          archive.directory(item.from, item.to || false, (entry) => {
-            if (item.blacklist?.find((s) => entry.name === s)) {
-              return false;
-            }
-            return entry;
-          });
-        } else {
-          archive.file(item.from, { name: item.to });
-        }
-      }
-      archive.on('progress', (progress) => {
-        const message = `${progress.entries.processed} entries zipped!`;
-        Utils.logSameLineMessage(message);
-      });
-      await archive.finalize();
+      archive.finalize();
     });
   }
 
-  public unzip(zipFile: string, innerFolder: string | null, targetFolder: string): Promise<void> {
-    const zip = new StreamZip({
-      file: zipFile,
-      storeEntries: true,
-    });
-    this.logger.info(`Unzipping Backup Sync's '${innerFolder || 'ROOT'}' into '${targetFolder}'. This could take a while!`);
-    let totalFiles = 0;
-    let process = 0;
-    return new Promise<void>((resolve, reject) => {
-      zip.on('entry', (entry) => {
-        if (!entry.isDirectory && totalFiles) {
-          process++;
-          const percentage = ((process * 100) / totalFiles).toFixed(2);
-          const message = `${percentage}% | ${process} files unzipped out of ${totalFiles}`;
-          Utils.logSameLineMessage(message);
-        }
-        if (AsyncUtils.stopProcess) {
-          zip.close();
-          reject(new Error('Process cancelled!'));
-        }
-      });
-      zip.on('ready', () => {
-        totalFiles = zip.entriesCount;
-        zip.extract(innerFolder, targetFolder, (err) => {
-          zip.close();
-          if (err) {
-            reject(err);
-          } else {
-            this.logger.info(`Unzipped '${targetFolder}' created`);
-            resolve();
-          }
-        });
-      });
-    });
+  /**
+   * ZIP ファイルを解凍する。
+   *
+   * @param zipFile 解凍元の ZIP ファイルパス
+   * @param innerFolder ZIP 内の解凍対象フォルダ（`null` の場合はルート全体）
+   * @param targetFolder 解凍先のディレクトリパス
+   */
+  public async unzip(
+    zipFile: string,
+    innerFolder: string | null,
+    targetFolder: string
+  ): Promise<void> {
+    const zip = new StreamZip.async({ file: zipFile });
+    this.logger.info(
+      `'${innerFolder ?? 'ROOT'}' を '${targetFolder}' へ解凍中... しばらくお待ちください。`
+    );
+    try {
+      await zip.extract(innerFolder, targetFolder);
+      this.logger.info(`'${targetFolder}' への解凍が完了しました。`);
+    } finally {
+      await zip.close();
+    }
   }
 }

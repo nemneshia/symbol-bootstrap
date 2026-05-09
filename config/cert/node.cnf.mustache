@@ -1,6 +1,17 @@
 [req]
 prompt = no
 distinguished_name = dn
+req_extensions = req_v3
 
 [dn]
-CN = {{{name}}}
+CN = {{{host}}}
+
+[req_v3]
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = serverAuth,clientAuth
+subjectAltName = @alt_names
+
+[alt_names]
+DNS.1 = {{{host}}}
+IP.1 = {{{ip}}}

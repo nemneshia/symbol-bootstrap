@@ -1,21 +1,21 @@
-nodes:
-  - harvesting: true
-    api: false
-    name: 'node'
-    openPort: true
-    trustedHosts: 127.0.0.1, 172.20.0.25
-    localNetworks: 127.0.0.1, 172.20.0.25
-gateways:
-  - name: 'rest-gateway'
-    apiNodeName: 'node'
-    apiNodeHost: 'node'
-    openPort: true
-    ipv4_address: 172.20.0.25
-httpsProxies:
-  - name: 'https-proxy'
-    excludeDockerService: true #disabled as default
-    openPort: 3001
-    #domains: 'symbol-node.example.com -> http://rest-gateway:3000'
-    stage: 'production'
-    webSocket: 'true'
-    serverNamesHashBucketSize: 128
+node:
+  harvesting: true
+  api: false
+  name: 'node'
+  openPort: true
+  trustedHosts: 127.0.0.1, 172.20.0.25
+  localNetworks: 127.0.0.1, 172.20.0.25
+gateway:
+  name: 'gateway'
+  apiNodeName: 'node'
+  apiNodeHost: 'node'
+  openPort: true
+  ipv4_address: 172.20.0.25
+httpsProxy:
+  name: 'https-proxy'
+  excludeDockerService: true #disabled as default
+  openPort: 3001
+  #domains: 'symbol-node.example.com -> http://rest-gateway:3000'
+  stage: 'production'
+  webSocket: 'true'
+  serverNamesHashBucketSize: 128

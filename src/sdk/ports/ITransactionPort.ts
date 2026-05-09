@@ -44,25 +44,41 @@ export interface ITransactionPort {
   // with the symbol-sdk v3 typed-descriptor field names set.  Signing and fee
   // finalisation happen later inside the announce* methods.
 
-  createVrfKeyLinkDescriptor(vrfPublicKey: string, action: 'link' | 'unlink', signerPublicKey: string): TransactionDescriptor;
+  createVrfKeyLinkDescriptor(
+    vrfPublicKey: string,
+    action: 'link' | 'unlink',
+    signerPublicKey: string
+  ): TransactionDescriptor;
 
-  createAccountKeyLinkDescriptor(remotePublicKey: string, action: 'link' | 'unlink', signerPublicKey: string): TransactionDescriptor;
+  createAccountKeyLinkDescriptor(
+    remotePublicKey: string,
+    action: 'link' | 'unlink',
+    signerPublicKey: string
+  ): TransactionDescriptor;
 
-  createVotingKeyLinkDescriptor(votingFile: VotingKeyAccount, action: 'link' | 'unlink', signerPublicKey: string): TransactionDescriptor;
+  createVotingKeyLinkDescriptor(
+    votingFile: VotingKeyAccount,
+    action: 'link' | 'unlink',
+    signerPublicKey: string
+  ): TransactionDescriptor;
 
   createMultisigModificationDescriptor(
     additions: readonly string[],
     deletions: readonly string[],
     minApprovalDelta: number,
     minRemovalDelta: number,
-    signerPublicKey: string,
+    signerPublicKey: string
   ): TransactionDescriptor;
 
   /**
    * Creates a zero-amount self-transfer descriptor used as the "trigger"
    * inner transaction when the service-provider flow requires a bonded aggregate.
    */
-  createSelfTransferDescriptor(recipientAddress: string, currencyMosaicId: string, signerPublicKey: string): TransactionDescriptor;
+  createSelfTransferDescriptor(
+    recipientAddress: string,
+    currencyMosaicId: string,
+    signerPublicKey: string
+  ): TransactionDescriptor;
 
   /** Returns true when the descriptor represents a multisig account modification. */
   isMultisigModification(descriptor: TransactionDescriptor): boolean;
@@ -83,7 +99,7 @@ export interface ITransactionPort {
     descriptor: TransactionDescriptor,
     signerPrivateKey: string,
     networkIdentifier: number,
-    generationHashSeed: string,
+    generationHashSeed: string
   ): string;
 
   /**
@@ -93,7 +109,11 @@ export interface ITransactionPort {
    * @param generationHashSeed Hex generation hash seed.
    * @param networkIdentifier Network identifier byte.
    */
-  computeTransactionHash(hexPayload: string, generationHashSeed: string, networkIdentifier: number): string;
+  computeTransactionHash(
+    hexPayload: string,
+    generationHashSeed: string,
+    networkIdentifier: number
+  ): string;
 
   // ── Announce flows ────────────────────────────────────────────────────────
 
@@ -108,7 +128,7 @@ export interface ITransactionPort {
     url: string,
     providedMaxFee: number | undefined,
     confirmFn: AnnounceConfirmCallback,
-    logger: Logger,
+    logger: Logger
   ): Promise<boolean>;
 
   /**
@@ -125,7 +145,7 @@ export interface ITransactionPort {
     requiredCosignatures: number,
     providedMaxFee: number | undefined,
     confirmFn: AnnounceConfirmCallback,
-    logger: Logger,
+    logger: Logger
   ): Promise<boolean>;
 
   /**
@@ -142,6 +162,6 @@ export interface ITransactionPort {
     url: string,
     providedMaxFee: number | undefined,
     confirmFn: AnnounceConfirmCallback,
-    logger: Logger,
+    logger: Logger
   ): Promise<boolean>;
 }

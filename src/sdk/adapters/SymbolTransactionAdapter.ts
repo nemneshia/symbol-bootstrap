@@ -8,7 +8,13 @@ import {
   TransactionRoutesApi,
 } from 'symbol-openapi-typescript-fetch-client';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
-import { KeyPair, Network, SymbolFacade, SymbolTransactionFactory, models } from 'symbol-sdk/symbol';
+import {
+  KeyPair,
+  Network,
+  SymbolFacade,
+  SymbolTransactionFactory,
+  models,
+} from 'symbol-sdk/symbol';
 import WebSocket from 'ws';
 
 import type { Logger } from '../../logger/Logger.js';
@@ -29,7 +35,7 @@ function networkByIdentifier(networkIdentifier: number): Network {
   // custom network – find by name or fall back to a fresh Network instance
   const known = Network.NETWORKS.find((n: Network) => n.identifier === networkIdentifier);
   if (known) return known;
-  throw new Error(`Unknown network identifier: ${networkIdentifier}`);
+  throw new Error(`不明なネットワーク識別子です: ${networkIdentifier}`);
 }
 
 /** Parse '7200s', '2h', '1h30m' style strings into seconds. */
@@ -73,7 +79,12 @@ function normalizeHexId(raw: string): string {
 }
 
 /** Wait for the first WS confirmedAdded event whose hash matches. */
-function waitForConfirmation(nodeUrl: string, address: string, txHash: string, timeoutMs = 120_000): Promise<void> {
+function waitForConfirmation(
+  nodeUrl: string,
+  address: string,
+  txHash: string,
+  timeoutMs = 120_000
+): Promise<void> {
   return new Promise((resolve, reject) => {
     const wsUrl = nodeUrl.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws';
     const ws = new WebSocket(wsUrl);
@@ -92,7 +103,7 @@ function waitForConfirmation(nodeUrl: string, address: string, txHash: string, t
             JSON.stringify({
               uid,
               subscribe: `confirmedAdded/${address}`,
-            }),
+            })
           );
           return;
         }
@@ -214,7 +225,11 @@ export class SymbolTransactionAdapter implements ITransactionPort {
 
   // ── Transaction descriptor builders ─────────────────────────────────────
 
-  createVrfKeyLinkDescriptor(vrfPublicKey: string, action: 'link' | 'unlink', _signerPublicKey: string): TransactionDescriptor {
+  createVrfKeyLinkDescriptor(
+    vrfPublicKey: string,
+    action: 'link' | 'unlink',
+    _signerPublicKey: string
+  ): TransactionDescriptor {
     return {
       type: 'vrf_key_link_transaction_v1',
       linkedPublicKey: vrfPublicKey,
@@ -222,7 +237,11 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     };
   }
 
-  createAccountKeyLinkDescriptor(remotePublicKey: string, action: 'link' | 'unlink', _signerPublicKey: string): TransactionDescriptor {
+  createAccountKeyLinkDescriptor(
+    remotePublicKey: string,
+    action: 'link' | 'unlink',
+    _signerPublicKey: string
+  ): TransactionDescriptor {
     return {
       type: 'account_key_link_transaction_v1',
       linkedPublicKey: remotePublicKey,
@@ -230,7 +249,11 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     };
   }
 
-  createVotingKeyLinkDescriptor(votingFile: VotingKeyAccount, action: 'link' | 'unlink', _signerPublicKey: string): TransactionDescriptor {
+  createVotingKeyLinkDescriptor(
+    votingFile: VotingKeyAccount,
+    action: 'link' | 'unlink',
+    _signerPublicKey: string
+  ): TransactionDescriptor {
     return {
       type: 'voting_key_link_transaction_v1',
       linkedPublicKey: votingFile.publicKey,
@@ -245,7 +268,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     deletions: readonly string[],
     minApprovalDelta: number,
     minRemovalDelta: number,
-    _signerPublicKey: string,
+    _signerPublicKey: string
   ): TransactionDescriptor {
     return {
       type: 'multisig_account_modification_transaction_v1',
@@ -256,7 +279,11 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     };
   }
 
-  createSelfTransferDescriptor(recipientAddress: string, currencyMosaicId: string, _signerPublicKey: string): TransactionDescriptor {
+  createSelfTransferDescriptor(
+    recipientAddress: string,
+    currencyMosaicId: string,
+    _signerPublicKey: string
+  ): TransactionDescriptor {
     return {
       type: 'transfer_transaction_v1',
       recipientAddress,
@@ -274,11 +301,16 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     descriptor: TransactionDescriptor,
     signerPrivateKey: string,
     networkIdentifier: number,
-    generationHashSeed: string,
+    generationHashSeed: string
   ): string {
     const network = networkByIdentifier(networkIdentifier);
     const epochDate = (network.datetimeConverter as any).epoch as Date;
-    const customNetwork = new Network(network.name, network.identifier, epochDate, new Hash256(utils.hexToUint8(generationHashSeed)));
+    const customNetwork = new Network(
+      network.name,
+      network.identifier,
+      epochDate,
+      new Hash256(utils.hexToUint8(generationHashSeed))
+    );
     const facade = new SymbolFacade(customNetwork);
     const keyPair = new KeyPair(new PrivateKey(signerPrivateKey));
 
@@ -298,10 +330,19 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     return parsed.payload;
   }
 
-  computeTransactionHash(hexPayload: string, generationHashSeed: string, networkIdentifier: number): string {
+  computeTransactionHash(
+    hexPayload: string,
+    generationHashSeed: string,
+    networkIdentifier: number
+  ): string {
     const network = networkByIdentifier(networkIdentifier);
     const epochDate = (network.datetimeConverter as any).epoch as Date;
-    const customNetwork = new Network(network.name, network.identifier, epochDate, new Hash256(utils.hexToUint8(generationHashSeed)));
+    const customNetwork = new Network(
+      network.name,
+      network.identifier,
+      epochDate,
+      new Hash256(utils.hexToUint8(generationHashSeed))
+    );
     const facade = new SymbolFacade(customNetwork);
     const txBytes = utils.hexToUint8(hexPayload);
     const tx = SymbolTransactionFactory.deserialize(txBytes);
@@ -318,7 +359,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     url: string,
     providedMaxFee: number | undefined,
     confirmFn: AnnounceConfirmCallback,
-    logger: Logger,
+    logger: Logger
   ): Promise<boolean> {
     const { facade, keyPair } = this._createFacadeAndKeyPair(signerPrivateKey, networkConfig);
     const tx = this._buildTx(facade, descriptor, keyPair.publicKey, networkConfig, providedMaxFee);
@@ -328,12 +369,12 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     const signature = facade.signTransaction(keyPair, tx);
     SymbolTransactionFactory.attachSignature(tx, signature);
     const hash = utils.uint8ToHex(facade.hashTransaction(tx).bytes);
-    logger.info(`Announcing tx ${hash}`);
+    logger.info(`トランザクション ${hash} をアナウンスします`);
 
     await this._announce(url, tx);
     const address = utils.uint8ToHex(facade.network.publicKeyToAddress(keyPair.publicKey).bytes);
     await waitForConfirmation(url, address, hash);
-    logger.info(`Tx ${hash} confirmed`);
+    logger.info(`トランザクション ${hash} の承認を確認しました`);
     return true;
   }
 
@@ -347,7 +388,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     _requiredCosignatures: number,
     providedMaxFee: number | undefined,
     confirmFn: AnnounceConfirmCallback,
-    logger: Logger,
+    logger: Logger
   ): Promise<boolean> {
     const { facade, keyPair } = this._createFacadeAndKeyPair(signerPrivateKey, networkConfig);
     const mainPubKey = new PublicKey(mainPublicKey);
@@ -374,7 +415,8 @@ export class SymbolTransactionAdapter implements ITransactionPort {
 
     // Set fee
     const cosignatureCount = cosignerPrivateKeys.length;
-    const feeMultiplier = providedMaxFee !== undefined ? providedMaxFee : networkConfig.minFeeMultiplier;
+    const feeMultiplier =
+      providedMaxFee !== undefined ? providedMaxFee : networkConfig.minFeeMultiplier;
     const txSize = aggregateTx.size + cosignatureCount * new models.Cosignature().size;
     aggregateTx.fee = new models.Amount(BigInt(txSize) * BigInt(feeMultiplier));
 
@@ -393,11 +435,11 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     }
 
     const hash = utils.uint8ToHex(aggHash.bytes);
-    logger.info(`Announcing aggregate-complete tx ${hash}`);
+    logger.info(`アグリゲートコンプリートトランザクション ${hash} をアナウンスします`);
     await this._announce(url, aggregateTx);
     const address = utils.uint8ToHex(facade.network.publicKeyToAddress(keyPair.publicKey).bytes);
     await waitForConfirmation(url, address, hash);
-    logger.info(`Aggregate-complete tx ${hash} confirmed`);
+    logger.info(`アグリゲートコンプリートトランザクション ${hash} の承認を確認しました`);
     return true;
   }
 
@@ -411,7 +453,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     url: string,
     providedMaxFee: number | undefined,
     confirmFn: AnnounceConfirmCallback,
-    logger: Logger,
+    logger: Logger
   ): Promise<boolean> {
     const { facade, keyPair } = this._createFacadeAndKeyPair(signerPrivateKey, networkConfig);
     const mainPubKey = new PublicKey(mainPublicKey);
@@ -426,7 +468,8 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     });
 
     const deadline = this.computeDeadlineMs(networkConfig);
-    const feeMultiplier = providedMaxFee !== undefined ? providedMaxFee : networkConfig.minFeeMultiplier;
+    const feeMultiplier =
+      providedMaxFee !== undefined ? providedMaxFee : networkConfig.minFeeMultiplier;
     const txsHash = SymbolFacade.hashEmbeddedTransactions(embeddedTxs);
 
     const bondedTx = facade.transactionFactory.create({
@@ -461,12 +504,14 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     const hashLockSig = facade.signTransaction(keyPair, hashLockTx);
     SymbolTransactionFactory.attachSignature(hashLockTx, hashLockSig);
     const lockHash = utils.uint8ToHex(facade.hashTransaction(hashLockTx).bytes);
-    const signerAddress = utils.uint8ToHex(facade.network.publicKeyToAddress(keyPair.publicKey).bytes);
+    const signerAddress = utils.uint8ToHex(
+      facade.network.publicKeyToAddress(keyPair.publicKey).bytes
+    );
 
-    logger.info(`Announcing hash-lock tx ${lockHash}`);
+    logger.info(`ハッシュロックトランザクション ${lockHash} をアナウンスします`);
     await this._announce(url, hashLockTx);
     await waitForConfirmation(url, signerAddress, lockHash);
-    logger.info(`Hash-lock confirmed. Announcing aggregate-bonded...`);
+    logger.info('ハッシュロックの承認を確認しました。アグリゲートボンデッドをアナウンスします...');
 
     // Sign bonded
     const bondedSig = facade.signTransaction(keyPair, bondedTx);
@@ -480,10 +525,10 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     }
 
     const bondedHashHex = utils.uint8ToHex(bondedHash.bytes);
-    logger.info(`Announcing aggregate-bonded tx ${bondedHashHex}`);
+    logger.info(`アグリゲートボンデッドトランザクション ${bondedHashHex} をアナウンスします`);
     await this._announcePartial(url, bondedTx);
     await waitForConfirmation(url, signerAddress, bondedHashHex);
-    logger.info(`Aggregate-bonded tx ${bondedHashHex} confirmed`);
+    logger.info(`アグリゲートボンデッドトランザクション ${bondedHashHex} の承認を確認しました`);
     return true;
   }
 
@@ -496,7 +541,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
       network.name,
       network.identifier,
       epochDate,
-      new Hash256(utils.hexToUint8(networkConfig.generationHashSeed)),
+      new Hash256(utils.hexToUint8(networkConfig.generationHashSeed))
     );
     const facade = new SymbolFacade(customNetwork);
     const keyPair = new KeyPair(new PrivateKey(signerPrivateKey));
@@ -508,7 +553,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     descriptor: TransactionDescriptor,
     signerPublicKey: PublicKey,
     networkConfig: NetworkConfigDto,
-    providedMaxFee: number | undefined,
+    providedMaxFee: number | undefined
   ) {
     const deadline = this.computeDeadlineMs(networkConfig);
     const { type, ...rest } = descriptor;
@@ -519,7 +564,8 @@ export class SymbolTransactionAdapter implements ITransactionPort {
       deadline,
       fee: 0n,
     });
-    const feeMultiplier = providedMaxFee !== undefined ? providedMaxFee : networkConfig.minFeeMultiplier;
+    const feeMultiplier =
+      providedMaxFee !== undefined ? providedMaxFee : networkConfig.minFeeMultiplier;
     tx.fee = new models.Amount(BigInt(tx.size) * BigInt(feeMultiplier));
     return tx;
   }

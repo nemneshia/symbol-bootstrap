@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import { promises as fsPromises } from 'fs';
 import Handlebars from 'handlebars';
 
-import { totalmem } from 'os';
-import { basename, join } from 'path';
+import { promises as fsPromises } from 'node:fs';
+import { totalmem } from 'node:os';
+import { basename, join } from 'node:path';
+
 import { SymbolCryptoAdapter } from '../sdk/index.js';
 import { Utils } from './Utils.js';
 import { YamlUtils } from './YamlUtils.js';
@@ -27,51 +27,133 @@ import { YamlUtils } from './YamlUtils.js';
  * Handlebars テンプレートを使用した設定ファイル生成とカスタムヘルパー登録を担当するユーティリティクラス。
  */
 export class HandlebarsUtils {
+  /**
+   * テンプレートフォルダーを走査して設定ファイルを生成する。
+   * `.mustache` はレンダリングし、それ以外はそのままコピーする。
+   */
   public static async generateConfiguration(
     templateContext: any,
     copyFrom: string,
     copyTo: string,
     excludeFiles: string[] = [],
-    includeFiles: string[] = [],
+    includeFiles: string[] = []
   ): Promise<void> {
-    // Loop through all the files in the config folder
     await fsPromises.mkdir(copyTo, { recursive: true });
-    const files = await fsPromises.readdir(copyFrom);
+    const entries = await fsPromises.readdir(copyFrom);
+
     await Promise.all(
-      files.map(async (file: string) => {
-        const fromPath = join(copyFrom, file);
-        const toPath = join(copyTo, file);
-
-        // Stat the file to see if we have a file or dir
-        const stat = await fsPromises.stat(fromPath);
-        if (stat.isFile()) {
-          const isMustache = file.indexOf('.mustache') > -1;
-          const destinationFile = toPath.replace('.mustache', '');
-          const fileName = basename(destinationFile);
-          const notBlacklisted = excludeFiles.indexOf(fileName) === -1;
-          const inWhitelistIfAny = includeFiles.length === 0 || includeFiles.indexOf(fileName) > -1;
-          if (notBlacklisted && inWhitelistIfAny) {
-            if (isMustache) {
-              const template = await YamlUtils.readTextFile(fromPath);
-              const renderedTemplate = this.runTemplate(template, templateContext);
-
-              await fsPromises.writeFile(
-                destinationFile,
-                destinationFile.toLowerCase().endsWith('.json') ? HandlebarsUtils.formatJson(renderedTemplate) : renderedTemplate,
-              );
-            } else {
-              await fsPromises.copyFile(fromPath, destinationFile);
-            }
-            await fsPromises.chmod(destinationFile, 0o600);
-          }
-        } else if (stat.isDirectory()) {
-          await fsPromises.mkdir(toPath, { recursive: true });
-          await this.generateConfiguration(templateContext, fromPath, toPath, excludeFiles, includeFiles);
-        }
-      }),
+      entries.map((entryName) =>
+        this.processEntry({
+          templateContext,
+          entryName,
+          copyFrom,
+          copyTo,
+          excludeFiles,
+          includeFiles,
+        })
+      )
     );
   }
 
+  /**
+   * テンプレートディレクトリ内の 1 エントリーを処理する。
+   */
+  private static async processEntry({
+    templateContext,
+    entryName,
+    copyFrom,
+    copyTo,
+    excludeFiles,
+    includeFiles,
+  }: {
+    templateContext: any;
+    entryName: string;
+    copyFrom: string;
+    copyTo: string;
+    excludeFiles: string[];
+    includeFiles: string[];
+  }): Promise<void> {
+    const fromPath = join(copyFrom, entryName);
+    const toPath = join(copyTo, entryName);
+    const stat = await fsPromises.stat(fromPath);
+
+    if (stat.isDirectory()) {
+      await this.generateConfiguration(
+        templateContext,
+        fromPath,
+        toPath,
+        excludeFiles,
+        includeFiles
+      );
+      return;
+    }
+
+    if (!stat.isFile()) {
+      return;
+    }
+
+    const isMustache = entryName.endsWith('.mustache');
+    const destinationFile = toPath.replace(/\.mustache$/, '');
+    if (!this.shouldProcessFile(destinationFile, excludeFiles, includeFiles)) {
+      return;
+    }
+
+    await this.writeDestinationFile({
+      fromPath,
+      destinationFile,
+      isMustache,
+      templateContext,
+    });
+
+    await fsPromises.chmod(destinationFile, 0o600);
+  }
+
+  /**
+   * 1 ファイル分の出力を行う。
+   * mustache ファイルはテンプレート展開し、それ以外はコピーする。
+   */
+  private static async writeDestinationFile({
+    fromPath,
+    destinationFile,
+    isMustache,
+    templateContext,
+  }: {
+    fromPath: string;
+    destinationFile: string;
+    isMustache: boolean;
+    templateContext: any;
+  }): Promise<void> {
+    if (isMustache) {
+      const template = await YamlUtils.readTextFile(fromPath);
+      const renderedTemplate = this.runTemplate(template, templateContext);
+      const content = destinationFile.toLowerCase().endsWith('.json')
+        ? this.formatJson(renderedTemplate)
+        : renderedTemplate;
+      await fsPromises.writeFile(destinationFile, content);
+      return;
+    }
+
+    await fsPromises.copyFile(fromPath, destinationFile);
+  }
+
+  /**
+   * 除外・許可リストに基づいて処理対象ファイルかを判定する。
+   */
+  private static shouldProcessFile(
+    destinationFile: string,
+    excludeFiles: string[],
+    includeFiles: string[]
+  ): boolean {
+    const fileName = basename(destinationFile);
+    const isExcluded = excludeFiles.includes(fileName);
+    const isIncluded = includeFiles.length === 0 || includeFiles.includes(fileName);
+    return !isExcluded && isIncluded;
+  }
+
+  /**
+   * Handlebars テンプレートを実行して文字列を返す。
+   * 失敗時は秘密情報をマスクしたメッセージへ変換して再送出する。
+   */
   public static runTemplate(template: string, templateContext: any): string {
     try {
       const compiledTemplate = Handlebars.compile(template);
@@ -81,12 +163,12 @@ export class HandlebarsUtils {
       const securedContext = Utils.secureString(YamlUtils.toYaml(templateContext));
       const securedMessage = Utils.secureString(Utils.getMessage(e));
 
-      const message = `Unknown error rendering template. Error: ${securedMessage}\nTemplate:\n${securedTemplate}.`;
+      const message = `テンプレートのレンダリング中にエラーが発生しました。Error: ${securedMessage}\nTemplate:\n${securedTemplate}.`;
       throw new Error(`${message}\nContext: \n${securedContext}`, { cause: e });
     }
   }
 
-  //HANDLEBARS READY FUNCTIONS:
+  // Handlebars ヘルパーをクラス読み込み時に登録する。
   private static initialize = (() => {
     Handlebars.registerHelper('toAmount', HandlebarsUtils.toAmount);
     Handlebars.registerHelper('toHex', HandlebarsUtils.toHex);
@@ -121,18 +203,27 @@ export class HandlebarsUtils {
     return Number(a) - Number(b);
   }
 
+  /**
+   * 搭載メモリー量に対する指定割合のメモリー量を返す。
+   */
   public static computerMemory(percentage: number): number {
     return (totalmem() * percentage) / 100;
   }
 
+  /**
+   * 整数文字列を 3 桁区切り（'）で整形する。
+   */
   public static toAmount(renderedText: string | number): string {
-    const numberAsString = (renderedText + '').split("'").join('');
+    const numberAsString = String(renderedText).replaceAll("'", '');
     if (!numberAsString.match(/^\d+$/)) {
       throw new Error(`'${renderedText}' is not a valid integer`);
     }
     return (numberAsString.match(/\d{1,3}(?=(\d{3})*$)/g) || [numberAsString]).join("'");
   }
 
+  /**
+   * 16進文字列を 4 桁区切り（'）+ `0x` プレフィックスで整形する。
+   */
   public static toHex(renderedText: string): string {
     if (!renderedText) {
       return '';
@@ -141,19 +232,27 @@ export class HandlebarsUtils {
     return '0x' + (numberAsString.match(/\w{1,4}(?=(\w{4})*$)/g) || [numberAsString]).join("'");
   }
 
+  /**
+   * 16進文字列から区切りと `0x` を除去した生文字列を返す。
+   */
   public static toSimpleHex(renderedText: string): string {
     if (!renderedText) {
       return '';
     }
-    return renderedText.toString().split("'").join('').replace(/^(0x)/, '');
+    return renderedText.toString().replaceAll("'", '').replace(/^(0x)/, '');
   }
 
+  /**
+   * オブジェクトをインデント付き JSON 文字列へ変換する。
+   */
   public static toJson(object: any): string {
     return JSON.stringify(object, null, 2);
   }
 
+  /**
+   * JSON文字列を妥当性検証しつつ整形する。
+   */
   public static formatJson(string: string): string {
-    // Validates and format the json string.
     try {
       return JSON.stringify(JSON.parse(string), null, 2);
     } catch (e) {
@@ -161,6 +260,9 @@ export class HandlebarsUtils {
     }
   }
 
+  /**
+   * CSV 文字列を分割し、空要素を除去して返す。
+   */
   public static splitCsv(object: string): string[] {
     return (object || '')
       .split(',')
@@ -168,6 +270,9 @@ export class HandlebarsUtils {
       .filter((string) => string);
   }
 
+  /**
+   * `1h`, `10m` などのサーバー時間表記を秒へ変換する。
+   */
   public static toSeconds(serverDuration: string): number {
     return new SymbolCryptoAdapter().parseServerDurationToSeconds(serverDuration);
   }

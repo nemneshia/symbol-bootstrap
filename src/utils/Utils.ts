@@ -13,8 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { isAbsolute, join } from 'path';
+
+import dns from 'node:dns/promises';
+import net from 'node:net';
+
 import { KnownError } from '../errors/KnownError.js';
 import { NetworkType } from '../sdk/index.js';
 
@@ -61,7 +64,9 @@ export class Utils {
   public static validatePassword(password: string): string {
     const passwordMinSize = 4;
     if (password.length < passwordMinSize) {
-      throw new KnownError(`Password is too short. It should have at least ${passwordMinSize} characters!`);
+      throw new KnownError(
+        `Password is too short. It should have at least ${passwordMinSize} characters!`
+      );
     }
     return password;
   }
@@ -101,27 +106,8 @@ export class Utils {
    * 元のオブジェクトは変更せず、ディープクローンに対して処理を行う。
    */
   public static pruneEmpty(obj: any): any {
-    return (function prune(current: any) {
-      // 各プロパティを再帰処理し、空値を削除する
-      for (const key of Object.keys(current)) {
-        const value = current[key];
-        if (
-          value === undefined ||
-          value === null ||
-          Number.isNaN(value) ||
-          (typeof value === 'object' && value !== null && Utils.isObjectEmpty(prune(value)))
-        ) {
-          delete current[key];
-        }
-      }
-      // 配列の場合、削除後に残った undefined 要素をスプライスで除去する
-      if (Array.isArray(current)) {
-        for (let i = current.length - 1; i >= 0; i--) {
-          if (current[i] === undefined) current.splice(i, 1);
-        }
-      }
-      return current;
-    })(structuredClone(obj)); // 元のオブジェクトを変更しないようディープクローンを作成する
+    // 元オブジェクトを破壊しないよう、クローンに対して再帰処理する。
+    return Utils.pruneValue(structuredClone(obj));
   }
   /**
    * エラーオブジェクトからメッセージ文字列を取得する。
@@ -143,7 +129,13 @@ export class Utils {
         const srcVal = source[key];
         const dstVal = result[key];
         if (srcVal === undefined) continue;
-        if (srcVal !== null && typeof srcVal === 'object' && dstVal !== null && dstVal !== undefined && typeof dstVal === 'object') {
+        if (
+          srcVal !== null &&
+          typeof srcVal === 'object' &&
+          dstVal !== null &&
+          dstVal !== undefined &&
+          typeof dstVal === 'object'
+        ) {
           // 両方ともオブジェクト/配列の場合は再帰的にマージする
           result[key] = Utils.deepMerge(dstVal, srcVal);
         } else {
@@ -181,6 +173,12 @@ export class Utils {
     });
   }
 
+  public static async resolveHost(host: string) {
+    if (net.isIP(host)) return host;
+    const { address } = await dns.lookup(host);
+    return address;
+  }
+
   // --- OSUtils から統合したOS判定メソッド ---
 
   /**
@@ -205,5 +203,39 @@ export class Utils {
     if (Array.isArray(value)) return value.length === 0;
     if (typeof value === 'object' && value !== null) return Object.keys(value).length === 0;
     return false;
+  }
+
+  /**
+   * 値を再帰的に走査して空要素を削除する内部ヘルパー。
+   */
+  private static pruneValue(current: any): any {
+    if (Array.isArray(current)) {
+      return current
+        .map((value) => Utils.pruneValue(value))
+        .filter((value) => !Utils.shouldPruneValue(value));
+    }
+
+    if (typeof current === 'object' && current !== null) {
+      for (const key of Object.keys(current)) {
+        const value = Utils.pruneValue(current[key]);
+        if (Utils.shouldPruneValue(value)) {
+          delete current[key];
+        } else {
+          current[key] = value;
+        }
+      }
+      return current;
+    }
+
+    return current;
+  }
+
+  /**
+   * prune 対象の空値かどうかを判定する内部ヘルパー。
+   */
+  private static shouldPruneValue(value: any): boolean {
+    return (
+      value === undefined || value === null || Number.isNaN(value) || Utils.isObjectEmpty(value)
+    );
   }
 }

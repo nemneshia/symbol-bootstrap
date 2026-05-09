@@ -31,9 +31,8 @@ export enum KeyName {
 }
 
 /**
- * Delegate that knows how to retrieve or generate accounts.
- *
- * Implementations of this interface could for example prompt or load accounts from a key store.
+ * アカウント（鍵ペア）を解決するための抽象インターフェース。
+ * 実装側で、既存鍵の読み込み・生成・対話入力などを選択できる。
  */
 export interface AccountResolver {
   resolveAccount(
@@ -42,23 +41,28 @@ export interface AccountResolver {
     keyName: KeyName,
     nodeName: string | undefined,
     operationDescription: string,
-    generateErrorMessage: string | undefined,
+    generateErrorMessage: string | undefined
   ): Promise<GeneratedAccount>;
 }
 
 /**
- * Basic no prompt implementation. If the account cannot be resolved, it won't be prompted.
+ * 非対話型の基本実装。
+ * 与えられた秘密鍵からアカウントを復元するか、必要に応じて新規生成する。
  */
 export class DefaultAccountResolver implements AccountResolver {
-  private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter();
+  constructor(private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter()) {}
 
-  async resolveAccount(
+  /**
+   * アカウント情報を解決する。
+   * `account` が未指定なら新規生成（またはエラー）、秘密鍵があれば復元する。
+   */
+  public async resolveAccount(
     networkType: NetworkType,
     account: CertificatePair | undefined,
-    keyName: KeyName,
-    nodeName: string,
-    operationDescription: string,
-    generateErrorMessage: string | undefined,
+    _keyName: KeyName,
+    _nodeName: string,
+    _operationDescription: string,
+    generateErrorMessage: string | undefined
   ): Promise<GeneratedAccount> {
     if (!account) {
       if (generateErrorMessage) {
@@ -66,13 +70,18 @@ export class DefaultAccountResolver implements AccountResolver {
       }
       return this.generateNewAccount(networkType);
     }
-    if (account?.privateKey) {
+
+    if (account.privateKey) {
       return this.cryptoPort.createAccountFromPrivateKey(account.privateKey, networkType);
     }
-    throw new Error('Private key not provided');
+
+    throw new Error('秘密鍵が指定されていません。');
   }
 
-  generateNewAccount(networkType: NetworkType): GeneratedAccount {
+  /**
+   * 指定ネットワークタイプの新規アカウントを生成する。
+   */
+  public generateNewAccount(networkType: NetworkType): GeneratedAccount {
     return this.cryptoPort.generateAccount(networkType);
   }
 }

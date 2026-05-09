@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 import { createDecipheriv, pbkdf2Sync } from 'crypto';
+
 import { KnownError } from '../errors/KnownError.js';
 import { PrivateKeySecurityMode } from '../model/index.js';
 import { SymbolCryptoAdapter } from '../sdk/index.js';
@@ -30,7 +31,11 @@ export class CryptoUtils {
   /** 新形式 V2 の暗号化プレフィックス */
   private static readonly ENCRYPT_PREFIX_V2 = 'ENCRYPTED_V2:';
   /** 暗号化対象フィールド名のリスト */
-  private static readonly ENCRYPTABLE_KEYS = ['privateKey', 'restSSLKeyBase64', 'privateFileContent'];
+  private static readonly ENCRYPTABLE_KEYS = [
+    'privateKey',
+    'restSSLKeyBase64',
+    'privateFileContent',
+  ];
 
   /**
    * 値を再帰的にトラバースし、暗号化可能フィールドを暗号化する。
@@ -44,7 +49,7 @@ export class CryptoUtils {
         }
         return v;
       },
-      fieldName,
+      fieldName
     );
   }
 
@@ -60,13 +65,18 @@ export class CryptoUtils {
     if (securityMode) {
       return securityMode;
     }
-    throw new KnownError(`${value} is not a valid Security Mode. Please use one of ${securityModes.join(', ')}`);
+    throw new KnownError(
+      `${value} は有効な Security Mode ではありません。次のいずれかを指定してください: ${securityModes.join(', ')}`
+    );
   }
 
   /**
    * セキュリティモードに応じて、対象の秘密鍵フィールドを削除する。
    */
-  public static removePrivateKeysAccordingToSecurityMode(value: any, securityMode: PrivateKeySecurityMode): any {
+  public static removePrivateKeysAccordingToSecurityMode(
+    value: any,
+    securityMode: PrivateKeySecurityMode
+  ): any {
     if (securityMode === PrivateKeySecurityMode.PROMPT_MAIN) {
       return this.removePrivateKeys(value, ['main', 'voting']);
     }
@@ -95,16 +105,22 @@ export class CryptoUtils {
       const filtered = Object.fromEntries(
         Object.entries(value).filter(([name, v]) => {
           const isBlacklisted =
-            !blacklistNames.length || blacklistNames.find((blacklistName) => name.toLowerCase().indexOf(blacklistName.toLowerCase()) > -1);
+            !blacklistNames.length ||
+            blacklistNames.find(
+              (blacklistName) => name.toLowerCase().indexOf(blacklistName.toLowerCase()) > -1
+            );
           return !isBlacklisted || !this.isEncryptableKeyField(v, name);
-        }),
+        })
       );
       return Object.fromEntries(
         Object.entries(filtered).map(([name, v]) => {
           const isBlacklisted =
-            !blacklistNames.length || blacklistNames.find((blacklistName) => name.toLowerCase().indexOf(blacklistName.toLowerCase()) > -1);
+            !blacklistNames.length ||
+            blacklistNames.find(
+              (blacklistName) => name.toLowerCase().indexOf(blacklistName.toLowerCase()) > -1
+            );
           return [name, CryptoUtils.removePrivateKeys(v, isBlacklisted ? [] : blacklistNames)];
-        }),
+        })
       );
     }
     return value;
@@ -127,7 +143,7 @@ export class CryptoUtils {
             if (!decryptedValue) throw new Error();
             return decryptedValue;
           } catch {
-            throw Error('Value could not be decrypted!');
+            throw Error('値を復号できませんでした。');
           }
         }
         if (v.startsWith(CryptoUtils.ENCRYPT_PREFIX)) {
@@ -154,11 +170,11 @@ export class CryptoUtils {
           } catch {
             // fall through
           }
-          throw Error('Value could not be decrypted!');
+          throw Error('値を復号できませんでした。');
         }
         return v;
       },
-      fieldName,
+      fieldName
     );
   }
 
@@ -166,7 +182,11 @@ export class CryptoUtils {
    * 復号化し、レガシー暗号化が使われていたかの情報も返す。
    * ファイルを強化暗号化で保存し直す必要があるかどうかの判定に利用される。
    */
-  public static decryptWithUpgradeInfo(value: any, password: string, fieldName?: string): { data: any; hasLegacyUpgrade: boolean } {
+  public static decryptWithUpgradeInfo(
+    value: any,
+    password: string,
+    fieldName?: string
+  ): { data: any; hasLegacyUpgrade: boolean } {
     CryptoUtils._legacyUpgradeDetected = false;
     const data = this.decrypt(value, password, fieldName);
     return { data, hasLegacyUpgrade: CryptoUtils._legacyUpgradeDetected };
@@ -193,7 +213,8 @@ export class CryptoUtils {
     }
     if (
       this.isEncryptableKeyField(value, fieldName) &&
-      (value.startsWith(CryptoUtils.ENCRYPT_PREFIX) || value.startsWith(CryptoUtils.ENCRYPT_PREFIX_V2))
+      (value.startsWith(CryptoUtils.ENCRYPT_PREFIX) ||
+        value.startsWith(CryptoUtils.ENCRYPT_PREFIX_V2))
     ) {
       return 1;
     }
@@ -207,7 +228,9 @@ export class CryptoUtils {
     return (
       typeof value === 'string' &&
       fieldName &&
-      CryptoUtils.ENCRYPTABLE_KEYS.some((key) => fieldName.toLowerCase().endsWith(key.toLowerCase()))
+      CryptoUtils.ENCRYPTABLE_KEYS.some((key) =>
+        fieldName.toLowerCase().endsWith(key.toLowerCase())
+      )
     );
   }
 
@@ -216,7 +239,11 @@ export class CryptoUtils {
    * encrypt / decrypt の共通トラバーサルロジックを担当する。
    * 配列要素はフィールド名なしで再帰処理し、オブジェクトは各プロパティ名をフィールド名として渡す。
    */
-  private static traverseAndTransform(value: any, transform: (v: any, fieldName?: string) => any, fieldName?: string): any {
+  private static traverseAndTransform(
+    value: any,
+    transform: (v: any, fieldName?: string) => any,
+    fieldName?: string
+  ): any {
     if (!value) return value;
     if (Array.isArray(value)) {
       // 配列要素はフィールド名なしで再帰処理
@@ -224,7 +251,12 @@ export class CryptoUtils {
     }
     if (typeof value === 'object' && value !== null) {
       // オブジェクトは各プロパティ名をフィールド名として再帰処理
-      return Object.fromEntries(Object.entries(value).map(([k, v]) => [k, CryptoUtils.traverseAndTransform(v, transform, k)]));
+      return Object.fromEntries(
+        Object.entries(value).map(([k, v]) => [
+          k,
+          CryptoUtils.traverseAndTransform(v, transform, k),
+        ])
+      );
     }
     // 葉ノード: 変換関数を適用する
     return transform(value, fieldName);
@@ -236,7 +268,7 @@ export class CryptoUtils {
    */
   private static decryptLegacy(data: string, password: string): string {
     if (!data || data.length < 64) {
-      throw new Error('Invalid encrypted payload');
+      throw new Error('暗号化ペイロードが不正です。');
     }
     const saltHex = data.substring(0, 32);
     const ivHex = data.substring(32, 64);

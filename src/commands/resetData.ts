@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class ResetData extends Command {
-  static description = 'It removes the data keeping the generated configuration, certificates, keys and block 1.';
+  static description = 'データを削除します。生成済みの設定、証明書、鍵、block 1 は保持します。';
 
   static examples = [`$ symbol-bootstrap resetData`];
 

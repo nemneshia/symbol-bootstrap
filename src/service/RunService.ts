@@ -13,30 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { chmodSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
 
-import { chmodSync, existsSync } from 'fs';
-
-import { join } from 'path';
 import { Logger } from '../logger/index.js';
 import { DockerCompose, DockerComposeService } from '../model/index.js';
 import { ICryptoPort, INetworkPort, SymbolCryptoAdapter } from '../sdk/index.js';
 import { AsyncUtils } from '../utils/AsyncUtils.js';
 import { Constants } from '../utils/Constants.js';
+import { PortUtils } from '../utils/PortUtils.js';
+import { Utils } from '../utils/Utils.js';
+import { YamlUtils } from '../utils/YamlUtils.js';
 import { DefaultAccountResolver } from './AccountResolver.js';
 import { CertificateService } from './CertificateService.js';
 import { ConfigLoader } from './ConfigLoader.js';
 import { FileSystemService } from './FileSystemService.js';
-
-import { PortUtils } from '../utils/PortUtils.js';
-import { Utils } from '../utils/Utils.js';
-import { YamlUtils } from '../utils/YamlUtils.js';
 import { RuntimeService } from './RuntimeService.js';
+
 /**
- * params necessary to run the docker compose network.
+ * docker compose ネットワーク起動時に利用するパラメーター。
  */
 export type RunParams = {
   detached?: boolean;
-  healthCheck?: boolean;
+  checkHealth?: boolean;
   build?: boolean;
   pullImages?: boolean;
   timeout?: number;
@@ -61,7 +60,7 @@ export class RunService {
     private readonly logger: Logger,
     protected readonly params: RunParams,
     private readonly networkPort: INetworkPort,
-    private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter(),
+    private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter()
   ) {
     this.configLoader = new ConfigLoader(this.logger);
     this.fileSystemService = new FileSystemService(this.logger);
@@ -73,46 +72,64 @@ export class RunService {
       await this.resetData();
     }
 
-    const basicArgs = ['up', '--remove-orphans'];
-    if (this.params.detached) {
-      basicArgs.push('--detach');
-    }
-    if (this.params.build) {
-      basicArgs.push('--build');
-    }
-    if (this.params.args) {
-      basicArgs.push(...(this.params.args ?? []).flatMap((s) => s.split(' ').map((internal) => internal.trim())));
-    }
+    const basicArgs = this.createUpArgs();
 
     await this.beforeRun(basicArgs, false);
 
     const promises: Promise<any>[] = [];
     promises.push(this.basicRun(basicArgs));
-    if (this.params.healthCheck) {
+    if (this.params.checkHealth) {
       await AsyncUtils.sleep(5000);
-      promises.push(this.healthCheck());
+      promises.push(this.checkHealth());
     }
     await Promise.all(promises);
   }
 
-  public async healthCheck(pollIntervalMs = 10000): Promise<void> {
-    const dockerFile = join(this.params.target, `docker`, `compose.yaml`);
+  /**
+   * docker compose up に渡す基本引数を構築する。
+   */
+  private createUpArgs(): string[] {
+    const args = ['up', '--remove-orphans'];
+    if (this.params.detached) {
+      args.push('--detach');
+    }
+    if (this.params.build) {
+      args.push('--build');
+    }
+    if (this.params.args) {
+      args.push(
+        ...(this.params.args ?? []).flatMap((s) => s.split(' ').map((internal) => internal.trim()))
+      );
+    }
+    return args;
+  }
+
+  public async checkHealth(pollIntervalMs = 10000): Promise<void> {
+    const dockerFile = this.getComposeFile();
     if (!existsSync(dockerFile)) {
-      this.logger.info(`Docker compose ${dockerFile} does not exist. Cannot check the status of the service.`);
+      this.logger.info(
+        `Docker compose ${dockerFile} が存在しないため、サービス状態を確認できません。`
+      );
       return;
     }
     if (!(await this.checkCertificates())) {
-      throw new Error(`Certificates are about to expire. Check the logs!`);
+      throw new Error(`証明書の有効期限が近づいています。ログを確認してください。`);
     }
-    const dockerCompose: DockerCompose = YamlUtils.fromYaml(await YamlUtils.readTextFile(dockerFile));
+    const dockerCompose: DockerCompose = YamlUtils.fromYaml(
+      await YamlUtils.readTextFile(dockerFile)
+    );
     const services = Object.values(dockerCompose.services);
     const timeout = this.params.timeout || RunService.defaultParams.timeout || 0;
-    const started = await AsyncUtils.poll(this.logger, () => this.runOneCheck(services), timeout, pollIntervalMs);
+    const started = await AsyncUtils.poll(
+      this.logger,
+      () => this.runOneCheck(services),
+      timeout,
+      pollIntervalMs
+    );
     if (!started) {
-      throw new Error(`Network did NOT start!!!`);
-    } else {
-      this.logger.info('Network is running!');
+      throw new Error(`ネットワークが起動しませんでした。`);
     }
+    this.logger.info('ネットワークは稼働中です。');
   }
 
   private async checkCertificates(): Promise<boolean> {
@@ -124,24 +141,32 @@ export class RunService {
         target: this.params.target,
         user: Constants.CURRENT_USER,
       },
-      this.cryptoPort,
+      this.cryptoPort
     );
-    const allServicesChecks: Promise<boolean>[] = (presetData.nodes || []).map(async (nodePreset) => {
+    if (!presetData.node) {
+      return true;
+    }
+    const allServicesChecks: Promise<boolean>[] = [presetData.node].map(async (nodePreset) => {
       const name = nodePreset.name;
-      const certFolder = this.fileSystemService.getTargetNodesFolder(this.params.target, false, name, 'cert');
+      const certFolder = this.fileSystemService.getTargetNodesFolder(
+        this.params.target,
+        false,
+        name,
+        'cert'
+      );
       const willExpireReport = await service.willCertificateExpire(
         presetData.symbolServerImage,
         certFolder,
         CertificateService.NODE_CERTIFICATE_FILE_NAME,
-        presetData.certificateExpirationWarningInDays,
+        presetData.certificateExpirationWarningInDays
       );
       if (willExpireReport.willExpire) {
         this.logger.warn(
-          `The ${CertificateService.NODE_CERTIFICATE_FILE_NAME} certificate for node ${name} will expire in less than ${presetData.certificateExpirationWarningInDays} days on ${willExpireReport.expirationDate}. You need to renew it.`,
+          `ノード ${name} の ${CertificateService.NODE_CERTIFICATE_FILE_NAME} 証明書は ${willExpireReport.expirationDate} に失効予定で、残り ${presetData.certificateExpirationWarningInDays} 日未満です。更新が必要です。`
         );
       } else {
         this.logger.info(
-          `The ${CertificateService.NODE_CERTIFICATE_FILE_NAME} certificate for node ${name} will expire on ${willExpireReport.expirationDate}. No need to renew it yet.`,
+          `ノード ${name} の ${CertificateService.NODE_CERTIFICATE_FILE_NAME} 証明書の失効日は ${willExpireReport.expirationDate} です。現時点では更新不要です。`
         );
       }
       return !willExpireReport.willExpire;
@@ -150,88 +175,135 @@ export class RunService {
   }
 
   private async runOneCheck(services: DockerComposeService[]): Promise<boolean> {
-    const runningContainers = (await this.runtimeService.exec('docker ps --format {{.Names}}')).stdout.split(`\n`);
-    const allServicesChecks: Promise<boolean>[] = services.map(async (service) => {
-      if (runningContainers.indexOf(service.container_name) < 0) {
-        this.logger.warn(`Container ${service.container_name} is NOT running YET.`);
-        return false;
-      }
-      this.logger.info(`Container ${service.container_name} is running`);
-      return (
-        await Promise.all(
-          (service.ports || []).map(async (portBind) => {
-            const ports = portBind.split(':');
-            const externalPort = parseInt(ports[0]);
-            const internalPort = ports.length > 1 ? parseInt(ports[1]) : externalPort;
-            const portOpen = await PortUtils.isReachable(externalPort, 'localhost');
-            if (portOpen) {
-              this.logger.info(`Container ${service.container_name} port ${externalPort} -> ${internalPort} is open`);
-            } else {
-              this.logger.warn(`Container ${service.container_name} port ${externalPort} -> ${internalPort}  is NOT open YET.`);
-              return false;
-            }
-            if (service.container_name.indexOf('rest-gateway') > -1) {
-              const url = 'http://localhost:' + externalPort;
-              if (service.command !== undefined && service.command.indexOf('start-light') > -1) {
-                // light rest
-                const testUrl = `${url}/node/info`;
-                this.logger.info(`Testing ${testUrl}`);
-                try {
-                  await this.networkPort.getNodeInfo(url);
-                  this.logger.info(`Rest ${testUrl} is up and running...`);
-                  return true;
-                } catch (e) {
-                  this.logger.warn(`Rest ${testUrl} is NOT up and running YET: ${Utils.getMessage(e)}`);
-                  return false;
-                }
-              } else {
-                const testUrl = `${url}/node/health`;
-                this.logger.info(`Testing ${testUrl}`);
-                try {
-                  const health = await this.networkPort.getNodeHealth(url);
-                  if (health.apiNodeStatus === 'Down') {
-                    this.logger.warn(`Rest ${testUrl} is NOT up and running YET: Api Node is still Down!`);
-                    return false;
-                  }
-                  if (health.dbStatus === 'Down') {
-                    this.logger.warn(`Rest ${testUrl} is NOT up and running YET: DB is still Down!`);
-                    return false;
-                  }
-                  this.logger.info(`Rest ${testUrl} is up and running...`);
-                  return true;
-                } catch (e) {
-                  this.logger.warn(`Rest ${testUrl} is NOT up and running YET: ${Utils.getMessage(e)}`);
-                  return false;
-                }
-              }
-            }
-            return true;
-          }),
-        )
-      ).every((t) => t);
-    });
+    const runningContainers = await this.loadRunningContainerNames();
+    const allServicesChecks: Promise<boolean>[] = services.map((service) =>
+      this.runServiceHealthCheck(service, runningContainers)
+    );
     return (await Promise.all(allServicesChecks)).every((t) => t);
   }
 
+  private async loadRunningContainerNames(): Promise<string[]> {
+    const output = (await this.runtimeService.exec('docker ps --format {{.Names}}')).stdout;
+    return output
+      .split(`\n`)
+      .map((line) => line.trim())
+      .filter((line) => !!line);
+  }
+
+  private async runServiceHealthCheck(
+    service: DockerComposeService,
+    runningContainers: string[]
+  ): Promise<boolean> {
+    if (!runningContainers.includes(service.container_name)) {
+      this.logger.warn(`コンテナ ${service.container_name} はまだ起動していません。`);
+      return false;
+    }
+    this.logger.info(`コンテナ ${service.container_name} は起動しています`);
+    const portChecks = await Promise.all(
+      (service.ports ?? []).map((portBind) => this.checkServicePort(service, portBind))
+    );
+    return portChecks.every((t) => t);
+  }
+
+  private async checkServicePort(
+    service: DockerComposeService,
+    portBind: string
+  ): Promise<boolean> {
+    const [externalPort, internalPort] = this.parsePortBinding(portBind);
+    const portOpen = await PortUtils.isReachable(externalPort, 'localhost');
+    if (!portOpen) {
+      this.logger.warn(
+        `コンテナ ${service.container_name} のポート ${externalPort} -> ${internalPort} はまだ開いていません。`
+      );
+      return false;
+    }
+    this.logger.info(
+      `コンテナ ${service.container_name} のポート ${externalPort} -> ${internalPort} は開いています`
+    );
+    return this.checkRestIfNeeded(service, externalPort);
+  }
+
+  private parsePortBinding(portBind: string): [number, number] {
+    const ports = portBind.split(':');
+    const externalPort = Number.parseInt(ports[0], 10);
+    const internalPort = ports.length > 1 ? Number.parseInt(ports[1], 10) : externalPort;
+    return [externalPort, internalPort];
+  }
+
+  private async checkRestIfNeeded(
+    service: DockerComposeService,
+    externalPort: number
+  ): Promise<boolean> {
+    const command = service.command;
+    if (!command || !command.includes('/symbol-workdir/rest')) {
+      return true;
+    }
+    const baseUrl = `http://localhost:${externalPort}`;
+    if (command.includes('start-light')) {
+      return this.checkLightRest(baseUrl);
+    }
+    return this.checkRegularRest(baseUrl);
+  }
+
+  private async checkLightRest(url: string): Promise<boolean> {
+    const testUrl = `${url}/node/info`;
+    this.logger.info(`${testUrl} を確認中`);
+    try {
+      await this.networkPort.getNodeInfo(url);
+      this.logger.info(`REST ${testUrl} は正常に稼働しています...`);
+      return true;
+    } catch (e) {
+      this.logger.warn(`REST ${testUrl} はまだ稼働していません: ${Utils.getMessage(e)}`);
+      return false;
+    }
+  }
+
+  private async checkRegularRest(url: string): Promise<boolean> {
+    const testUrl = `${url}/node/health`;
+    this.logger.info(`${testUrl} を確認中`);
+    try {
+      const health = await this.networkPort.getNodeHealth(url);
+      if (health.apiNodeStatus === 'Down') {
+        this.logger.warn(`REST ${testUrl} はまだ稼働していません: API ノードが Down のままです。`);
+        return false;
+      }
+      if (health.dbStatus === 'Down') {
+        this.logger.warn(`REST ${testUrl} はまだ稼働していません: DB が Down のままです。`);
+        return false;
+      }
+      this.logger.info(`REST ${testUrl} は正常に稼働しています...`);
+      return true;
+    } catch (e) {
+      this.logger.warn(`REST ${testUrl} はまだ稼働していません: ${Utils.getMessage(e)}`);
+      return false;
+    }
+  }
+
   public async resetData(): Promise<void> {
-    this.logger.info('Resetting data');
+    this.logger.info('データをリセットします');
     const target = this.params.target;
     const preset = this.configLoader.loadExistingPresetData(target, false);
-    await Promise.all(
-      (preset.nodes || []).map(async (node) => {
-        const componentConfigFolder = this.fileSystemService.getTargetNodesFolder(target, false, node.name);
-        const dataFolder = join(componentConfigFolder, 'data');
-        const logsFolder = join(componentConfigFolder, 'logs');
-        this.fileSystemService.deleteFolder(dataFolder);
-        this.fileSystemService.deleteFolder(logsFolder);
-        await this.fileSystemService.mkdir(dataFolder);
-        await this.fileSystemService.mkdir(logsFolder);
-      }),
+    if (preset.node) {
+      const componentConfigFolder = this.fileSystemService.getTargetNodesFolder(
+        target,
+        false,
+        preset.node.name
+      );
+      const dataFolder = join(componentConfigFolder, 'data');
+      const logsFolder = join(componentConfigFolder, 'logs');
+      this.fileSystemService.deleteFolder(dataFolder);
+      this.fileSystemService.deleteFolder(logsFolder);
+      await this.fileSystemService.mkdir(dataFolder);
+      await this.fileSystemService.mkdir(logsFolder);
+    }
+    if (preset.gateway) {
+      this.fileSystemService.deleteFolder(
+        this.fileSystemService.getTargetGatewayFolder(target, false, preset.gateway.name, 'logs')
+      );
+    }
+    this.fileSystemService.deleteFolder(
+      this.fileSystemService.getTargetDatabasesFolder(target, false)
     );
-    (preset.gateways || []).forEach((node) => {
-      this.fileSystemService.deleteFolder(this.fileSystemService.getTargetGatewayFolder(target, false, node.name, 'logs'));
-    });
-    this.fileSystemService.deleteFolder(this.fileSystemService.getTargetDatabasesFolder(target, false));
   }
 
   public async stop(): Promise<void> {
@@ -240,39 +312,45 @@ export class RunService {
   }
 
   private async beforeRun(extraArgs: string[], ignoreIfNotFound: boolean): Promise<boolean> {
-    const dockerFile = join(this.params.target, `docker`, `compose.yaml`);
+    const dockerFile = this.getComposeFile();
     const dockerComposeArgs = ['-f', dockerFile];
     const args = [...dockerComposeArgs, ...extraArgs];
     if (!existsSync(dockerFile)) {
       if (ignoreIfNotFound) {
-        this.logger.info(`Docker compose ${dockerFile} does not exist, ignoring: docker compose ${args.join(' ')}`);
+        this.logger.info(
+          `Docker compose ${dockerFile} が存在しないためスキップします: docker compose ${args.join(' ')}`
+        );
         return false;
       } else {
-        throw new Error(`Docker compose ${dockerFile} does not exist. Cannot run: docker compose ${args.join(' ')}`);
+        throw new Error(
+          `Docker compose ${dockerFile} が存在しないため実行できません: docker compose ${args.join(' ')}`
+        );
       }
     }
 
-    //Creating folders to avoid being created using sudo. Is there a better way?
+    // sudo 実行時に root 所有で作成されることを避けるため、先にボリュームフォルダーを準備する。
     const dockerCompose: DockerCompose = await YamlUtils.loadYaml(dockerFile, false);
     if (!ignoreIfNotFound && this.params.pullImages) await this.pullImages(dockerCompose);
 
-    const volumenList = Object.values(dockerCompose?.services).flatMap((s) => s.volumes?.map((v) => v.split(':')[0]) ?? []);
+    const volumeList = Object.values(dockerCompose.services).flatMap(
+      (s) => s.volumes?.map((v) => v.split(':')[0]) ?? []
+    );
 
     await Promise.all(
-      volumenList.map(async (v) => {
-        const volumenPath = join(this.params.target, `docker`, v);
-        if (!existsSync(volumenPath)) await this.fileSystemService.mkdir(volumenPath);
+      volumeList.map(async (v) => {
+        const volumePath = join(this.params.target, `docker`, v);
+        if (!existsSync(volumePath)) await this.fileSystemService.mkdir(volumePath);
         if (v.startsWith('../databases') && Utils.isRoot()) {
-          this.logger.info(`Chmod 777 folder ${volumenPath}`);
-          chmodSync(volumenPath, '777');
+          this.logger.info(`フォルダー ${volumePath} に chmod 777 を適用します`);
+          chmodSync(volumePath, '777');
         }
-      }),
+      })
     );
     return true;
   }
 
   private async basicRun(extraArgs: string[]): Promise<string> {
-    const dockerFile = join(this.params.target, `docker`, `compose.yaml`);
+    const dockerFile = this.getComposeFile();
     let dockerComposeArgs = ['compose', '-f', dockerFile];
     // docker compose project
     const presetData = this.configLoader.loadExistingPresetData(this.params.target, false);
@@ -289,9 +367,13 @@ export class RunService {
       ...new Set(
         Object.values(dockerCompose.services)
           .map((s) => s.image)
-          .filter((s): s is string => !!s),
+          .filter((s): s is string => !!s)
       ),
     ];
     await Promise.all(images.map((image) => this.runtimeService.pullImage(image)));
+  }
+
+  private getComposeFile(): string {
+    return join(this.params.target, `docker`, `compose.yaml`);
   }
 }

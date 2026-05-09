@@ -1,67 +1,23 @@
 {
   "name": "@nemneshia/symbol-bootstrap",
-  "description": "Symbol tool that allows you creating, configuring and running Symbol's networks",
-  "version": "2.0.8",
-  "author": "Nemneshia <@nemneshia>",
+  "description": "Symbolネットワークを手軽に構築・設定・運用できるツール",
+  "version": "3.0.0-alpha.0",
+  "author": "ccHarvestasya <harvestasya84@gmail.com>",
+  "license": "Apache-2.0",
   "type": "module",
   "bin": {
     "sb": "bin/run.js",
     "symbol-bootstrap": "bin/run.js"
   },
+  "main": "lib/index.js",
+  "exports": {
+    ".": {
+      "types": "./lib/index.d.ts",
+      "import": "./lib/index.js"
+    }
+  },
+  "types": "lib/index.d.ts",
   "bugs": "https://github.com/nemneshia/symbol-bootstrap/issues",
-  "dependencies": {
-    "@inquirer/prompts": "^8.0.1",
-    "@noble/ed25519": "^3.0.0",
-    "@noble/hashes": "^2.0.1",
-    "@oclif/core": "^4.8.0",
-    "@oclif/plugin-autocomplete": "^3.2.39",
-    "@oclif/plugin-help": "^6.2.36",
-    "archiver": "^7.0.1",
-    "figlet": "^1.9.4",
-    "handlebars": "^4.7.8",
-    "js-yaml": "^4.1.1",
-    "node-stream-zip": "^1.15.0",
-    "rxjs": "^7.8.2",
-    "semver": "^7.7.3",
-    "shx": "^0.4.0",
-    "symbol-openapi-typescript-fetch-client": "^1.0.3",
-    "symbol-sdk": "^3.3.1",
-    "ws": "^8.18.2",
-    "symbol-statistics-service-typescript-fetch-client": "^1.1.5",
-    "tslib": "^2.8.1",
-    "tweetnacl": "^1.0.3",
-    "winston": "^3.18.3"
-  },
-  "devDependencies": {
-    "@eslint/js": "^10.0.1",
-    "@oclif/test": "^4.1.15",
-    "@types/archiver": "^7.0.0",
-    "@types/figlet": "^1.7.0",
-    "@types/js-yaml": "^4.0.9",
-    "@types/node": "^25.6.0",
-    "@types/ws": "^8.5.14",
-    "@types/semver": "^7.7.1",
-    "@types/sinon": "^21.0.0",
-    "@typescript-eslint/eslint-plugin": "^8.48.0",
-    "@typescript-eslint/parser": "^8.48.0",
-    "@vitest/coverage-v8": "^3.0.0",
-    "coveralls": "^3.1.1",
-    "create-ts-index": "^1.14.0",
-    "dir-compare": "^5.0.0",
-    "esbuild": "^0.28.0",
-    "eslint": "^10.2.1",
-    "eslint-config-prettier": "^10.1.8",
-    "globals": "^17.5.0",
-    "mock-stdin": "^1.0.0",
-    "nock": "^14.0.10",
-    "oclif": "^4.22.50",
-    "prettier": "^3.7.1",
-    "sinon": "^21.0.0",
-    "tsx": "^4.0.0",
-    "typedoc": "^0.28.14",
-    "typescript": "^6.0.3",
-    "vitest": "^3.0.0"
-  },
   "engines": {
     "node": ">=20.0.0"
   },
@@ -70,23 +26,12 @@
     "/presets",
     "/bin",
     "/lib",
-    "/npm-shrinkwrap.json",
     "/oclif.manifest.json"
   ],
   "homepage": "https://github.com/nemneshia/symbol-bootstrap",
-  "keywords": [
-    "oclif"
-  ],
-  "license": "Apache-2.0",
-  "main": "lib/index.js",
-  "exports": {
-    ".": {
-      "types": "./lib/index.d.ts",
-      "import": "./lib/index.js"
-    }
-  },
   "oclif": {
     "bin": "symbol-bootstrap",
+    "helpClass": "./lib/help",
     "commands": "./lib/commands",
     "plugins": [
       "@oclif/plugin-autocomplete",
@@ -97,13 +42,17 @@
     "type": "git",
     "url": "git+https://github.com/nemneshia/symbol-bootstrap.git"
   },
+  "keywords": [
+    "oclif"
+  ],
   "scripts": {
     "doc": "typedoc --out \"ts-docs\" src && touch ./ts-docs/.nojekyll",
+    "clean": "pnpm exec shx rm -rf ./lib ./target ./doc logs.log oclif.manifest.json tsconfig.tsbuildinfo tsconfig.build.tsbuildinfo",
     "lint": "eslint --cache src/ test/",
-    "clean": "pnpm exec shx rm -rf ./lib tsconfig.build.tsbuildinfo",
     "lint:fix": "eslint src/ test/ --fix",
-    "prettier": "prettier --write ./src ./test",
-    "style:fix": "pnpm run create-index-files && pnpm run prettier && pnpm run lint:fix && pnpm run oclif-doc",
+    "format": "prettier ./src ./test",
+    "format:fix": "prettier --write ./src ./test",
+    "style:fix": "pnpm run create-index-files && pnpm run format:fix && pnpm run lint:fix && pnpm run oclif-doc",
     "create-index-files": "cti create ./src -b -n -e commands",
     "postpack": "pnpm exec shx rm -f oclif.manifest.json tsconfig.build.tsbuildinfo",
     "oclif-doc": "oclif manifest && oclif readme --multi",
@@ -114,7 +63,7 @@
     "prepack": "pnpm run build && pnpm run oclif-doc",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "e2e": "vitest run \"test/**/*.e2e.ts\"",
+    "e2e": "vitest run --config vitest.e2e.config.ts",
     "coveralls-report": "cat ./coverage/lcov.info | coveralls",
     "version": "echo $npm_package_version",
     "install-cli": "pnpm pack && pnpm add -g symbol-bootstrap",
@@ -123,5 +72,52 @@
     "publish:prd": "pnpm publish --access public",
     "publish:dry": "pnpm publish --access public --dry-run"
   },
-  "types": "lib/index.d.ts"
+  "dependencies": {
+    "@clack/prompts": "^1.3.0",
+    "@noble/ed25519": "^3.0.0",
+    "@noble/hashes": "^2.0.1",
+    "@oclif/core": "^4.11.1",
+    "@oclif/plugin-autocomplete": "^3.2.47",
+    "@oclif/plugin-help": "^6.2.46",
+    "archiver": "^8.0.0",
+    "cfonts": "^3.3.1",
+    "compare-versions": "^6.1.1",
+    "handlebars": "^4.7.8",
+    "js-yaml": "^4.1.1",
+    "node-stream-zip": "^1.15.0",
+    "rxjs": "^7.8.2",
+    "shx": "^0.4.0",
+    "symbol-openapi-typescript-fetch-client": "^1.0.3",
+    "symbol-sdk": "^3.3.1",
+    "symbol-statistics-service-typescript-fetch-client": "^1.1.5",
+    "tslib": "^2.8.1",
+    "winston": "^3.18.3",
+    "ws": "^8.18.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@oclif/test": "^4.1.15",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "@types/archiver": "^7.0.0",
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^25.6.2",
+    "@types/ws": "^8.5.14",
+    "@typescript-eslint/eslint-plugin": "^8.59.2",
+    "@typescript-eslint/parser": "^8.59.2",
+    "@vitest/coverage-v8": "^4.1.5",
+    "coveralls": "^3.1.1",
+    "create-ts-index": "^1.14.0",
+    "dir-compare": "^5.0.0",
+    "esbuild": "^0.28.0",
+    "eslint": "^10.3.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.6.0",
+    "mock-stdin": "^1.0.0",
+    "oclif": "^4.22.50",
+    "prettier": "^3.7.1",
+    "tsx": "^4.0.0",
+    "typedoc": "^0.28.14",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.5"
+  }
 }

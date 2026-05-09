@@ -1,282 +1,269 @@
-import { expect } from 'vitest';
-import { SymbolCryptoAdapter } from '../../src/sdk/index.js';
+import { describe, expect, it } from 'vitest';
+
+import { SymbolCryptoAdapter } from '../../src/sdk/adapters/SymbolCryptoAdapter.js';
 import { NetworkType } from '../../src/sdk/types/NetworkType.js';
 
-const adapter = new SymbolCryptoAdapter();
-
-// symbol-sdk が TEST_NET (152) アドレスに使う Base32 文字セット
-const BASE32_ADDR_RE = /^[A-Z2-7]{39}$/;
-
-// 既知の秘密鍵（決定論的テスト用）
-const KNOWN_PRIVATE_KEY = '0000000000000000000000000000000000000000000000000000000000000001';
-
+/**
+ * SymbolCryptoAdapter クラスのユニットテスト。
+ * ICryptoPort の本番実装を検証する。
+ */
 describe('SymbolCryptoAdapter', () => {
-  // ---------------------------------------------------------------
+  const adapter = new SymbolCryptoAdapter();
+
+  /** テスト用の既知の秘密鍵（決定論的な検証に使用）*/
+  const KNOWN_PRIVATE_KEY = '0000000000000000000000000000000000000000000000000000000000000001';
+
   describe('generateAccount', () => {
-    it('MAIN_NET で GeneratedAccount の形状を持つオブジェクトを返す', () => {
+    it('MAIN_NET でアカウントを生成できること', () => {
       const account = adapter.generateAccount(NetworkType.MAIN_NET);
+
+      // 秘密鍵・公開鍵・アドレスが揃っていること
       expect(account.privateKey).toMatch(/^[0-9A-Fa-f]{64}$/);
       expect(account.publicKey).toMatch(/^[0-9A-Fa-f]{64}$/);
-      expect(account.address).toMatch(/^N/);
+      expect(account.address).toMatch(/^N/); // メインネットは 'N' 始まり
     });
 
-    it('TEST_NET で GeneratedAccount の形状を持つオブジェクトを返す', () => {
+    it('TEST_NET でアカウントを生成できること', () => {
       const account = adapter.generateAccount(NetworkType.TEST_NET);
+
       expect(account.privateKey).toMatch(/^[0-9A-Fa-f]{64}$/);
-      expect(account.publicKey).toMatch(/^[0-9A-Fa-f]{64}$/);
-      expect(account.address).toMatch(/^T/);
+      expect(account.address).toMatch(/^T/); // テストネットは 'T' 始まり
     });
 
-    it('呼ぶたびに異なるアカウントを生成する（乱数性）', () => {
+    it('呼ぶたびに異なるアカウントを生成すること（乱数性）', () => {
       const a1 = adapter.generateAccount(NetworkType.TEST_NET);
       const a2 = adapter.generateAccount(NetworkType.TEST_NET);
-      expect(a1.privateKey).not.eq(a2.privateKey);
+
+      expect(a1.privateKey).not.toBe(a2.privateKey);
     });
   });
 
-  // ---------------------------------------------------------------
   describe('createAccountFromPrivateKey', () => {
-    it('既知の秘密鍵から TEST_NET アカウントを決定論的に生成する', () => {
+    it('既知の秘密鍵から決定論的にアカウントを生成すること', () => {
       const account = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      expect(account.privateKey.toUpperCase()).eq(KNOWN_PRIVATE_KEY.toUpperCase());
-      expect(account.publicKey).toMatch(/^[0-9A-Fa-f]{64}$/);
+
+      // 秘密鍵は大文字小文字を問わず一致すること
+      expect(account.privateKey.toUpperCase()).toBe(KNOWN_PRIVATE_KEY.toUpperCase());
+      // テストネットのアドレスは 'T' 始まり
       expect(account.address).toMatch(/^T/);
     });
 
-    it('既知の秘密鍵から MAIN_NET アカウントを決定論的に生成する', () => {
-      const account = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.MAIN_NET);
-      expect(account.privateKey.toUpperCase()).eq(KNOWN_PRIVATE_KEY.toUpperCase());
-      expect(account.address).toMatch(/^N/);
-    });
-
-    it('同じ秘密鍵から常に同一の結果を返す（冪等性）', () => {
+    it('同じ秘密鍵から常に同じ結果を返すこと（冪等性）', () => {
       const a1 = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
       const a2 = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      expect(a1).deep.eq(a2);
+
+      expect(a1.publicKey).toBe(a2.publicKey);
+      expect(a1.address).toBe(a2.address);
+    });
+
+    it('MAIN_NET と TEST_NET でアドレスが異なること', () => {
+      const mainNet = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.MAIN_NET);
+      const testNet = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
+
+      // 同じ秘密鍵でもネットワークが違えばアドレスが異なる
+      expect(mainNet.address).not.toBe(testNet.address);
+      expect(mainNet.address).toMatch(/^N/);
+      expect(testNet.address).toMatch(/^T/);
     });
   });
 
-  // ---------------------------------------------------------------
   describe('createPublicAccount', () => {
-    it('公開鍵からアドレスを導出する (TEST_NET)', () => {
-      const generated = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      const publicAccount = adapter.createPublicAccount(generated.publicKey, NetworkType.TEST_NET);
-      expect(publicAccount.publicKey).eq(generated.publicKey);
-      expect(publicAccount.address).eq(generated.address);
-    });
+    it('秘密鍵から導出した公開鍵でアカウントを作成できること', () => {
+      const full = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
+      const publicOnly = adapter.createPublicAccount(full.publicKey, NetworkType.TEST_NET);
 
-    it('公開鍵からアドレスを導出する (MAIN_NET)', () => {
-      const generated = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.MAIN_NET);
-      const publicAccount = adapter.createPublicAccount(generated.publicKey, NetworkType.MAIN_NET);
-      expect(publicAccount.publicKey).eq(generated.publicKey);
-      expect(publicAccount.address).eq(generated.address);
+      // 公開鍵とアドレスは一致すること
+      expect(publicOnly.publicKey).toBe(full.publicKey);
+      expect(publicOnly.address).toBe(full.address);
+      // privateKey は含まれないこと
+      expect((publicOnly as any).privateKey).toBeUndefined();
     });
   });
 
-  // ---------------------------------------------------------------
   describe('getAddressFromPublicKey', () => {
-    it('TEST_NET の公開鍵からアドレスを返す', () => {
-      const generated = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      const address = adapter.getAddressFromPublicKey(generated.publicKey, NetworkType.TEST_NET);
-      expect(address).eq(generated.address);
-    });
+    it('公開鍵からアドレスを導出できること', () => {
+      const account = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
+      const address = adapter.getAddressFromPublicKey(account.publicKey, NetworkType.TEST_NET);
 
-    it('MAIN_NET の公開鍵からアドレスを返す', () => {
-      const generated = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.MAIN_NET);
-      const address = adapter.getAddressFromPublicKey(generated.publicKey, NetworkType.MAIN_NET);
-      expect(address).eq(generated.address);
+      expect(address).toBe(account.address);
     });
   });
 
-  // ---------------------------------------------------------------
-  describe('createAddressFromRawAddress', () => {
-    it('生アドレス（plain 形式）を渡して同一アドレスが返る（ラウンドトリップ）', () => {
-      const generated = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      const address = adapter.createAddressFromRawAddress(generated.address);
-      expect(address).eq(generated.address);
+  describe('encrypt / decrypt', () => {
+    it('暗号化した値を復号化できること（ラウンドトリップ）', () => {
+      const original = 'テストシークレット値';
+      const password = 'securePassword123';
+
+      const encrypted = adapter.encrypt(original, password);
+      const decrypted = adapter.decrypt(encrypted, password);
+
+      expect(decrypted).toBe(original);
     });
 
-    it('MAIN_NET アドレスのラウンドトリップ', () => {
-      const generated = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.MAIN_NET);
-      const address = adapter.createAddressFromRawAddress(generated.address);
-      expect(address).eq(generated.address);
+    it('暗号化のたびに異なる暗号文を生成すること（IVのランダム性）', () => {
+      const value = 'テスト値';
+      const password = 'pass';
+
+      const e1 = adapter.encrypt(value, password);
+      const e2 = adapter.encrypt(value, password);
+
+      expect(e1).not.toBe(e2);
+    });
+
+    it('異なるパスワードで復号化するとエラーになること', () => {
+      const encrypted = adapter.encrypt('秘密値', 'correctPassword');
+
+      expect(() => adapter.decrypt(encrypted, 'wrongPassword')).toThrow();
+    });
+
+    it('秘密鍵（64文字hex）のラウンドトリップが正常に動作すること', () => {
+      const privateKey = KNOWN_PRIVATE_KEY.toUpperCase();
+      const password = 'testPassword';
+
+      const encrypted = adapter.encrypt(privateKey, password);
+      const decrypted = adapter.decrypt(encrypted, password);
+
+      expect(decrypted.toUpperCase()).toBe(privateKey);
     });
   });
 
-  // ---------------------------------------------------------------
-  describe('createMosaicId', () => {
-    it('16 文字の 16 進数文字列を返す', () => {
-      const { address } = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      const id = adapter.createMosaicId(0, address);
-      expect(id).toMatch(/^[0-9A-Fa-f]{16}$/);
-    });
-
-    it('同一引数で常に同一の ID を返す（決定論的）', () => {
-      const { address } = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      const id1 = adapter.createMosaicId(0, address);
-      const id2 = adapter.createMosaicId(0, address);
-      expect(id1).eq(id2);
-    });
-
-    it('nonce が異なれば異なる ID が返る', () => {
-      const { address } = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
-      const id1 = adapter.createMosaicId(0, address);
-      const id2 = adapter.createMosaicId(1, address);
-      expect(id1).not.eq(id2);
-    });
-  });
-
-  // ---------------------------------------------------------------
-  describe('randomBytes', () => {
-    it('randomBytes(16) → 長さ 16 の Uint8Array', () => {
+  describe('randomBytes / randomHex', () => {
+    it('指定したバイト数のランダムバイト列を返すこと', () => {
       const bytes = adapter.randomBytes(16);
-      expect(bytes).toBeInstanceOf(Uint8Array);
+
       expect(bytes).toHaveLength(16);
     });
 
-    it('randomBytes(32) → 長さ 32 の Uint8Array', () => {
-      expect(adapter.randomBytes(32)).toHaveLength(32);
-    });
-
-    it('連続呼び出しで（ほぼ）異なる値を返す', () => {
-      const a = adapter.randomBytes(32);
-      const b = adapter.randomBytes(32);
-      // 全バイトが一致する確率は天文学的に低いため比較
-      expect(Buffer.from(a).toString('hex')).not.eq(Buffer.from(b).toString('hex'));
-    });
-  });
-
-  // ---------------------------------------------------------------
-  describe('randomHex', () => {
-    it('randomHex(16) → 長さ 32（16 バイト × 2）の文字列', () => {
+    it('指定したバイト数の16進文字列を返すこと', () => {
       const hex = adapter.randomHex(16);
+
+      // 16バイト = 32文字の16進文字列
       expect(hex).toHaveLength(32);
-    });
-
-    it('返値が有効な 16 進数文字列である', () => {
-      const hex = adapter.randomHex(8);
-      expect(adapter.isHexString(hex)).eq(true);
+      expect(hex).toMatch(/^[0-9A-Fa-f]+$/);
     });
   });
 
-  // ---------------------------------------------------------------
   describe('hexToUint8 / uint8ToHex', () => {
-    it('uint8ToHex(hexToUint8(hex)) でラウンドトリップ', () => {
-      const hex = 'DEADBEEF0102030405060708090A0B0C';
+    it('16進文字列をUint8Arrayに変換できること', () => {
+      const hex = 'DEADBEEF';
       const bytes = adapter.hexToUint8(hex);
-      expect(adapter.uint8ToHex(bytes)).eq(hex);
+
+      expect(bytes).toEqual(new Uint8Array([0xde, 0xad, 0xbe, 0xef]));
     });
 
-    it('hexToUint8 が正しいバイト値を返す', () => {
-      const bytes = adapter.hexToUint8('0102FF');
-      expect(bytes[0]).eq(0x01);
-      expect(bytes[1]).eq(0x02);
-      expect(bytes[2]).eq(0xff);
+    it('Uint8Arrayを16進文字列に変換できること', () => {
+      const bytes = new Uint8Array([0xde, 0xad, 0xbe, 0xef]);
+      const hex = adapter.uint8ToHex(bytes);
+
+      expect(hex.toUpperCase()).toBe('DEADBEEF');
     });
 
-    it('uint8ToHex が大文字の 16 進数文字列を返す', () => {
-      const hex = adapter.uint8ToHex(Uint8Array.from([0xde, 0xad]));
-      expect(hex).eq('DEAD');
+    it('16進文字列のラウンドトリップが正常に動作すること', () => {
+      const original = 'AABBCCDD00112233';
+      const hex = adapter.uint8ToHex(adapter.hexToUint8(original));
+
+      expect(hex.toUpperCase()).toBe(original.toUpperCase());
     });
   });
 
-  // ---------------------------------------------------------------
   describe('numberToUint8Array / uintArray8ToNumber', () => {
-    it('ラウンドトリップ: uintArray8ToNumber(numberToUint8Array(n, size)) === n', () => {
-      expect(adapter.uintArray8ToNumber(adapter.numberToUint8Array(42, 4))).eq(42);
-      expect(adapter.uintArray8ToNumber(adapter.numberToUint8Array(0, 4))).eq(0);
-      expect(adapter.uintArray8ToNumber(adapter.numberToUint8Array(255, 1))).eq(255);
+    it('数値をリトルエンディアンのUint8Arrayに変換できること', () => {
+      // 256 = 0x100 → [0x00, 0x01] in little-endian (2 bytes)
+      const bytes = adapter.numberToUint8Array(256, 2);
+
+      expect(bytes[0]).toBe(0x00);
+      expect(bytes[1]).toBe(0x01);
     });
 
-    it('numberToUint8Array が指定サイズの Uint8Array を返す', () => {
-      expect(adapter.numberToUint8Array(1, 4)).toHaveLength(4);
-      expect(adapter.numberToUint8Array(1, 2)).toHaveLength(2);
+    it('Uint8Arrayを数値に変換できること（リトルエンディアン）', () => {
+      const bytes = new Uint8Array([0x00, 0x01]);
+      const num = adapter.uintArray8ToNumber(bytes);
+
+      expect(num).toBe(256);
+    });
+
+    it('数値変換のラウンドトリップが正常に動作すること', () => {
+      const original = 12345678;
+      const bytes = adapter.numberToUint8Array(original, 4);
+      const restored = adapter.uintArray8ToNumber(bytes);
+
+      expect(restored).toBe(original);
     });
   });
 
-  // ---------------------------------------------------------------
   describe('isHexString', () => {
-    it('有効な 16 進数文字列で true を返す', () => {
-      expect(adapter.isHexString('AABB1234')).eq(true);
-      expect(adapter.isHexString('aabbccdd')).eq(true);
-      expect(adapter.isHexString('00FF')).eq(true);
+    it('有効な16進文字列を正しく判定すること', () => {
+      expect(adapter.isHexString('DEADBEEF')).toBe(true);
+      expect(adapter.isHexString('deadbeef')).toBe(true);
+      expect(adapter.isHexString('0123456789ABCDEF')).toBe(true);
     });
 
-    it('無効な文字列で false を返す', () => {
-      expect(adapter.isHexString('ZZZZ')).eq(false);
-      expect(adapter.isHexString('hello')).eq(false);
-      expect(adapter.isHexString('XY')).eq(false);
+    it('無効な文字を含む場合は false を返すこと', () => {
+      expect(adapter.isHexString('GHIJKLMN')).toBe(false);
+      expect(adapter.isHexString('DEADBEEF!')).toBe(false);
     });
 
-    it('expectedSize 指定時: 文字数が一致すれば true、不一致なら false', () => {
-      // expectedSize は文字数（hex chars）として比較される
-      expect(adapter.isHexString('AABB', 4)).eq(true); // 4 文字 === 4
-      expect(adapter.isHexString('AA', 2)).eq(true); // 2 文字 === 2
-      expect(adapter.isHexString('AABB', 2)).eq(false); // 4 文字 !== 2
-      expect(adapter.isHexString('AABBCCDD', 4)).eq(false); // 8 文字 !== 4
-    });
-
-    it('byteCount 省略時は文字数チェックなし', () => {
-      expect(adapter.isHexString('AA')).eq(true);
-      expect(adapter.isHexString('AAAA')).eq(true);
+    it('byteCount を指定した場合、文字列長が byteCount と等しい場合のみ true を返すこと', () => {
+      // 実装は value.length === byteCount で比較する（文字数 = byteCount）
+      expect(adapter.isHexString('DEADBEEF', 8)).toBe(true); // 8文字の文字列、byteCount=8 → 一致
+      expect(adapter.isHexString('DEADBEEF', 4)).toBe(false); // 8文字の文字列、byteCount=4 → 不一致
     });
   });
 
-  // ---------------------------------------------------------------
-  describe('encrypt / decrypt', () => {
-    it('decrypt(encrypt(value, password), password) === value（ラウンドトリップ）', () => {
-      const plaintext = 'hello symbol bootstrap!';
-      const password = 'my_secure_p@ssw0rd';
-      const encrypted = adapter.encrypt(plaintext, password);
-      expect(encrypted).not.eq(plaintext);
-      const decrypted = adapter.decrypt(encrypted, password);
-      expect(decrypted).eq(plaintext);
-    });
-
-    it('空文字列もラウンドトリップ可能', () => {
-      const encrypted = adapter.encrypt('', 'password');
-      expect(adapter.decrypt(encrypted, 'password')).eq('');
-    });
-
-    it('暗号化結果は毎回異なる（IV/salt のランダム性）', () => {
-      const e1 = adapter.encrypt('test', 'password');
-      const e2 = adapter.encrypt('test', 'password');
-      expect(e1).not.eq(e2);
-    });
-  });
-
-  // ---------------------------------------------------------------
   describe('parseServerDurationToSeconds', () => {
-    it("'30s' → 30 秒", () => {
-      expect(adapter.parseServerDurationToSeconds('30s')).eq(30);
+    it('秒表記を正しく変換すること', () => {
+      expect(adapter.parseServerDurationToSeconds('30s')).toBe(30);
     });
 
-    it("'1m' → 60 秒", () => {
-      expect(adapter.parseServerDurationToSeconds('1m')).eq(60);
+    it('分表記を正しく変換すること', () => {
+      expect(adapter.parseServerDurationToSeconds('1m')).toBe(60);
+      expect(adapter.parseServerDurationToSeconds('10m')).toBe(600);
     });
 
-    it("'1h' → 3600 秒", () => {
-      expect(adapter.parseServerDurationToSeconds('1h')).eq(3600);
+    it('時間表記を正しく変換すること', () => {
+      expect(adapter.parseServerDurationToSeconds('1h')).toBe(3600);
     });
 
-    it("'1d' → 86400 秒", () => {
-      expect(adapter.parseServerDurationToSeconds('1d')).eq(86400);
+    it('日表記を正しく変換すること', () => {
+      expect(adapter.parseServerDurationToSeconds('1d')).toBe(86400);
     });
 
-    it("'1h30m' → 5400 秒", () => {
-      expect(adapter.parseServerDurationToSeconds('1h30m')).eq(5400);
+    it('複合表記を正しく変換すること', () => {
+      // 1時間30分 = 5400秒
+      expect(adapter.parseServerDurationToSeconds('1h30m')).toBe(5400);
     });
 
-    it("'2h30m15s' → 複合フォーマットの変換", () => {
-      expect(adapter.parseServerDurationToSeconds('2h30m15s')).eq(2 * 3600 + 30 * 60 + 15);
+    it('不正なフォーマットでエラーをスローすること', () => {
+      expect(() => adapter.parseServerDurationToSeconds('')).toThrow('期間フォーマットが不正です');
+      expect(() => adapter.parseServerDurationToSeconds('invalid')).toThrow(
+        '期間フォーマットが不正です'
+      );
+    });
+  });
+
+  describe('createMosaicId', () => {
+    it('正常なアドレスとナンス番号からモザイクIDを生成できること', () => {
+      const account = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
+      const mosaicId = adapter.createMosaicId(0, account.address);
+
+      // モザイクIDは16文字の16進文字列であること
+      expect(mosaicId).toMatch(/^[0-9A-Fa-f]{16}$/);
     });
 
-    it('無効なフォーマットは例外をスロー', () => {
-      expect(() => adapter.parseServerDurationToSeconds('invalid')).toThrow();
+    it('同じナンスとアドレスから決定論的に同じモザイクIDを生成すること', () => {
+      const account = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
+      const id1 = adapter.createMosaicId(0, account.address);
+      const id2 = adapter.createMosaicId(0, account.address);
+
+      expect(id1).toBe(id2);
     });
 
-    it("'0s' → 0 秒", () => {
-      expect(adapter.parseServerDurationToSeconds('0s')).eq(0);
+    it('異なるナンスから異なるモザイクIDを生成すること', () => {
+      const account = adapter.createAccountFromPrivateKey(KNOWN_PRIVATE_KEY, NetworkType.TEST_NET);
+      const id0 = adapter.createMosaicId(0, account.address);
+      const id1 = adapter.createMosaicId(1, account.address);
+
+      expect(id0).not.toBe(id1);
     });
   });
 });

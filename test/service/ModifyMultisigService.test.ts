@@ -1,231 +1,363 @@
-/*
- * Copyright 2022 Fernando Boucquez
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { restore, stub } from 'sinon';
-import { Account, Deadline, MultisigAccountModificationTransaction, NetworkType, TransactionType, UInt64 } from 'symbol-sdk';
-import { expect } from 'vitest';
-import { LoggerFactory, LogType, Utils } from '../../src';
-import { ConfigPreset } from '../../src/model';
-import { ModifyMultisigParams, ModifyMultisigService, TransactionFactoryParams, TransactionUtils } from '../../src/service';
-import { StdUtils } from '../utils/StdUtils';
-const logger = LoggerFactory.getLogger(LogType.Silent);
-describe('ModifyMultisigService', () => {
-  let modifyMultisigService: ModifyMultisigService;
+import { LogType } from '../../src/logger/LogType.js';
+import { LoggerFactory } from '../../src/logger/LoggerFactory.js';
+import { NetworkType } from '../../src/sdk/index.js';
+import { AnnounceService } from '../../src/service/AnnounceService.js';
+import { ConfigLoader } from '../../src/service/ConfigLoader.js';
+import {
+  ModifyMultisigParams,
+  ModifyMultisigService,
+} from '../../src/service/ModifyMultisigService.js';
+import { TransactionUtils } from '../../src/utils/TransactionUtils.js';
 
-  afterEach(() => restore());
+const textMock = vi.fn();
 
-  const url = 'http://localhost:3000';
-  const target = 'target/tests/testnet-dual';
-  const useKnownRestGateways = false;
-  const networkType = NetworkType.TEST_NET;
-  const maxFee = UInt64.fromUint(2_000_000);
-  const mainAccount = Account.createFromPrivateKey('CA82E7ADAF7AB729A5462A1BD5AA78632390634904A64EB1BB22295E2E1A1BDD', networkType);
-  const presetData = { networkType, useKnownRestGateways } as unknown as ConfigPreset;
-  const deadline = Deadline.create(1_616_694_977);
+vi.mock('@clack/prompts', () => ({
+  text: (...args: any[]) => textMock(...args),
+  isCancel: (value: unknown) => value === 'cancel',
+}));
 
-  const cosigner1 = Account.createFromPrivateKey('41C0163B6A057A4E7B6264AC5BB36C44E0245F8552242BF6A163617C4D616ED3', networkType);
-  const cosigner2 = Account.createFromPrivateKey('2FBDC1419F22BC049F6E869B144778277C5930D8D07D55E99ADD2282399FDCF5', networkType);
-
-  const commonStub = async (
-    addressAdditions?: string,
-    addressDeletions?: string,
-    minApprovalDelta?: number,
+class TestableModifyMultisigService extends ModifyMultisigService {
+  public validateParamsPublic(
+    addressAdditions?: string[],
+    addressDeletions?: string[],
     minRemovalDelta?: number,
-    multisigAccount?: any,
-  ): Promise<MultisigAccountModificationTransaction> => {
-    const params: ModifyMultisigParams = {
-      target,
-      url,
-      useKnownRestGateways,
+    minApprovalDelta?: number,
+    currentMultisigInfo?: any
+  ): void {
+    this.validateParams(
       addressAdditions,
       addressDeletions,
-      minApprovalDelta,
       minRemovalDelta,
-    };
-    modifyMultisigService = new ModifyMultisigService(logger, params);
-    stub(TransactionUtils, <any>'getRepositoryFactory');
-    stub(TransactionUtils, <any>'getMultisigAccount').returns(Promise.resolve(multisigAccount));
-    const transactionFactoryParams = {
-      presetData,
-      deadline,
-      maxFee,
-      mainAccount: mainAccount.publicAccount,
-    } as TransactionFactoryParams;
-    const transactions = await modifyMultisigService.createTransactions(transactionFactoryParams);
-    return transactions[0] as MultisigAccountModificationTransaction;
+      minApprovalDelta,
+      currentMultisigInfo
+    );
+  }
+}
+
+const createService = (): TestableModifyMultisigService => {
+  const logger = LoggerFactory.getLogger(LogType.Silent);
+  const params: ModifyMultisigParams = {
+    target: 'target',
+    url: 'http://localhost:3000',
   };
+  return new TestableModifyMultisigService(logger, params);
+};
 
-  it('Converts regular account to multisig, adding single cosignatory', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions
-
-    const tx = await commonStub(cosigner1.address.plain(), undefined, 1, 1, undefined);
-
-    expect(tx.type).to.be.eq(TransactionType.MULTISIG_ACCOUNT_MODIFICATION);
-    expect(tx.addressAdditions.length).to.be.eq(1);
-    expect(tx.addressDeletions.length).to.be.eq(0);
-    expect(tx.minRemovalDelta).to.be.eq(1);
-    expect(tx.minApprovalDelta).to.be.eq(1);
+describe('ModifyMultisigService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
   });
 
-  it('Converts regular account to multisig, adding multiple cosignatories', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions
+  describe('resolveCosigners', () => {
+    it('カンマ区切りのアドレスを trim して返すこと', async () => {
+      const service = createService();
+      const first = 'TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      const second = 'TBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB';
 
-    const tx = await commonStub([cosigner1, cosigner2].map((c) => c.address.plain()).join(','), undefined, 1, 1, undefined);
+      const result = await service.resolveCosigners(
+        NetworkType.TEST_NET,
+        '追加アドレス',
+        `  ${first}  , ${second}  `
+      );
 
-    expect(tx.type).to.be.eq(TransactionType.MULTISIG_ACCOUNT_MODIFICATION);
-    expect(tx.addressAdditions.length).to.be.eq(2);
-    expect(tx.addressDeletions.length).to.be.eq(0);
-    expect(tx.minRemovalDelta).to.be.eq(1);
-    expect(tx.minApprovalDelta).to.be.eq(1);
-  });
-
-  it('Adds another cosignatory to the current multisig account', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions
-
-    const tx = await commonStub(cosigner2.address.plain(), undefined, 1, 1, {
-      minApproval: 1,
-      minRemoval: 1,
-      cosignatoryAddresses: [cosigner1.address],
+      expect(result).toEqual([first, second]);
     });
 
-    expect(tx.type).to.be.eq(TransactionType.MULTISIG_ACCOUNT_MODIFICATION);
-    expect(tx.addressAdditions.length).to.be.eq(1);
-    expect(tx.minRemovalDelta).to.be.eq(1);
-    expect(tx.minApprovalDelta).to.be.eq(1);
-  });
+    it('不正なアドレス形式の場合はエラーを投げること', async () => {
+      const service = createService();
 
-  it('Removes a cosignatory from the current multisig account', async () => {
-    StdUtils.in(['\n', '\n']); // for addressAdditions
-
-    const tx = await commonStub(undefined, cosigner1.address.plain(), -1, -1, {
-      minApproval: 1,
-      minRemoval: 1,
-      cosignatoryAddresses: [cosigner1.address],
+      await expect(
+        service.resolveCosigners(NetworkType.TEST_NET, '追加アドレス', 'INVALID_ADDRESS')
+      ).rejects.toThrow('アドレス INVALID_ADDRESS は不正です。');
     });
 
-    expect(tx.type).to.be.eq(TransactionType.MULTISIG_ACCOUNT_MODIFICATION);
-    expect(tx.addressDeletions.length).to.be.eq(1);
-    expect(tx.addressAdditions.length).to.be.eq(0);
-    expect(tx.minRemovalDelta).to.be.eq(-1);
-    expect(tx.minApprovalDelta).to.be.eq(-1);
+    it('cosigners 未指定時は text プロンプト結果を利用すること', async () => {
+      const service = createService();
+      const address = 'TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+      textMock.mockResolvedValueOnce(address);
+
+      const result = await service.resolveCosigners(NetworkType.TEST_NET, '追加アドレス');
+
+      expect(result).toEqual([address]);
+      expect(textMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('private toAddresses は undefined 入力で空配列を返すこと', () => {
+      const service = createService() as any;
+
+      expect(service.toAddresses(undefined)).toEqual([]);
+    });
   });
 
-  it('Modifies minApproval and minRemoval of the current multisig account with prompt for the address additions/deletions', async () => {
-    StdUtils.in(['\n', '\n', '\n']); // for addressDeletions, addressAdditions
+  describe('resolveDelta', () => {
+    it('delta が指定されている場合はその値を返すこと', async () => {
+      const service = createService();
 
-    const tx = await commonStub(undefined, undefined, -1, -1, {
+      const result = await service.resolveDelta('delta', 7);
+
+      expect(result).toBe(7);
+      expect(textMock).not.toHaveBeenCalled();
+    });
+
+    it('delta が未指定の場合は text プロンプト結果を返すこと', async () => {
+      const service = createService();
+      textMock.mockResolvedValueOnce('3');
+
+      const result = await service.resolveDelta('delta');
+
+      expect(result).toBe(3);
+      expect(textMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('validateParams', () => {
+    const currentMultisigInfo = {
       minApproval: 2,
       minRemoval: 2,
-      cosignatoryAddresses: [cosigner1.address],
+      cosignatoryAddresses: ['TA', 'TB', 'TC'],
+    };
+
+    it('既存コサイナーを追加しようとするとエラーになること', () => {
+      const service = createService();
+
+      expect(() =>
+        service.validateParamsPublic(['TA'], [], 0, 0, currentMultisigInfo as any)
+      ).toThrow('コサイナーを追加できません。TA は既にコサイナーです。');
     });
 
-    expect(tx.type).to.be.eq(TransactionType.MULTISIG_ACCOUNT_MODIFICATION);
-    expect(tx.addressAdditions.length).to.be.eq(0);
-    expect(tx.addressDeletions.length).to.be.eq(0);
-    expect(tx.minRemovalDelta).to.be.eq(-1);
-    expect(tx.minApprovalDelta).to.be.eq(-1);
-  });
+    it('存在しないコサイナーを削除しようとするとエラーになること', () => {
+      const service = createService();
 
-  it('Modifies minApproval and minRemoval of the current multisig account with no prompts', async () => {
-    const tx = await commonStub('', '', -1, -1, {
-      minApproval: 2,
-      minRemoval: 2,
-      cosignatoryAddresses: [cosigner1.address],
+      expect(() =>
+        service.validateParamsPublic([], ['TD'], 0, 0, currentMultisigInfo as any)
+      ).toThrow('コサイナーを削除できません。TD は現行コサイナーではありません。');
     });
 
-    expect(tx.type).to.be.eq(TransactionType.MULTISIG_ACCOUNT_MODIFICATION);
-    expect(tx.addressAdditions.length).to.be.eq(0);
-    expect(tx.addressDeletions.length).to.be.eq(0);
-    expect(tx.minRemovalDelta).to.be.eq(-1);
-    expect(tx.minApprovalDelta).to.be.eq(-1);
-  });
+    it('最小承認数を満たさないとエラーになること', () => {
+      const service = createService();
 
-  it('Throws error when new minApproval is larger than the total number of cosignatories ', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions
+      expect(() =>
+        service.validateParamsPublic([], ['TA', 'TB'], 0, 0, currentMultisigInfo as any)
+      ).toThrow('最小承認数に対してコサイナーが 1 件不足しています。');
+    });
 
-    try {
-      await commonStub(cosigner2.address.plain(), undefined, 1, 1, {
-        minApproval: 3,
-        minRemoval: 1,
-        cosignatoryAddresses: [cosigner1.address],
-      });
-    } catch (err) {
-      expect(Utils.getMessage(err)).to.be.eq(
-        'There are 2 more required cosignatories than available cosignatories for min. approval. Please add cosignatories or reduce the min. approval delta.',
+    it('最小削除承認数を満たさないとエラーになること', () => {
+      const service = createService();
+
+      expect(() =>
+        service.validateParamsPublic([], ['TA', 'TB'], 1, 0, {
+          minApproval: 0,
+          minRemoval: 2,
+          cosignatoryAddresses: ['TA', 'TB', 'TC'],
+        } as any)
+      ).toThrow('最小削除承認数に対してコサイナーが 2 件不足しています。');
+    });
+
+    it('コサイナーがいるのに最小承認数を 0 にするとエラーになること', () => {
+      const service = createService();
+
+      expect(() =>
+        service.validateParamsPublic([], [], -2, -2, currentMultisigInfo as any)
+      ).toThrow(
+        'コサイナーが 3 件いる状態で、最小承認数または最小削除承認数を 0 には設定できません。'
       );
-    }
+    });
+
+    it('整合するパラメータはエラーにならないこと', () => {
+      const service = createService();
+
+      expect(() =>
+        service.validateParamsPublic(['TD'], ['TA'], 0, 0, currentMultisigInfo as any)
+      ).not.toThrow();
+    });
+
+    it('currentMultisigInfo 未指定でも整合パラメータはエラーにならないこと', () => {
+      const service = createService();
+
+      expect(() =>
+        service.validateParamsPublic([], [], undefined, undefined, undefined)
+      ).not.toThrow();
+    });
+
+    it('currentMultisigInfo ありで delta 未指定でも既存閾値を維持すること', () => {
+      const service = createService();
+
+      expect(() =>
+        service.validateParamsPublic(undefined, undefined, undefined, undefined, {
+          minApproval: 1,
+          minRemoval: 1,
+          cosignatoryAddresses: ['TA'],
+        } as any)
+      ).not.toThrow();
+    });
   });
 
-  it('Throws error when new minRemoval is larger than the total number of cosignatories ', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions
-
-    try {
-      await commonStub(cosigner2.address.plain(), undefined, 1, 1, {
-        minApproval: 1,
-        minRemoval: 3,
-        cosignatoryAddresses: [cosigner1.address],
-      });
-    } catch (err) {
-      expect(Utils.getMessage(err)).to.be.eq(
-        'There are 2  more required cosignatories than available cosignatories for min removal. Please add cosignatories or reduce the min. removal delta.',
+  describe('createTransactions', () => {
+    it('トランザクション作成フローで Descriptor を1件返すこと', async () => {
+      const logger = LoggerFactory.getLogger(LogType.Silent);
+      const transactionPort = {
+        createMultisigModificationDescriptor: vi.fn().mockReturnValue({ type: 'multisig' }),
+      };
+      const networkPort = {};
+      const service = new ModifyMultisigService(
+        logger,
+        {
+          target: 'target',
+          url: 'http://localhost:3000/',
+          addressAdditions: 'TAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA',
+          addressDeletions: '',
+          minApprovalDelta: 1,
+          minRemovalDelta: 1,
+        },
+        {} as any,
+        networkPort as any,
+        transactionPort as any
       );
-    }
-  });
+      vi.spyOn(TransactionUtils, 'getBestUrlLegacy').mockResolvedValue('http://best-url');
+      vi.spyOn(TransactionUtils, 'getMultisigInfo').mockResolvedValue({
+        minApproval: 0,
+        minRemoval: 0,
+        cosignatoryAddresses: [],
+      } as any);
 
-  it('Throws error when new minApproval is 0 when there are cosignatories in the account', async () => {
-    StdUtils.in(['\n', '\n', '\n']); // for addressDeletions, addressAdditions
+      const result = await service.createTransactions({
+        presetData: { networkType: NetworkType.TEST_NET } as any,
+        mainAccount: { address: 'TMAIN', publicKey: 'MAIN' } as any,
+      } as any);
 
-    try {
-      await commonStub(undefined, undefined, -1, -1, {
-        minApproval: 1,
-        minRemoval: 1,
-        cosignatoryAddresses: [cosigner1.address],
-      });
-    } catch (err) {
-      expect(Utils.getMessage(err)).to.be.eq(
-        'Minimum approval and/or minimum removal cannot be set to 0 while there are 1 cosignatories in your list.',
+      expect(result).toHaveLength(1);
+      expect(transactionPort.createMultisigModificationDescriptor).toHaveBeenCalledTimes(1);
+    });
+
+    it('useKnownRestGateways=true の場合は URL 指定なしでベストノード探索すること', async () => {
+      const logger = LoggerFactory.getLogger(LogType.Silent);
+      const transactionPort = {
+        createMultisigModificationDescriptor: vi.fn().mockReturnValue({ type: 'multisig' }),
+      };
+      const getBestUrlSpy = vi
+        .spyOn(TransactionUtils, 'getBestUrlLegacy')
+        .mockResolvedValue('http://best-url');
+      vi.spyOn(TransactionUtils, 'getMultisigInfo').mockResolvedValue({
+        minApproval: 0,
+        minRemoval: 0,
+        cosignatoryAddresses: [],
+      } as any);
+      const service = new ModifyMultisigService(
+        logger,
+        {
+          target: 'target',
+          url: 'http://localhost:3000/',
+          useKnownRestGateways: true,
+          addressAdditions: '',
+          addressDeletions: '',
+          minApprovalDelta: 0,
+          minRemovalDelta: 0,
+        },
+        {} as any,
+        {} as any,
+        transactionPort as any
       );
-    }
+
+      await service.createTransactions({
+        presetData: { networkType: NetworkType.TEST_NET } as any,
+        mainAccount: { address: 'TMAIN', publicKey: 'MAIN' } as any,
+      } as any);
+
+      expect(getBestUrlSpy).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.anything(),
+        undefined,
+        expect.anything()
+      );
+    });
   });
 
-  it('Throws error while cosignatory to be added already a cosignatory.', async () => {
-    StdUtils.in(['\n', '\n']); // for addressDeletions, addressAdditions
+  describe('run', () => {
+    it('preset/addresses を引数で受けた場合も announce を呼び出すこと', async () => {
+      const announceSpy = vi
+        .spyOn(AnnounceService.prototype, 'announce')
+        .mockResolvedValue(undefined as any);
+      vi.spyOn(ConfigLoader.prototype, 'loadCustomPreset').mockReturnValue(undefined as any);
+      vi.spyOn(ConfigLoader.prototype, 'mergePresets').mockImplementation(
+        (preset) => preset as any
+      );
 
-    try {
-      await commonStub(cosigner1.address.plain(), undefined, -1, -1, {
-        minApproval: 1,
-        minRemoval: 1,
-        cosignatoryAddresses: [cosigner1.address],
-      });
-    } catch (err) {
-      expect(Utils.getMessage(err).startsWith('Cannot add cosignatory!')).to.be.true;
-    }
-  });
+      const service = new ModifyMultisigService(
+        LoggerFactory.getLogger(LogType.Silent),
+        {
+          target: 'target',
+          url: 'http://localhost:3000',
+          ready: true,
+          accountResolver: {} as any,
+        },
+        {} as any,
+        {} as any
+      );
 
-  it('Throws error while cosignatory to be removed is not an actual cosignatory.', async () => {
-    StdUtils.in(['\n', '\n', '\n']); // for addressDeletions, addressAdditions
+      await service.run({ networkType: NetworkType.TEST_NET } as any, { node: {} } as any);
 
-    try {
-      await commonStub(undefined, cosigner2.address.plain(), -1, -1, {
-        minApproval: 1,
-        minRemoval: 1,
-        cosignatoryAddresses: [cosigner1.address],
-      });
-    } catch (err) {
-      expect(Utils.getMessage(err).startsWith('Cannot remove cosignatory!')).to.be.true;
-    }
+      expect(announceSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('preset/addresses 未指定時は ConfigLoader から読み込むこと', async () => {
+      const announceSpy = vi
+        .spyOn(AnnounceService.prototype, 'announce')
+        .mockResolvedValue(undefined as any);
+      const presetSpy = vi
+        .spyOn(ConfigLoader.prototype, 'loadExistingPresetData')
+        .mockReturnValue({ networkType: NetworkType.TEST_NET } as any);
+      const addressesSpy = vi
+        .spyOn(ConfigLoader.prototype, 'loadExistingAddresses')
+        .mockReturnValue({ node: {} } as any);
+      vi.spyOn(ConfigLoader.prototype, 'loadCustomPreset').mockReturnValue(undefined as any);
+      vi.spyOn(ConfigLoader.prototype, 'mergePresets').mockImplementation(
+        (preset) => preset as any
+      );
+
+      const service = new ModifyMultisigService(
+        LoggerFactory.getLogger(LogType.Silent),
+        {
+          target: 'target',
+          url: 'http://localhost:3000',
+          ready: true,
+          accountResolver: {} as any,
+        },
+        {} as any,
+        {} as any
+      );
+
+      await service.run();
+
+      expect(presetSpy).toHaveBeenCalledTimes(1);
+      expect(addressesSpy).toHaveBeenCalledTimes(1);
+      expect(announceSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('accountResolver 未指定時でも run が実行できること', async () => {
+      const announceSpy = vi
+        .spyOn(AnnounceService.prototype, 'announce')
+        .mockResolvedValue(undefined as any);
+      vi.spyOn(ConfigLoader.prototype, 'loadCustomPreset').mockReturnValue(undefined as any);
+      vi.spyOn(ConfigLoader.prototype, 'mergePresets').mockImplementation(
+        (preset) => preset as any
+      );
+
+      const service = new ModifyMultisigService(
+        LoggerFactory.getLogger(LogType.Silent),
+        {
+          target: 'target',
+          url: 'http://localhost:3000',
+          ready: true,
+        },
+        {} as any,
+        {} as any
+      );
+
+      await service.run({ networkType: NetworkType.TEST_NET } as any, { node: {} } as any);
+
+      expect(announceSpy).toHaveBeenCalledTimes(1);
+    });
   });
 });

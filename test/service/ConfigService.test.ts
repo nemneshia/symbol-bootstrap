@@ -1,681 +1,390 @@
-/*
- * Copyright 2022 Fernando Boucquez
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import _ from 'lodash';
-import { expect } from 'vitest';
+import { existsSync } from 'node:fs';
 
-import { join } from 'path';
-import { Assembly, CustomPreset, LoggerFactory, LogType, Utils } from '../../src';
-import { ConfigService, CryptoUtils, Preset } from '../../src/service';
-// Local test utils
-// @ts-ignore
-import { FileSystemTestUtils } from '../utils/FileSystemTestUtils';
+import { KnownError } from '../../src/errors/KnownError.js';
+import { NetworkType } from '../../src/sdk/index.js';
+import { AddressesService } from '../../src/service/AddressesService.js';
+import { ConfigLoader } from '../../src/service/ConfigLoader.js';
+import { ConfigService } from '../../src/service/ConfigService.js';
+import { FileSystemService } from '../../src/service/FileSystemService.js';
+import { GatewayConfigurationService } from '../../src/service/GatewayConfigurationService.js';
+import { NemesisConfigurationService } from '../../src/service/NemesisConfigurationService.js';
+import { NodeConfigurationService } from '../../src/service/NodeConfigurationService.js';
+import { CryptoUtils } from '../../src/utils/CryptoUtils.js';
+import { YamlUtils } from '../../src/utils/YamlUtils.js';
 
-const logger = LoggerFactory.getLogger(LogType.Silent);
+vi.mock('node:fs', async () => {
+  const actual = await vi.importActual<typeof import('node:fs')>('node:fs');
+  return {
+    ...actual,
+    existsSync: vi.fn(actual.existsSync),
+  };
+});
+
 describe('ConfigService', () => {
-  it('ConfigService bootstrap run with optin_preset.yml', async () => {
-    await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      preset: Preset.bootstrap,
-      target: 'target/tests/ConfigService.test.optin',
-      customPreset: './test/optin_preset.yml',
-    }).run();
+  const existsSyncMock = vi.mocked(existsSync);
+  const logger = {
+    error: vi.fn(),
+    info: vi.fn(),
+    warn: vi.fn(),
+  };
+  const accountResolver = {} as any;
+  const cryptoPort = {} as any;
+  const networkPort = {} as any;
+
+  const presetLocation = 'target/preset.yml';
+  const addressesLocation = 'target/addresses.yml';
+  const oldPreset = {
+    knownPeers: ['peer'],
+    knownRestGateways: ['gateway'],
+    nodes: [],
+  } as any;
+  const oldAddresses = { version: 1 } as any;
+  const addresses = {
+    version: 1,
+    nemesisGenerationHashSeed: 'seed',
+    networkType: NetworkType.TEST_NET,
+  } as any;
+
+  const baseParams = () =>
+    ({
+      target: 'target',
+      workingDir: 'working',
+      offline: false,
+      reset: false,
+      upgrade: false,
+      user: 'current',
+      password: 'password',
+      accountResolver,
+    }) as any;
+
+  const createPreset = () =>
+    ({
+      privateKeySecurityMode: 'ENCRYPT',
+      dockerComposeProjectName: 'bootstrap',
+      restSSLKeyFileName: 'rest.key.pem',
+      restSSLCertificateFileName: 'rest.crt.pem',
+      node: {
+        name: 'api-node',
+        databaseHost: 'mongo',
+        brokerName: 'broker',
+      },
+      gateway: {
+        name: 'gateway',
+        apiNodeName: 'api-node',
+        databaseHost: 'mongo',
+        apiNodeHost: 'api-host',
+        apiNodeBrokerHost: 'broker-host',
+      },
+      database: { name: 'mongo' },
+    }) as any;
+
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    logger.error.mockClear();
+    logger.info.mockClear();
+    logger.warn.mockClear();
+    existsSyncMock.mockReturnValue(false);
+
+    vi.spyOn(ConfigLoader.prototype, 'getGeneratedPresetLocation').mockReturnValue(presetLocation);
+    vi.spyOn(ConfigLoader.prototype, 'getGeneratedAddressLocation').mockReturnValue(
+      addressesLocation
+    );
+    vi.spyOn(ConfigLoader.prototype, 'loadExistingPresetData').mockReturnValue(oldPreset);
+    vi.spyOn(ConfigLoader.prototype, 'loadExistingAddresses').mockReturnValue(oldAddresses);
+    vi.spyOn(ConfigLoader.prototype, 'loadExistingPresetDataIfPreset').mockReturnValue(undefined);
+    vi.spyOn(ConfigLoader.prototype, 'loadExistingAddressesIfPreset').mockReturnValue(undefined);
+    vi.spyOn(ConfigLoader.prototype, 'createPresetData').mockReturnValue(createPreset());
+
+    vi.spyOn(FileSystemService.prototype, 'deleteFolder').mockImplementation(() => {});
+    vi.spyOn(FileSystemService.prototype, 'mkdir').mockResolvedValue(undefined);
+    vi.spyOn(AddressesService.prototype, 'resolveAddresses').mockResolvedValue(addresses);
+    vi.spyOn(NodeConfigurationService.prototype, 'generateNodeCertificates').mockResolvedValue(
+      undefined
+    );
+    vi.spyOn(NodeConfigurationService.prototype, 'generateNodes').mockResolvedValue(undefined);
+    vi.spyOn(GatewayConfigurationService.prototype, 'generateGateways').mockResolvedValue([]);
+    vi.spyOn(NemesisConfigurationService.prototype, 'resolveNemesis').mockResolvedValue(undefined);
+    vi.spyOn(NemesisConfigurationService.prototype, 'copyNemesis').mockResolvedValue(undefined);
+    vi.spyOn(YamlUtils, 'writeYaml').mockResolvedValue(undefined);
   });
 
-  it('ConfigService bootstrap in custom preset run with override-currency-preset.yml', async () => {
-    await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      target: 'target/tests/ConfigService.test.custom',
-      customPreset: './test/override-currency-preset.yml',
-    }).run();
-  });
-
-  it('ConfigService testnet assembly', async () => {
-    await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      target: 'target/tests/ConfigService.test.testnet',
-      preset: Preset.testnet,
-      assembly: Assembly.dual,
-    }).run();
-  });
-
-  it('ConfigService mainnet assembly', async () => {
-    await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      target: 'target/tests/ConfigService.test.mainnet',
-      preset: Preset.mainnet,
-      assembly: Assembly.dual,
-    }).run();
-  });
-
-  it('ConfigService bootstrap default', async () => {
-    const configResult = await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      password: '1111',
-      target: 'target/tests/bootstrap',
-      preset: Preset.bootstrap,
-    }).run();
-
-    expect(configResult.addresses.mosaics?.length).eq(2);
-    expect(configResult.addresses.mosaics?.[0]?.accounts.length).eq(5);
-    expect(configResult.addresses.mosaics?.[1]?.accounts.length).eq(2);
-
-    const configResultUpgrade = await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      upgrade: true,
-      password: '1111',
-      target: 'target/tests/bootstrap',
-      preset: Preset.bootstrap,
-    }).run();
-    expect(configResult.addresses).deep.eq(configResultUpgrade.addresses);
-
-    expect(CryptoUtils.removePrivateKeys(configResultUpgrade.presetData)).deep.eq(CryptoUtils.removePrivateKeys(configResult.presetData));
-  });
-
-  it('ConfigService custom network yml file', async () => {
-    const target = 'target/tests/ConfigService.test.customNetwork';
-    const workingDir = 'test/customNetwork';
-    await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      workingDir: workingDir,
-      reset: true,
-      password: '1111',
-      target: target,
-      preset: 'custom-network-preset.yml',
-      assembly: Assembly.dual,
-    }).run();
-    FileSystemTestUtils.assertSameFolder({
-      expectFolder: join(workingDir, 'nemesis-seed'),
-      actualFolder: join(target, 'nemesis', 'seed'),
+  describe('defaultParams', () => {
+    it('CLI から省略される値のデフォルトを持つこと', () => {
+      expect(ConfigService.defaultParams.reset).toBe(false);
+      expect(ConfigService.defaultParams.upgrade).toBe(false);
+      expect(ConfigService.defaultParams.offline).toBe(false);
+      expect(ConfigService.defaultParams.accountResolver).toBeDefined();
     });
   });
 
-  it('ConfigService custom network yml file invalid seed folder', async () => {
-    const target = 'target/tests/ConfigService.test.customNetwork';
-    const workingDir = 'test/customNetwork';
+  describe('resolveConfigPreset', () => {
+    it('生成済み preset があり upgrade でない場合は既存 preset を返すこと', () => {
+      existsSyncMock.mockReturnValue(true);
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
 
-    try {
-      await new ConfigService(logger, {
-        ...ConfigService.defaultParams,
-        workingDir: workingDir,
-        customPresetObject: {
-          nemesisSeedFolder: 'nemesis-seed-invalid',
-        },
-        reset: true,
-        password: '1111',
-        target: target,
-        preset: 'custom-network-preset.yml',
-        assembly: Assembly.dual,
-      }).run();
-      expect(false).to.be.eq(true); // should have raised an error!
-    } catch (e) {
-      expect(Utils.getMessage(e)).eq(`${join('test', `customNetwork`, 'nemesis-seed-invalid')} folder does not exist`);
-    }
-  });
+      const result = service.resolveConfigPreset('password');
 
-  it('ConfigService resolve nemesis balances', async () => {
-    const customPresetObject: CustomPreset = {
-      nodes: [
-        {
-          mainPrivateKey: '0000000000000000000000000000000000000000000000000000000000000001',
-        },
-      ],
-      nemesis: {
-        nemesisSignerPrivateKey: '935C58E9D933D9A4E3BE6EEB5DA7B518FF90DA6B32BA6BEDE1098B79E2B69B66',
-        mosaics: [
-          {
-            accounts: [
-              '000000000000000000000000000000000000000000000000000000000000000A',
-              '000000000000000000000000000000000000000000000000000000000000000B',
-              '000000000000000000000000000000000000000000000000000000000000000C',
-            ],
-            currencyDistributions: [
-              {
-                address: 'TACBGHDQEJOAOAIR4KGWWAOZRGGSR4BPR6JRCPI',
-                amount: 10,
-              },
-              {
-                address: 'TBJEKGLTINMGFEH6O47E7ZXMZFWZAJHBJTHOVUY',
-                amount: 20,
-              },
-            ],
-          },
-          {
-            name: 'harvest',
-            accounts: ['000000000000000000000000000000000000000000000000000000000000000D'],
-            currencyDistributions: [
-              {
-                address: 'TDSDCOH77Z27YCQ4NPDNC6MMVHXFGIQ7AV4JQSI',
-                amount: 100,
-              },
-              {
-                address: 'TDEOPVFMZW4CEY5OHSGTT3DKTU2JLF2HN57K6AY',
-                amount: 200,
-              },
-              {
-                address: 'TCHX23ENEKTSUGI7MMXFFALNF57C6WXBL7VXM7I',
-                amount: 300,
-              },
-            ],
-          },
-        ],
-      },
-    };
-    const configResult = await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      target: 'target/tests/ConfigService.bootstrap.nemesis.balances',
-      preset: Preset.bootstrap,
-      assembly: Assembly.dual,
-      customPresetObject: customPresetObject,
-    }).run();
-    const presetData = configResult.presetData;
-    expect(presetData.nemesis).deep.eq(
-      {
-        mosaics: [
-          {
-            name: 'currency',
-            divisibility: 6,
-            duration: 0,
-            supply: 8998999998000000,
-            isTransferable: true,
-            isSupplyMutable: false,
-            isRestrictable: false,
-            accounts: [
-              '000000000000000000000000000000000000000000000000000000000000000A',
-              '000000000000000000000000000000000000000000000000000000000000000B',
-              '000000000000000000000000000000000000000000000000000000000000000C',
-            ],
-            currencyDistributions: [
-              {
-                address: 'TDSIJBWRFPA57RLKZQ4OTMLEHYT4L2MMMBSPGWA',
-                amount: 2249749999499994,
-              },
-              {
-                address: 'TCZTFCI4CFLHEB2KZX3GJO2IR6OV6SYUASPLAOA',
-                amount: 2249749999499992,
-              },
-              {
-                address: 'TBRZ247CV76OV6D75JT2KWYPUOEWAGEDBNKNVKQ',
-                amount: 2249749999499992,
-              },
-              {
-                address: 'TB6QOVCUOFRCF5QJSKPIQMLUVWGJS3KYFDETRPA',
-                amount: 2249749999499992,
-              },
-              {
-                address: 'TACBGHDQEJOAOAIR4KGWWAOZRGGSR4BPR6JRCPI',
-                amount: 10,
-              },
-              {
-                address: 'TBJEKGLTINMGFEH6O47E7ZXMZFWZAJHBJTHOVUY',
-                amount: 20,
-              },
-            ],
-          },
-          {
-            name: 'harvest',
-            divisibility: 3,
-            duration: 0,
-            supply: 15000000,
-            isTransferable: true,
-            isSupplyMutable: true,
-            isRestrictable: false,
-            accounts: ['000000000000000000000000000000000000000000000000000000000000000D'],
-            currencyDistributions: [
-              {
-                address: 'TDNLZGEP733XMNHH6Y5KGPSR7A3ZKJ6OF54ZWTQ',
-                amount: 7499700,
-              },
-              {
-                address: 'TB6QOVCUOFRCF5QJSKPIQMLUVWGJS3KYFDETRPA',
-                amount: 7499700,
-              },
-              {
-                address: 'TDSDCOH77Z27YCQ4NPDNC6MMVHXFGIQ7AV4JQSI',
-                amount: 100,
-              },
-              {
-                address: 'TDEOPVFMZW4CEY5OHSGTT3DKTU2JLF2HN57K6AY',
-                amount: 200,
-              },
-              {
-                address: 'TCHX23ENEKTSUGI7MMXFFALNF57C6WXBL7VXM7I',
-                amount: 300,
-              },
-            ],
-          },
-        ],
-        nemesisSignerPrivateKey: '935C58E9D933D9A4E3BE6EEB5DA7B518FF90DA6B32BA6BEDE1098B79E2B69B66',
-      },
-      `Should be the same than  \n${JSON.stringify(presetData.nemesis, null, 2)}`,
-    );
-
-    expect(presetData.nemesis.mosaics.length).eq(2);
-    presetData.nemesis.mosaics.forEach((mosaic) => {
-      expect(_.sumBy(mosaic.currencyDistributions, (d) => d.amount)).eq(mosaic.supply);
+      expect(result).toBe(oldPreset);
+      expect(ConfigLoader.prototype.loadExistingPresetData).toHaveBeenCalledWith(
+        'target',
+        'password'
+      );
+      expect(ConfigLoader.prototype.createPresetData).not.toHaveBeenCalled();
     });
 
-    expect(configResult.addresses.mosaics).deep.eq(
-      [
-        {
-          id: '113DFC906359F64D',
-          name: 'currency',
-          accounts: [
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000A',
-              address: 'TDSIJBWRFPA57RLKZQ4OTMLEHYT4L2MMMBSPGWA',
-            },
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000B',
-              address: 'TCZTFCI4CFLHEB2KZX3GJO2IR6OV6SYUASPLAOA',
-            },
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000C',
-              address: 'TBRZ247CV76OV6D75JT2KWYPUOEWAGEDBNKNVKQ',
-            },
-          ],
-        },
-        {
-          id: '0B2720BC49498DAC',
-          name: 'harvest',
-          accounts: [
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000D',
-              address: 'TDNLZGEP733XMNHH6Y5KGPSR7A3ZKJ6OF54ZWTQ',
-            },
-          ],
-        },
-      ],
-      `Should be the same than  \n${JSON.stringify(configResult.addresses.mosaics, null, 2)}`,
-    );
+    it('生成済み preset がない場合は旧 preset を引き継いで現在の preset を作成すること', () => {
+      const params = { ...baseParams(), upgrade: true };
+      vi.mocked(ConfigLoader.prototype.loadExistingPresetDataIfPreset).mockReturnValue(oldPreset);
+      const service = new ConfigService(logger as any, params, cryptoPort, networkPort);
+
+      const result = service.resolveConfigPreset('secret');
+
+      expect(result).toEqual(createPreset());
+      expect(ConfigLoader.prototype.createPresetData).toHaveBeenCalledWith(
+        expect.objectContaining({
+          password: 'secret',
+          oldPresetData: oldPreset,
+          upgrade: true,
+        })
+      );
+    });
   });
 
-  it('ConfigService resolve nemesis balances no extra generated accounts', async () => {
-    const customPresetObject: CustomPreset = {
-      nodes: [
-        {
-          mainPrivateKey: '0000000000000000000000000000000000000000000000000000000000000001',
-        },
-      ],
-      nemesis: {
-        nemesisSignerPrivateKey: '935C58E9D933D9A4E3BE6EEB5DA7B518FF90DA6B32BA6BEDE1098B79E2B69B66',
-        mosaics: [
-          {
-            accounts: 0,
-            currencyDistributions: [
-              {
-                address: 'TACBGHDQEJOAOAIR4KGWWAOZRGGSR4BPR6JRCPI',
-                amount: 10,
-              },
-              {
-                address: 'TBJEKGLTINMGFEH6O47E7ZXMZFWZAJHBJTHOVUY',
-                amount: 20,
-              },
-            ],
-          },
-          {
-            name: 'harvest',
-            accounts: 0,
-            currencyDistributions: [
-              {
-                address: 'TDSDCOH77Z27YCQ4NPDNC6MMVHXFGIQ7AV4JQSI',
-                amount: 100,
-              },
-              {
-                address: 'TDEOPVFMZW4CEY5OHSGTT3DKTU2JLF2HN57K6AY',
-                amount: 200,
-              },
-              {
-                address: 'TCHX23ENEKTSUGI7MMXFFALNF57C6WXBL7VXM7I',
-                amount: 300,
-              },
-            ],
-          },
-        ],
-      },
-    };
-    const configResult = await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      target: 'target/tests/ConfigService.bootstrap.nemesis.balances.no.extra.gen.accounts',
-      preset: Preset.bootstrap,
-      assembly: Assembly.dual,
-      customPresetObject: customPresetObject,
-    }).run();
-    const presetData = configResult.presetData;
-    expect(presetData.nemesis).deep.eq(
-      {
-        mosaics: [
-          {
-            name: 'currency',
-            divisibility: 6,
-            duration: 0,
-            supply: 8998999998000000,
-            isTransferable: true,
-            isSupplyMutable: false,
-            isRestrictable: false,
-            accounts: 0,
-            currencyDistributions: [
-              {
-                address: 'TB6QOVCUOFRCF5QJSKPIQMLUVWGJS3KYFDETRPA',
-                amount: 8998999997999970,
-              },
-              {
-                address: 'TACBGHDQEJOAOAIR4KGWWAOZRGGSR4BPR6JRCPI',
-                amount: 10,
-              },
-              {
-                address: 'TBJEKGLTINMGFEH6O47E7ZXMZFWZAJHBJTHOVUY',
-                amount: 20,
-              },
-            ],
-          },
-          {
-            name: 'harvest',
-            divisibility: 3,
-            duration: 0,
-            supply: 15000000,
-            isTransferable: true,
-            isSupplyMutable: true,
-            isRestrictable: false,
-            accounts: 0,
-            currencyDistributions: [
-              {
-                address: 'TB6QOVCUOFRCF5QJSKPIQMLUVWGJS3KYFDETRPA',
-                amount: 14999400,
-              },
-              {
-                address: 'TDSDCOH77Z27YCQ4NPDNC6MMVHXFGIQ7AV4JQSI',
-                amount: 100,
-              },
-              {
-                address: 'TDEOPVFMZW4CEY5OHSGTT3DKTU2JLF2HN57K6AY',
-                amount: 200,
-              },
-              {
-                address: 'TCHX23ENEKTSUGI7MMXFFALNF57C6WXBL7VXM7I',
-                amount: 300,
-              },
-            ],
-          },
-        ],
-        nemesisSignerPrivateKey: '935C58E9D933D9A4E3BE6EEB5DA7B518FF90DA6B32BA6BEDE1098B79E2B69B66',
-      },
-      `Should be the same than  \n${JSON.stringify(presetData.nemesis, null, 2)}`,
-    );
+  describe('run', () => {
+    it('reset 指定時に target を削除し、生成済み preset がある場合は早期リターンすること', async () => {
+      existsSyncMock.mockReturnValue(true);
+      const service = new ConfigService(
+        logger as any,
+        { ...baseParams(), reset: true },
+        cryptoPort,
+        networkPort
+      );
 
-    expect(presetData.nemesis.mosaics.length).eq(2);
-    presetData.nemesis.mosaics.forEach((mosaic) => {
-      expect(_.sumBy(mosaic.currencyDistributions, (d) => d.amount)).eq(mosaic.supply);
+      const result = await service.run();
+
+      expect(result).toEqual({ presetData: oldPreset, addresses: oldAddresses });
+      expect(FileSystemService.prototype.deleteFolder).toHaveBeenCalledWith('target');
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('既に存在するため、設定生成をスキップします')
+      );
+      expect(AddressesService.prototype.resolveAddresses).not.toHaveBeenCalled();
+      expect(YamlUtils.writeYaml).not.toHaveBeenCalled();
     });
 
-    expect(configResult.addresses.mosaics).deep.eq(
-      [
-        {
-          id: '113DFC906359F64D',
-          name: 'currency',
-          accounts: [],
-        },
-        {
-          id: '0B2720BC49498DAC',
-          name: 'harvest',
-          accounts: [],
-        },
-      ],
-      `Should be the same than  \n${JSON.stringify(configResult.addresses.mosaics, null, 2)}`,
-    );
-  });
+    it('新規生成フローで prefix 適用、各サービス委譲、YAML 出力を行うこと', async () => {
+      const presetData = createPreset();
+      vi.mocked(ConfigLoader.prototype.createPresetData).mockReturnValue(presetData);
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
 
-  it('ConfigService resolve nemesis balances when excluding the node', async () => {
-    const customPresetObject: CustomPreset = {
-      nodes: [
-        {
-          excludeFromNemesis: true,
-        },
-      ],
-      nemesis: {
-        nemesisSignerPrivateKey: '935C58E9D933D9A4E3BE6EEB5DA7B518FF90DA6B32BA6BEDE1098B79E2B69B66',
-        mosaics: [
-          {
-            accounts: [
-              '000000000000000000000000000000000000000000000000000000000000000A',
-              '000000000000000000000000000000000000000000000000000000000000000B',
-              '000000000000000000000000000000000000000000000000000000000000000C',
-            ],
-            currencyDistributions: [
-              {
-                address: 'TACBGHDQEJOAOAIR4KGWWAOZRGGSR4BPR6JRCPI',
-                amount: 10,
-              },
-              {
-                address: 'TBJEKGLTINMGFEH6O47E7ZXMZFWZAJHBJTHOVUY',
-                amount: 20,
-              },
-            ],
-          },
-          {
-            name: 'harvest',
-            accounts: ['000000000000000000000000000000000000000000000000000000000000000D'],
-            currencyDistributions: [
-              {
-                address: 'TDSDCOH77Z27YCQ4NPDNC6MMVHXFGIQ7AV4JQSI',
-                amount: 100,
-              },
-              {
-                address: 'TDEOPVFMZW4CEY5OHSGTT3DKTU2JLF2HN57K6AY',
-                amount: 200,
-              },
-              {
-                address: 'TCHX23ENEKTSUGI7MMXFFALNF57C6WXBL7VXM7I',
-                amount: 300,
-              },
-            ],
-          },
-        ],
-      },
-    };
-    const configResult = await new ConfigService(logger, {
-      ...ConfigService.defaultParams,
-      reset: true,
-      target: 'target/tests/ConfigService.bootstrap.nemesis.balances',
-      preset: Preset.bootstrap,
-      assembly: Assembly.dual,
-      customPresetObject: customPresetObject,
-    }).run();
-    const presetData = configResult.presetData;
-    expect(presetData.nemesis).deep.eq(
-      {
-        mosaics: [
-          {
-            name: 'currency',
-            divisibility: 6,
-            duration: 0,
-            supply: 8998999998000000,
-            isTransferable: true,
-            isSupplyMutable: false,
-            isRestrictable: false,
-            accounts: [
-              '000000000000000000000000000000000000000000000000000000000000000A',
-              '000000000000000000000000000000000000000000000000000000000000000B',
-              '000000000000000000000000000000000000000000000000000000000000000C',
-            ],
-            currencyDistributions: [
-              {
-                address: 'TDSIJBWRFPA57RLKZQ4OTMLEHYT4L2MMMBSPGWA',
-                amount: 2999666665999990,
-              },
-              {
-                address: 'TCZTFCI4CFLHEB2KZX3GJO2IR6OV6SYUASPLAOA',
-                amount: 2999666665999990,
-              },
-              {
-                address: 'TBRZ247CV76OV6D75JT2KWYPUOEWAGEDBNKNVKQ',
-                amount: 2999666665999990,
-              },
-              {
-                address: 'TACBGHDQEJOAOAIR4KGWWAOZRGGSR4BPR6JRCPI',
-                amount: 10,
-              },
-              {
-                address: 'TBJEKGLTINMGFEH6O47E7ZXMZFWZAJHBJTHOVUY',
-                amount: 20,
-              },
-            ],
-          },
-          {
-            name: 'harvest',
-            divisibility: 3,
-            duration: 0,
-            supply: 15000000,
-            isTransferable: true,
-            isSupplyMutable: true,
-            isRestrictable: false,
-            accounts: ['000000000000000000000000000000000000000000000000000000000000000D'],
-            currencyDistributions: [
-              {
-                address: 'TDNLZGEP733XMNHH6Y5KGPSR7A3ZKJ6OF54ZWTQ',
-                amount: 14999400,
-              },
-              {
-                address: 'TDSDCOH77Z27YCQ4NPDNC6MMVHXFGIQ7AV4JQSI',
-                amount: 100,
-              },
-              {
-                address: 'TDEOPVFMZW4CEY5OHSGTT3DKTU2JLF2HN57K6AY',
-                amount: 200,
-              },
-              {
-                address: 'TCHX23ENEKTSUGI7MMXFFALNF57C6WXBL7VXM7I',
-                amount: 300,
-              },
-            ],
-          },
-        ],
-        nemesisSignerPrivateKey: '935C58E9D933D9A4E3BE6EEB5DA7B518FF90DA6B32BA6BEDE1098B79E2B69B66',
-      },
-      `Should be the same than  \n${JSON.stringify(presetData.nemesis, null, 2)}`,
-    );
+      const result = await service.run();
 
-    expect(presetData.nemesis.mosaics.length).eq(2);
-    presetData.nemesis.mosaics.forEach((mosaic) => {
-      expect(_.sumBy(mosaic.currencyDistributions, (d) => d.amount)).eq(mosaic.supply);
+      expect(result).toEqual({ presetData, addresses });
+      expect(presetData.node).toMatchObject({
+        name: 'api-node',
+        databaseHost: 'mongo',
+        brokerName: 'broker',
+      });
+      expect(presetData.gateway).toMatchObject({
+        apiNodeName: 'api-node',
+        databaseHost: 'mongo',
+        apiNodeHost: 'api-host',
+        apiNodeBrokerHost: 'broker-host',
+      });
+      expect(presetData.database).toEqual({ name: 'mongo' });
+      expect(AddressesService.prototype.resolveAddresses).toHaveBeenCalledWith(
+        undefined,
+        undefined,
+        presetData
+      );
+      expect(FileSystemService.prototype.mkdir).toHaveBeenCalledWith('target');
+      expect(NodeConfigurationService.prototype.generateNodeCertificates).toHaveBeenCalledWith(
+        presetData,
+        addresses
+      );
+      expect(NodeConfigurationService.prototype.generateNodes).toHaveBeenCalledWith(
+        presetData,
+        addresses,
+        expect.any(Object)
+      );
+      expect(GatewayConfigurationService.prototype.generateGateways).toHaveBeenCalledWith(
+        presetData
+      );
+      expect(NemesisConfigurationService.prototype.resolveNemesis).toHaveBeenCalledWith(
+        presetData,
+        addresses,
+        false
+      );
+      expect(NemesisConfigurationService.prototype.copyNemesis).toHaveBeenCalledWith(addresses);
+      expect(FileSystemService.prototype.deleteFolder).toHaveBeenCalledWith(
+        'target/api-node/server-config'
+      );
+      expect(FileSystemService.prototype.deleteFolder).toHaveBeenCalledWith(
+        'target/api-node/broker-config'
+      );
+      expect(FileSystemService.prototype.deleteFolder).toHaveBeenCalledWith(
+        'target/api-node/userconfig'
+      );
+      expect(FileSystemService.prototype.deleteFolder).toHaveBeenCalledWith('target/api-node/seed');
+      expect(FileSystemService.prototype.deleteFolder).toHaveBeenCalledWith('target/gateway', [
+        'target/gateway/rest.key.pem',
+        'target/gateway/rest.crt.pem',
+      ]);
+      expect(YamlUtils.writeYaml).toHaveBeenNthCalledWith(
+        1,
+        addressesLocation,
+        addresses,
+        'password'
+      );
+      expect(YamlUtils.writeYaml).toHaveBeenNthCalledWith(
+        2,
+        presetLocation,
+        presetData,
+        'password'
+      );
+      expect(logger.info).toHaveBeenCalledWith('設定の生成が完了しました。');
     });
 
-    expect(configResult.addresses.mosaics).deep.eq(
-      [
-        {
-          id: '113DFC906359F64D',
-          name: 'currency',
-          accounts: [
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000A',
-              address: 'TDSIJBWRFPA57RLKZQ4OTMLEHYT4L2MMMBSPGWA',
-            },
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000B',
-              address: 'TCZTFCI4CFLHEB2KZX3GJO2IR6OV6SYUASPLAOA',
-            },
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000C',
-              address: 'TBRZ247CV76OV6D75JT2KWYPUOEWAGEDBNKNVKQ',
-            },
-          ],
-        },
-        {
-          id: '0B2720BC49498DAC',
-          name: 'harvest',
-          accounts: [
-            {
-              publicKey: '000000000000000000000000000000000000000000000000000000000000000D',
-              address: 'TDNLZGEP733XMNHH6Y5KGPSR7A3ZKJ6OF54ZWTQ',
-            },
-          ],
-        },
-      ],
-      `Should be the same than  \n${JSON.stringify(configResult.addresses.mosaics, null, 2)}`,
-    );
+    it('node がない preset では Nemesis 生成をスキップすること', async () => {
+      const presetData = {
+        privateKeySecurityMode: undefined,
+        restSSLKeyFileName: 'key.pem',
+        restSSLCertificateFileName: 'crt.pem',
+        node: undefined,
+        gateway: undefined,
+        database: undefined,
+      } as any;
+      vi.mocked(ConfigLoader.prototype.createPresetData).mockReturnValue(presetData);
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
+
+      await service.run();
+
+      expect(NemesisConfigurationService.prototype.resolveNemesis).not.toHaveBeenCalled();
+      expect(NemesisConfigurationService.prototype.copyNemesis).not.toHaveBeenCalled();
+    });
+
+    it('旧 preset と addresses が揃っている場合は upgrade として生成すること', async () => {
+      const params = { ...baseParams(), upgrade: true };
+      const previousPreset = { ...oldPreset };
+      vi.mocked(ConfigLoader.prototype.loadExistingPresetDataIfPreset).mockReturnValue(
+        previousPreset
+      );
+      vi.mocked(ConfigLoader.prototype.loadExistingAddressesIfPreset).mockReturnValue(oldAddresses);
+      const service = new ConfigService(logger as any, params, cryptoPort, networkPort);
+
+      await service.run();
+
+      expect(previousPreset).not.toHaveProperty('knownPeers');
+      expect(previousPreset).not.toHaveProperty('knownRestGateways');
+      expect(logger.info).toHaveBeenCalledWith('設定をアップグレードします...');
+      expect(ConfigLoader.prototype.createPresetData).toHaveBeenCalledWith(
+        expect.objectContaining({ oldPresetData: previousPreset })
+      );
+      expect(AddressesService.prototype.resolveAddresses).toHaveBeenCalledWith(
+        oldAddresses,
+        previousPreset,
+        expect.any(Object)
+      );
+      expect(NemesisConfigurationService.prototype.resolveNemesis).toHaveBeenCalledWith(
+        expect.any(Object),
+        addresses,
+        true
+      );
+    });
+
+    it('旧 addresses のみ存在する場合は KnownError をスローすること', async () => {
+      vi.mocked(ConfigLoader.prototype.loadExistingAddressesIfPreset).mockReturnValue(oldAddresses);
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
+
+      await expect(service.run()).rejects.toThrow(KnownError);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        `以前の ${presetLocation} ファイルがないため、設定をアップグレードできません。（リセットは -r を実行）`
+      );
+    });
+
+    it('旧 preset のみ存在する場合は KnownError をスローすること', async () => {
+      vi.mocked(ConfigLoader.prototype.loadExistingPresetDataIfPreset).mockReturnValue(oldPreset);
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
+
+      await expect(service.run()).rejects.toThrow(KnownError);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        `以前の ${addressesLocation} ファイルがないため、設定をアップグレードできません。（リセットは -r を実行）`
+      );
+    });
+
+    it('未知のエラーでは詳細ログと target 削除の警告を出して再スローすること', async () => {
+      const error = new Error('boom');
+      vi.mocked(ConfigLoader.prototype.createPresetData).mockImplementation(() => {
+        throw error;
+      });
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
+
+      await expect(service.run()).rejects.toThrow(error);
+
+      expect(logger.error).toHaveBeenCalledWith(
+        '設定生成中に不明なエラーが発生しました。boom',
+        error
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        "ターゲットフォルダー 'target' を削除してください。"
+      );
+    });
+
+    it('デフォルトの cryptoPort と networkPort でもインスタンス化できること', () => {
+      expect(new ConfigService(logger as any, baseParams())).toBeDefined();
+    });
   });
 
-  it('ConfigService invalid nemesis balances, larger than supply', async () => {
-    const toKey = (prefix: string, keySize = 64): string => {
-      return prefix.padStart(keySize, '0');
-    };
-    const customPresetObject: CustomPreset = {
-      nodes: [
-        {
-          mainPrivateKey: toKey('1'),
+  describe('private helper behavior', () => {
+    it('dockerComposeProjectName が未設定の場合は prefix を適用しないこと', () => {
+      const presetData = {
+        node: { name: 'node', databaseHost: undefined, brokerName: undefined },
+        gateway: {
+          apiNodeName: 'node',
+          databaseHost: 'mongo',
+          apiNodeHost: undefined,
+          apiNodeBrokerHost: undefined,
         },
-      ],
-      nemesis: {
-        nemesisSignerPrivateKey: '935C58E9D933D9A4E3BE6EEB5DA7B518FF90DA6B32BA6BEDE1098B79E2B69B66',
-        mosaics: [
-          {
-            supply: 1000000,
-            accounts: [toKey('A'), toKey('B'), toKey('C')],
-            currencyDistributions: [
-              {
-                address: 'TACBGHDQEJOAOAIR4KGWWAOZRGGSR4BPR6JRCPI',
-                amount: 999995,
-              },
-              {
-                address: 'TBJEKGLTINMGFEH6O47E7ZXMZFWZAJHBJTHOVUY',
-                amount: 10,
-              },
-            ],
-          },
-          {
-            supply: 5000000,
-            accounts: [toKey('D')],
-            currencyDistributions: [
-              {
-                address: 'TDSDCOH77Z27YCQ4NPDNC6MMVHXFGIQ7AV4JQSI',
-                amount: 100,
-              },
-              {
-                address: 'TDEOPVFMZW4CEY5OHSGTT3DKTU2JLF2HN57K6AY',
-                amount: 200,
-              },
-              {
-                address: 'TCHX23ENEKTSUGI7MMXFFALNF57C6WXBL7VXM7I',
-                amount: 300,
-              },
-            ],
-          },
-        ],
-      },
-    };
+        database: { name: 'mongo' },
+      } as any;
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
 
-    try {
-      await new ConfigService(logger, {
-        ...ConfigService.defaultParams,
-        reset: true,
-        target: 'target/tests/ConfigService.bootstrap.invalid.nemesis.balances',
-        preset: Preset.bootstrap,
-        assembly: Assembly.dual,
-        customPresetObject: customPresetObject,
-      }).run();
-      expect(false).to.be.eq(true); // should have raised an error!
-    } catch (e) {
-      expect(Utils.getMessage(e)).eq("Mosaic currency's fixed distributed supply 1000005 is grater than mosaic total supply 1000000");
-    }
+      (service as any).applyContainerNamePrefixes(presetData);
+
+      expect(presetData.node.name).toBe('node');
+      expect(presetData.gateway.databaseHost).toBe('mongo');
+      expect(presetData.database.name).toBe('mongo');
+    });
+
+    it('writeOutputFiles はセキュリティモードに従って秘密鍵を除去した値を書き出すこと', async () => {
+      const service = new ConfigService(logger as any, baseParams(), cryptoPort, networkPort);
+      vi.spyOn(CryptoUtils, 'removePrivateKeysAccordingToSecurityMode').mockReturnValue({
+        sanitized: 'addresses',
+      });
+      vi.spyOn(CryptoUtils, 'removePrivateKeys').mockReturnValue({ sanitized: 'preset' });
+
+      await (service as any).writeOutputFiles(
+        { privateKey: 'preset-private-key' },
+        { nodes: [{ privateKey: 'address-private-key' }] },
+        'password',
+        'ENCRYPT'
+      );
+
+      expect(YamlUtils.writeYaml).toHaveBeenNthCalledWith(
+        1,
+        addressesLocation,
+        { sanitized: 'addresses' },
+        'password'
+      );
+      expect(YamlUtils.writeYaml).toHaveBeenNthCalledWith(
+        2,
+        presetLocation,
+        { sanitized: 'preset' },
+        'password'
+      );
+    });
   });
 });

@@ -13,18 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { writeFileSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { Logger } from '../logger/index.js';
-import { ConfigPreset, NodeAccount, NodePreset } from '../model/index.js';
+import { ConfigPreset } from '../model/index.js';
 import { ICryptoPort } from '../sdk/index.js';
-import { RuntimeService } from './RuntimeService.js';
 import { VotingUtils } from '../utils/VotingUtils.js';
+import { RuntimeService } from './RuntimeService.js';
 
 export interface VotingKeyParams {
   presetData: ConfigPreset;
-  nodeAccount: NodeAccount;
-  nodePreset: NodePreset;
   votingKeysFolder: string;
   privateKeyTreeFileName: string;
   votingKeyStartEpoch: number;
@@ -39,14 +38,15 @@ export interface VotingKeyFileProvider {
   createVotingFile(params: VotingKeyParams): Promise<VotingKeyCreationResult>;
 }
 
+/**
+ * TypeScript 実装で投票キーファイルを生成するプロバイダー。
+ */
 export class NativeVotingKeyFileProvider implements VotingKeyFileProvider {
-  private readonly runtimeService: RuntimeService;
   constructor(
     private readonly logger: Logger,
-    private readonly cryptoPort: ICryptoPort,
-  ) {
-    this.runtimeService = new RuntimeService(logger);
-  }
+    private readonly cryptoPort: ICryptoPort
+  ) {}
+
   public async createVotingFile({
     presetData,
     votingKeysFolder,
@@ -57,8 +57,14 @@ export class NativeVotingKeyFileProvider implements VotingKeyFileProvider {
     const votingAccount = this.cryptoPort.generateAccount(presetData.networkType);
     const votingPrivateKey = votingAccount.privateKey;
     const votingUtils = new VotingUtils(VotingUtils.nobleImplementation, this.cryptoPort);
-    this.logger.info('Voting file is created using the native typescript voting key file generator!');
-    const votingFile = await votingUtils.createVotingFile(votingPrivateKey, votingKeyStartEpoch, votingKeyEndEpoch);
+    this.logger.info(
+      'ネイティブ TypeScript の投票キーファイルジェネレーターを使用して投票ファイルを作成します。'
+    );
+    const votingFile = await votingUtils.createVotingFile(
+      votingPrivateKey,
+      votingKeyStartEpoch,
+      votingKeyEndEpoch
+    );
     writeFileSync(join(votingKeysFolder, privateKeyTreeFileName), votingFile);
     return {
       publicKey: votingAccount.publicKey,
@@ -66,12 +72,16 @@ export class NativeVotingKeyFileProvider implements VotingKeyFileProvider {
   }
 }
 
+/**
+ * catapult.tools.votingkey を docker 経由で実行して投票キーファイルを生成するプロバイダー。
+ */
 export class CatapultVotingKeyFileProvider implements VotingKeyFileProvider {
   private readonly runtimeService: RuntimeService;
+
   constructor(
     private readonly logger: Logger,
     private readonly user: string,
-    private readonly cryptoPort: ICryptoPort,
+    private readonly cryptoPort: ICryptoPort
   ) {
     this.runtimeService = new RuntimeService(logger);
   }
@@ -82,7 +92,7 @@ export class CatapultVotingKeyFileProvider implements VotingKeyFileProvider {
     votingKeyStartEpoch,
     votingKeyEndEpoch,
   }: VotingKeyParams): Promise<VotingKeyCreationResult> {
-    this.logger.info(`Voting file is created using docker and catapult.tools.votingkey`);
+    this.logger.info('docker と catapult.tools.votingkey を使用して投票ファイルを作成します。');
     const votingAccount = this.cryptoPort.generateAccount(presetData.networkType);
     const votingPrivateKey = votingAccount.privateKey;
     const symbolServerImage = presetData.symbolServerImage;
@@ -104,10 +114,10 @@ export class CatapultVotingKeyFileProvider implements VotingKeyFileProvider {
       workdir: presetData.catapultAppFolder,
     });
 
-    if (stdout.indexOf('<error> ') > -1) {
+    if (stdout.includes('<error> ')) {
       this.logger.info(stdout);
       this.logger.error(stderr);
-      throw new Error('Voting key failed. Check the logs!');
+      throw new Error('投票キーの作成に失敗しました。ログを確認してください。');
     }
     return {
       publicKey: votingAccount.publicKey,

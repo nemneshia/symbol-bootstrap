@@ -1,6 +1,12 @@
-import { createCipheriv, createDecipheriv, randomBytes as nodeRandomBytes, pbkdf2Sync } from 'crypto';
+import {
+  createCipheriv,
+  createDecipheriv,
+  randomBytes as nodeRandomBytes,
+  pbkdf2Sync,
+} from 'crypto';
 import { PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import { Address, SymbolFacade, generateMosaicId } from 'symbol-sdk/symbol';
+
 import { ICryptoPort } from '../ports/ICryptoPort.js';
 import { GeneratedAccount, PublicAccountInfo } from '../types/Account.js';
 import { NetworkType } from '../types/NetworkType.js';
@@ -121,34 +127,39 @@ export class SymbolCryptoAdapter implements ICryptoPort {
     const iv = nodeRandomBytes(12);
     const cipher = createCipheriv('aes-256-gcm', key, iv);
     const encrypted = Buffer.concat([cipher.update(value, 'utf8'), cipher.final()]);
-    const tag = (cipher as ReturnType<typeof createCipheriv> & { getAuthTag(): Buffer }).getAuthTag();
+    const tag = (
+      cipher as ReturnType<typeof createCipheriv> & { getAuthTag(): Buffer }
+    ).getAuthTag();
     return Buffer.concat([salt, iv, tag, encrypted]).toString('hex').toUpperCase();
   }
 
   decrypt(encryptedValue: string, password: string): string {
     const data = Buffer.from(encryptedValue, 'hex');
-    if (data.length < 44) throw new Error('Invalid encrypted value');
+    if (data.length < 44) throw new Error('暗号化された値が不正です。');
     const salt = data.subarray(0, 16);
     const iv = data.subarray(16, 28);
     const tag = data.subarray(28, 44);
     const ciphertext = data.subarray(44);
     const key = pbkdf2Sync(password, salt, 100000, 32, 'sha256');
     const decipher = createDecipheriv('aes-256-gcm', key, iv);
-    (decipher as ReturnType<typeof createDecipheriv> & { setAuthTag(tag: Buffer): void }).setAuthTag(tag);
+    (
+      decipher as ReturnType<typeof createDecipheriv> & { setAuthTag(tag: Buffer): void }
+    ).setAuthTag(tag);
     return Buffer.concat([decipher.update(ciphertext), decipher.final()]).toString('utf8');
   }
 
   parseServerDurationToSeconds(duration: string): number {
-    if (!duration) throw new Error(`Invalid duration format: ${duration}`);
+    if (!duration) throw new Error(`期間フォーマットが不正です: ${duration}`);
     // Supports formats like: '30s', '1m', '1h', '1d', '1h30m', '2h30m15s'
     const re = /^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?$/;
     const m = re.exec(duration);
-    if (!m || duration === '') throw new Error(`Invalid duration format: ${duration}`);
+    if (!m || duration === '') throw new Error(`期間フォーマットが不正です: ${duration}`);
     const days = m[1] ? parseInt(m[1], 10) : 0;
     const hours = m[2] ? parseInt(m[2], 10) : 0;
     const minutes = m[3] ? parseInt(m[3], 10) : 0;
     const seconds = m[4] ? parseInt(m[4], 10) : 0;
-    if (!m[1] && !m[2] && !m[3] && !m[4]) throw new Error(`Invalid duration format: ${duration}`);
+    if (!m[1] && !m[2] && !m[3] && !m[4])
+      throw new Error(`期間フォーマットが不正です: ${duration}`);
     return days * 86400 + hours * 3600 + minutes * 60 + seconds;
   }
 }

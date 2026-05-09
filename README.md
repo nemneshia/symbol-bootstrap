@@ -13,8 +13,9 @@ Symbol CLI tool that allows you creating, configuring and running [Symbol](https
 [![Api Doc](https://img.shields.io/badge/api-doc-blue.svg)](https://fboucquez.github.io/symbol-bootstrap/) -->
 
 <!-- toc -->
-* [symbol-bootstrap](#symbol-bootstrap)
-* [Command Topics](#command-topics)
+
+- [symbol-bootstrap](#symbol-bootstrap)
+- [Command Topics](#command-topics)
 <!-- tocstop -->
 
 ## Key features
@@ -56,14 +57,12 @@ Properties in each file override the previous values (by object deep merge).
 
 - [`mainnet`](presets/mainnet/network.yml): Used to create nodes connected to Symbol's Mainnet network. The [nemesis block](presets/mainnet/seed/00000) is copied over.
 - [`testnet`](presets/testnet/network.yml): Used to create nodes connected to Symbol's Testnet network. The [nemesis block](presets/testnet/seed/00000) is copied over.
-- [`bootstrap`](presets/bootstrap/network.yml): Used to create new private networks with dual currency configuration, network and harvest currencies. Nemesis block is generated.
 
 #### Assemblies
 
 - [`peer`](presets/assemblies/assembly-peer.yml): A standard peer-only node that contains 1 peer node.
 - [`api`](presets/assemblies/assembly-api.yml): A standard API node that contains 1 Mongo database, 1 API node, 1 REST gateway, and 1 broker.
 - [`dual`](presets/assemblies/assembly-dual.yml): A standard dual node that contains 1 Mongo database, 1 API node, 1 REST gateway, 1 broker, and 1 peer node.
-- [`demo`](presets/assemblies/assembly-demo.yml): A dual node with an additional explorer and faucet for test and demonstration purposes.
 - [`multinode`](presets/assemblies/assembly-multinode.yml): A special assembly that contains 1 API node and 2 peer-only nodes. This assembly is for testing, it showcases how a private network with 3 nodes runs.
 - [`services`](presets/assemblies/assembly-services.yml): A special docker compose that includes the Explorer, Faucet and HTTPS proxy. This is an easy and quick way of running Symbol services when creating a new network. Note that the services are not HA, it's not for production environments.
 
@@ -125,6 +124,7 @@ cd my-networks
 Once in the working dir:
 
 <!-- usage -->
+
 ```sh-session
 $ npm install -g @nemneshia/symbol-bootstrap
 $ symbol-bootstrap COMMAND
@@ -136,6 +136,7 @@ USAGE
   $ symbol-bootstrap COMMAND
 ...
 ```
+
 <!-- usagestop -->
 
 Validate your environment by running:
@@ -170,10 +171,7 @@ Network presets and assemblies can be combined to generate different types of no
 
 - `$ symbol-bootstrap start -p mainnet -a dual -c customPreset.yml`
 - `$ symbol-bootstrap start -p testnet -a peer -c customPreset.yml`
-- `$ symbol-bootstrap start -p testnet -a demo -c customPreset.yml`
-- `$ symbol-bootstrap start -p bootstrap -a multinode -c customPreset.yml`
-- `$ symbol-bootstrap start -p bootstrap -a demo -c customPreset.yml`
-- `$ symbol-bootstrap start -p bootstrap -a dual -c customPreset.yml`
+- `$ symbol-bootstrap start -p testnet -a api -c customPreset.yml`
 - `$ symbol-bootstrap start -p testnet -a services -c customServicesPreset.yml`
 
 Although some combinations can be done, they may not be really useful. Examples that are NOT useful:
@@ -186,8 +184,6 @@ For this case, you provide your own `networkPreset.yml` and nemesis feed folder.
 
 - `$ symbol-bootstrap start -p customNetworkPreset.yml -a dual -c customNodePreset.yml`
 - `$ symbol-bootstrap start -p customNetworkPreset.yml -a services -c customServicesPreset.yml`
-
-The `demo` assemblies starts a local Explorer http://localhost:90 and Faucet http://localhost:100.
 
 ## Wizard
 
@@ -234,27 +230,26 @@ publicKey: 6DB275B83F4839768821FF621DD90358F99A84EC61EB7DE1F6947E5B0926B9BB
 If you don't like it, let me know by creating issues on GitHub. Pull Requests are welcome!
 
 <!-- commands -->
+
 # Command Topics
 
-* [`symbol-bootstrap autocomplete`](docs/autocomplete.md) - Display autocomplete installation instructions.
-* [`symbol-bootstrap clean`](docs/clean.md) - It removes the target folder deleting the generated configuration and data
-* [`symbol-bootstrap compose`](docs/compose.md) - It generates the `compose.yml` file from the configured network.
-* [`symbol-bootstrap config`](docs/config.md) - Command used to set up the configuration files and the nemesis block for the current network
-* [`symbol-bootstrap decrypt`](docs/decrypt.md) - It decrypts a yml file using the provided password. The source file can be a custom preset file, a preset.yml file or an addresses.yml.
-* [`symbol-bootstrap encrypt`](docs/encrypt.md) - It encrypts a yml file using the provided password. The source files would be a custom preset file, a preset.yml file or an addresses.yml.
-* [`symbol-bootstrap healthCheck`](docs/healthCheck.md) - It checks if the services created with docker compose are up and running.
-* [`symbol-bootstrap help`](docs/help.md) - Display help for symbol-bootstrap.
-* [`symbol-bootstrap link`](docs/link.md) - It announces VRF and Voting Link transactions to the network for each node with 'Peer' or 'Voting' roles. This command finalizes the node registration to an existing network.
-* [`symbol-bootstrap modifyMultisig`](docs/modifyMultisig.md) - Create or modify a multisig account
-* [`symbol-bootstrap pack`](docs/pack.md) - It configures and packages your node into a zip file that can be uploaded to the final node machine.
-* [`symbol-bootstrap renewCertificates`](docs/renewCertificates.md) - It renews the SSL certificates of the node regenerating the node.csr.pem files but reusing the current private keys.
-* [`symbol-bootstrap report`](docs/report.md) - it generates reStructuredText (.rst) reports describing the configuration of each node.
-* [`symbol-bootstrap resetData`](docs/resetData.md) - It removes the data keeping the generated configuration, certificates, keys and block 1.
-* [`symbol-bootstrap run`](docs/run.md) - It boots the network via docker using the generated `compose.yml` file and configuration. The config and compose methods/commands need to be called before this method. This is just a wrapper for the `docker compose up` bash call.
-* [`symbol-bootstrap start`](docs/start.md) - Single command that aggregates config, compose and run in one line!
-* [`symbol-bootstrap stop`](docs/stop.md) - It stops the docker compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker compose down` bash call.
-* [`symbol-bootstrap updateVotingKeys`](docs/updateVotingKeys.md) - It updates the voting files containing the voting keys when required.
-* [`symbol-bootstrap verify`](docs/verify.md) - It tests the installed software in the current computer reporting if there is any missing dependency, invalid version, or software related issue.
-* [`symbol-bootstrap wizard`](docs/wizard.md) - An utility command that will help you configuring node!
+- [`symbol-bootstrap autocomplete`](docs/autocomplete.md) - Display autocomplete installation instructions.
+- [`symbol-bootstrap clean`](docs/clean.md) - It removes the target folder deleting the generated configuration and data
+- [`symbol-bootstrap compose`](docs/compose.md) - It generates the `compose.yml` file from the configured network.
+- [`symbol-bootstrap config`](docs/config.md) - Command used to set up the configuration files and the nemesis block for the current network
+- [`symbol-bootstrap decrypt`](docs/decrypt.md) - It decrypts a yml file using the provided password. The source file can be a custom preset file, a preset.yml file or an addresses.yml.
+- [`symbol-bootstrap encrypt`](docs/encrypt.md) - It encrypts a yml file using the provided password. The source files would be a custom preset file, a preset.yml file or an addresses.yml.
+- [`symbol-bootstrap healthCheck`](docs/healthCheck.md) - It checks if the services created with docker compose are up and running.
+- [`symbol-bootstrap help`](docs/help.md) - Display help for symbol-bootstrap.
+- [`symbol-bootstrap link`](docs/link.md) - It announces VRF and Voting Link transactions to the network for each node with 'Peer' or 'Voting' roles. This command finalizes the node registration to an existing network.
+- [`symbol-bootstrap modifyMultisig`](docs/modifyMultisig.md) - Create or modify a multisig account
+- [`symbol-bootstrap pack`](docs/pack.md) - It configures and packages your node into a zip file that can be uploaded to the final node machine.
+- [`symbol-bootstrap renewCertificates`](docs/renewCertificates.md) - It renews the SSL certificates of the node regenerating the node.csr.pem files but reusing the current private keys.
+- [`symbol-bootstrap resetData`](docs/resetData.md) - It removes the data keeping the generated configuration, certificates, keys and block 1.
+- [`symbol-bootstrap run`](docs/run.md) - It boots the network via docker using the generated `compose.yml` file and configuration. The config and compose methods/commands need to be called before this method. This is just a wrapper for the `docker compose up` bash call.
+- [`symbol-bootstrap start`](docs/start.md) - Single command that aggregates config, compose and run in one line!
+- [`symbol-bootstrap stop`](docs/stop.md) - It stops the docker compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker compose down` bash call.
+- [`symbol-bootstrap updateVotingKeys`](docs/updateVotingKeys.md) - It updates the voting files containing the voting keys when required.
+- [`symbol-bootstrap verify`](docs/verify.md) - It tests the installed software in the current computer reporting if there is any missing dependency, invalid version, or software related issue.
 
 <!-- commandsstop -->

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class Stop extends Command {
   static description =
-    'It stops the docker compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker compose down` bash call.';
+    '実行中の docker compose ネットワークを停止します（symbol-bootstrap を --detached で起動した場合）。このコマンドは `docker compose down` のラッパーです。';
   static examples = [`$ symbol-bootstrap stop`];
 
   static flags = {
@@ -31,8 +31,8 @@ export default class Stop extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Stop);
-    const logger = LoggerFactory.getLogger(flags.logger);
     CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
     return new BootstrapService(logger).stop(flags);
   }
 }

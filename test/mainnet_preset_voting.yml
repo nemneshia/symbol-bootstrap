@@ -1,7 +1,0 @@
-privateKeySecurityMode: ENCRYPT
-nodes:
-  - voting: true
-    host: myServerHostnameOrPublicIp
-    friendlyName: myServerFriendlyName
-    remotePrivateKey: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
-    vrfPrivateKey: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA

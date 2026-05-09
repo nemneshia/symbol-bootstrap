@@ -13,30 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command, Flags } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
-import { ConfigPreset } from '../model/index.js';
-import { SymbolCryptoAdapter, SymbolNetworkAdapter } from '../sdk/index.js';
-import {
-  CommandUtils,
-  ConfigLoader,
-  Constants,
-  CryptoUtils,
-  RemoteNodeService,
-  Utils,
-  VotingService,
-  YamlUtils,
-} from '../service/index.js';
+import { BootstrapService, CommandUtils, Constants } from '../service/index.js';
 
 export default class UpdateVotingKeys extends Command {
-  static description = `It updates the voting files containing the voting keys when required.
+  static description = `必要に応じて、Voting キーを含む投票ファイルを更新します。
 
-If the node's current voting file has an end epoch close to the current network epoch, this command will create a new 'private_key_treeX.dat' that continues the current file.
+現在の投票ファイルの終了 epoch がネットワークの現在 epoch に近い場合、このコマンドは既存ファイルを引き継ぐ新しい 'private_key_treeX.dat' を作成します。
 
-By default, bootstrap creates a new voting file once the current file reaches its last month. The current network epoch is resolved from the network or you can provide it with the \`finalizationEpoch\` param.
+デフォルトでは、現在のファイルが最終月に入ると Bootstrap が新しい投票ファイルを作成します。現在 epoch はネットワークから解決されますが、\`finalizationEpoch\` で明示指定もできます。
 
-When a new voting file is created, Bootstrap will advise running the \`link\` command again.
+新しい投票ファイルが作成された場合、Bootstrap は \`link\` コマンドの再実行を案内します。
 
 `;
 
@@ -47,11 +36,11 @@ When a new voting file is created, Bootstrap will advise running the \`link\` co
     target: CommandUtils.targetFlag,
     user: Flags.string({
       char: 'u',
-      description: `User used to run docker images when creating the the voting key files. "${Constants.CURRENT_USER}" means the current user.`,
+      description: `投票キーファイル生成時に Docker イメージを実行するユーザーを指定します。"${Constants.CURRENT_USER}" は現在のユーザーを意味します。`,
       default: Constants.CURRENT_USER,
     }),
     finalizationEpoch: Flags.integer({
-      description: `The network's finalization epoch. It can be retrieved from the /chain/info rest endpoint. If not provided, the bootstrap known epoch is used.`,
+      description: `ネットワークの finalization epoch を指定します。/chain/info REST エンドポイントから取得できます。未指定の場合は Bootstrap が解決した既知の epoch を使用します。`,
     }),
     logger: CommandUtils.getLoggerFlag(...System),
   };
@@ -59,64 +48,18 @@ When a new voting file is created, Bootstrap will advise running the \`link\` co
   public async run(): Promise<void> {
     const { flags } = await this.parse(UpdateVotingKeys);
     CommandUtils.showBanner();
-    const password = false;
-    const target = flags.target;
     const logger = LoggerFactory.getLogger(flags.logger);
-    const configLoader = new ConfigLoader(logger);
-    const addressesLocation = configLoader.getGeneratedAddressLocation(target);
-    let presetData: ConfigPreset;
-    try {
-      const oldPresetData = configLoader.loadExistingPresetData(target, password);
-      presetData = configLoader.createPresetData({
-        workingDir: Constants.defaultWorkingDir,
-        password: password,
-        oldPresetData,
-      });
-    } catch (e) {
-      throw new Error(
-        `Node's preset cannot be loaded. Have you provided the right --target? If you have, please rerun the 'config' command with --upgrade. Error: ${Utils.getMessage(
-          e,
-        )}`,
-        { cause: e },
-      );
-    }
-    const addresses = configLoader.loadExistingAddresses(target, password);
-    const privateKeySecurityMode = CryptoUtils.getPrivateKeySecurityMode(presetData.privateKeySecurityMode);
-
-    const cryptoPort = new SymbolCryptoAdapter();
-    const networkPort = new SymbolNetworkAdapter();
-    const finalizationEpoch =
-      flags.finalizationEpoch || (await new RemoteNodeService(logger, presetData, false, networkPort).resolveCurrentFinalizationEpoch());
-
-    const votingKeyUpgrade = (
-      await Promise.all(
-        (presetData.nodes || []).map((nodePreset, index) => {
-          const nodeAccount = addresses.nodes?.[index];
-          if (!nodeAccount) {
-            throw new Error(`There is not node in addresses at index ${index}`);
-          }
-          return new VotingService(
-            logger,
-            {
-              target,
-              user: flags.user,
-            },
-            cryptoPort,
-          ).run(presetData, nodeAccount, nodePreset, finalizationEpoch, true, false);
-        }),
-      )
-    ).find((f) => f);
+    const votingKeyUpgrade = await new BootstrapService(logger).updateVotingKeys({
+      target: flags.target,
+      user: flags.user,
+      finalizationEpoch: flags.finalizationEpoch,
+    });
     if (votingKeyUpgrade) {
-      await YamlUtils.writeYaml(
-        addressesLocation,
-        CryptoUtils.removePrivateKeysAccordingToSecurityMode(addresses, privateKeySecurityMode),
-        undefined,
-      );
-      logger.warn('Bootstrap has created new voting file(s). Review the logs!');
+      logger.warn('Bootstrap が新しい投票ファイルを作成しました。ログを確認してください。');
       logger.warn('');
     } else {
       logger.info('');
-      logger.info('Voting files are up-to-date. There is nothing to upgrade');
+      logger.info('投票ファイルは最新です。アップグレードの必要はありません。');
       logger.info('');
     }
   }

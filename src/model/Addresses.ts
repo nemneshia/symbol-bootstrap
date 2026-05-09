@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { NetworkType } from '../sdk/index.js';
 import { VotingKeyFile } from '../utils/VotingUtils.js';
 
@@ -51,7 +50,7 @@ export interface MosaicAccounts {
 
 export interface Addresses {
   version: number;
-  nodes?: NodeAccount[];
+  node?: NodeAccount;
   nemesisGenerationHashSeed: string;
   sinkAddress?: string;
   nemesisSigner?: ConfigAccount;

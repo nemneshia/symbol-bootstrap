@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { NetworkType } from '../sdk/index.js';
 import { DockerCompose, DockerComposeService } from './DockerCompose.js';
 
@@ -418,7 +417,7 @@ export interface CommonConfigPreset extends NodeConfigPreset, GatewayConfigPrese
   // Allows hardcoded list. For new networks and for possible fallbacks.
   knownRestGateways?: string[];
   knownPeers?: PeerInfo[];
-  // Allows users to provide their own modification to the generate compose.yml, for example, a new docker service.
+  // Allows users to provide their own modification to the generate compose.yaml, for example, a new docker service.
   compose: DeepPartial<DockerCompose>;
 
   // Docker Compose Project Name
@@ -428,17 +427,17 @@ export interface CommonConfigPreset extends NodeConfigPreset, GatewayConfigPrese
 export interface ConfigPreset extends CommonConfigPreset {
   // Nested objects!
   nemesis: NemesisPreset;
-  databases?: DatabasePreset[];
-  nodes?: NodePreset[];
-  gateways?: GatewayPreset[];
-  httpsProxies?: HttpsProxyPreset[];
+  database?: DatabasePreset;
+  node?: NodePreset;
+  gateway?: GatewayPreset;
+  httpsProxy?: HttpsProxyPreset;
   customPresetCache?: CustomPreset;
 }
 
 export interface CustomPreset extends Partial<CommonConfigPreset> {
   nemesis?: DeepPartial<NemesisPreset>;
-  databases?: DeepPartial<DatabasePreset>[];
-  nodes?: DeepPartial<NodePreset>[];
-  gateways?: DeepPartial<GatewayPreset>[];
-  httpsProxies?: DeepPartial<HttpsProxyPreset>[];
+  database?: DeepPartial<DatabasePreset>;
+  node?: DeepPartial<NodePreset>;
+  gateway?: DeepPartial<GatewayPreset>;
+  httpsProxy?: DeepPartial<HttpsProxyPreset>;
 }

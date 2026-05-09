@@ -93,6 +93,7 @@ uniqueAggregateTransactionHash:
 caCertificateExpirationInDays: 7300 # 20 years
 nodeCertificateExpirationInDays: 375 # 1.02 years
 certificateExpirationWarningInDays: 30 # certificates are allowed to be renewed 30 before expiring
+
 # config database
 databaseName: catapult
 maxWriterThreads: 8
@@ -171,7 +172,7 @@ enableAutoHarvesting: true
 fileDatabaseBatchSize: 1
 maxUnlockedAccounts: 10
 delegatePrioritizationPolicy: Importance
-dockerComposeServiceRestart: 'on-failure:2'
+dockerComposeServiceRestart: 'no'
 dockerComposeDebugMode: false
 minPartnerNodeVersion: 1.0.2.0
 maxPartnerNodeVersion: 1.0.255.255
@@ -232,7 +233,7 @@ restSSLPath: '/symbol-workdir'
 restSSLKeyFileName: 'restSSL.key'
 restSSLCertificateFileName: 'restSSL.crt'
 restNodeMetadata:
-  _info: 'Node metadata'
+  _info: 'node metadata'
 metal:
   cacheTtl: 300
   sizeLimit: 10000000

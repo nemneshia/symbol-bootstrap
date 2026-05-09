@@ -1,75 +1,134 @@
-/*
- * Copyright 2022 Fernando Boucquez
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { expect } from 'vitest';
+import { LogType } from '../../src/logger/LogType.js';
+import { LoggerFactory } from '../../src/logger/LoggerFactory.js';
+import { NetworkType } from '../../src/sdk/index.js';
+import { KeyName } from '../../src/service/AccountResolver.js';
 
-import { Account, NetworkType } from 'symbol-sdk';
-import { BootstrapAccountResolver, KeyName, LoggerFactory, LogType, Utils } from '../../src';
-// @ts-ignore
-import { StdUtils } from '../utils/StdUtils';
+const passwordMock = vi.fn();
+
+vi.mock('@clack/prompts', () => ({
+  password: (...args: any[]) => passwordMock(...args),
+  isCancel: (value: unknown) => value === 'cancel',
+}));
 
 describe('BootstrapAccountResolver', () => {
-  const logger = LoggerFactory.getLogger(LogType.Silent);
-  const networkType = NetworkType.TEST_NET;
-  const resolver = new BootstrapAccountResolver(logger);
-  const testAccount = Account.generateNewAccount(networkType);
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
-  it('should resolveAccount when private key is provided', async () => {
-    const account = await resolver.resolveAccount(
-      networkType,
-      {
-        privateKey: testAccount.privateKey,
-        publicKey: testAccount.publicKey,
-      },
-      KeyName.Main,
-      'some node',
-      'some description',
-      undefined,
+  it('account が undefined かつ generateErrorMessage ありなら KnownError を投げること', async () => {
+    const { BootstrapAccountResolver } =
+      await import('../../src/service/BootstrapAccountResolver.js');
+    const resolver = new BootstrapAccountResolver(LoggerFactory.getLogger(LogType.Silent), {
+      generateAccount: vi.fn(),
+    } as any);
+
+    await expect(
+      resolver.resolveAccount(
+        NetworkType.TEST_NET,
+        undefined,
+        KeyName.Main,
+        'api-node',
+        '操作',
+        '生成禁止'
+      )
+    ).rejects.toThrow('生成禁止');
+  });
+
+  it('privateKey が存在する account は createAccountFromPrivateKey を返すこと', async () => {
+    const restored = { publicKey: 'PUB', privateKey: 'PVT', address: 'TADDR' };
+    const cryptoPort = {
+      createAccountFromPrivateKey: vi.fn().mockReturnValue(restored),
+    };
+    const { BootstrapAccountResolver } =
+      await import('../../src/service/BootstrapAccountResolver.js');
+    const resolver = new BootstrapAccountResolver(
+      LoggerFactory.getLogger(LogType.Silent),
+      cryptoPort as any
     );
-    expect(account).to.be.deep.eq(testAccount);
-  });
 
-  it('should resolveAccount prompt private key when private key is provided', async () => {
-    // first 2 are invalid, last one passes.
-    StdUtils.in([testAccount.privateKey, '\n']);
-    const account = await resolver.resolveAccount(
-      networkType,
-      {
-        publicKey: testAccount.publicKey,
-      },
+    const result = await resolver.resolveAccount(
+      NetworkType.TEST_NET,
+      { publicKey: 'PUB', privateKey: 'PVT' } as any,
       KeyName.Main,
-      'some node',
-      'some description',
-      undefined,
+      'api-node',
+      '操作',
+      undefined
     );
-    expect(account).to.be.deep.eq(testAccount);
+
+    expect(result).toEqual(restored);
+    expect(cryptoPort.createAccountFromPrivateKey).toHaveBeenCalledWith(
+      'PVT',
+      NetworkType.TEST_NET
+    );
   });
 
-  it('should resolveAccount generate account when no account is not provided', async () => {
-    const account = await resolver.resolveAccount(networkType, undefined, KeyName.Main, 'some node', 'some description', undefined);
-    expect(account).to.not.be.undefined;
-    expect(account).to.be.not.deep.eq(testAccount);
+  it('account が undefined かつ generateErrorMessage なしなら新規生成すること', async () => {
+    const generated = { publicKey: 'PUB', privateKey: 'PVT', address: 'TADDR' };
+    const cryptoPort = {
+      generateAccount: vi.fn().mockReturnValue(generated),
+    };
+    const { BootstrapAccountResolver } =
+      await import('../../src/service/BootstrapAccountResolver.js');
+    const resolver = new BootstrapAccountResolver(
+      LoggerFactory.getLogger(LogType.Silent),
+      cryptoPort as any
+    );
+
+    const result = await resolver.resolveAccount(
+      NetworkType.TEST_NET,
+      undefined,
+      KeyName.Main,
+      'api-node',
+      '操作',
+      undefined
+    );
+
+    expect(result).toEqual(generated);
+    expect(cryptoPort.generateAccount).toHaveBeenCalledWith(NetworkType.TEST_NET);
   });
 
-  it('should resolveAccount raise error when no account is not provided', async () => {
-    try {
-      await resolver.resolveAccount(networkType, undefined, KeyName.Main, 'some node', 'some description', 'DO NOT GENERATE');
-      expect.fail('Should raise error!');
-    } catch (e) {
-      expect(Utils.getMessage(e)).to.be.eq('DO NOT GENERATE');
-    }
+  it('プロンプト入力で空文字・不一致鍵を経て正しい鍵で解決できること', async () => {
+    const expected = {
+      publicKey: 'A'.repeat(64),
+      address: 'TEXPECTED',
+      privateKey: 'C'.repeat(64),
+    };
+
+    const cryptoPort = {
+      getAddressFromPublicKey: vi.fn().mockReturnValue('TADDRESS'),
+      createAccountFromPrivateKey: vi
+        .fn()
+        .mockReturnValueOnce({ publicKey: 'B'.repeat(64), address: 'TWRONG' })
+        .mockReturnValueOnce(expected),
+    };
+
+    passwordMock
+      .mockResolvedValueOnce('')
+      .mockResolvedValueOnce('D'.repeat(64))
+      .mockResolvedValueOnce('C'.repeat(64));
+
+    const { BootstrapAccountResolver } =
+      await import('../../src/service/BootstrapAccountResolver.js');
+    const resolver = new BootstrapAccountResolver(
+      LoggerFactory.getLogger(LogType.Silent),
+      cryptoPort as any
+    );
+    const account = { publicKey: 'A'.repeat(64) } as any;
+
+    const result = await resolver.resolveAccount(
+      NetworkType.TEST_NET,
+      account,
+      KeyName.Main,
+      'api-node',
+      '操作',
+      undefined
+    );
+
+    expect(result).toEqual(expected);
+    expect(account.privateKey).toBe('C'.repeat(64));
+    expect(passwordMock).toHaveBeenCalledTimes(3);
+    expect(cryptoPort.createAccountFromPrivateKey).toHaveBeenCalledTimes(2);
   });
 });

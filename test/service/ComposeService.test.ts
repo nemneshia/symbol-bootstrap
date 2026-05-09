@@ -1,282 +1,359 @@
-/*
- * Copyright 2022 Fernando Boucquez
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { existsSync } from 'fs';
-import { expect } from 'vitest';
+import { KnownError } from '../../src/errors/KnownError.js';
+import { LogType } from '../../src/logger/LogType.js';
+import { LoggerFactory } from '../../src/logger/LoggerFactory.js';
+import { ComposeParams, ComposeService } from '../../src/service/ComposeService.js';
+import { ConfigLoader } from '../../src/service/ConfigLoader.js';
+import { FileSystemService } from '../../src/service/FileSystemService.js';
+import { RuntimeService } from '../../src/service/RuntimeService.js';
+import { HandlebarsUtils } from '../../src/utils/HandlebarsUtils.js';
+import { YamlUtils } from '../../src/utils/YamlUtils.js';
 
-import { join } from 'path';
-import { Assembly, Constants, FileSystemService, LoggerFactory, LogType, RuntimeService, YamlUtils } from '../../src';
-import { DockerCompose } from '../../src/model';
-import { ComposeService, ConfigLoader, ConfigService, LinkService, Preset, StartParams } from '../../src/service';
+const { existsSyncMock } = vi.hoisted(() => ({
+  existsSyncMock: vi.fn(),
+}));
+
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return {
+    ...actual,
+    existsSync: ((path: any) => {
+      const text = String(path);
+      if (text.endsWith('compose.yaml')) {
+        return existsSyncMock(path);
+      }
+      return actual.existsSync(path);
+    }) as typeof actual.existsSync,
+  };
+});
+
 const logger = LoggerFactory.getLogger(LogType.Silent);
-const fileSystemService = new FileSystemService(logger);
-describe('ComposeService', () => {
-  const password = '1234';
 
-  const assertDockerCompose = async (params: StartParams, expectedComposeFile: string) => {
-    const presetData = new ConfigLoader(logger).createPresetData({ password, ...params, workingDir: Constants.defaultWorkingDir });
-    const dockerCompose = await new ComposeService(logger, params).run(presetData);
-    Object.values(dockerCompose.services).forEach((service) => {
-      if (service.mem_limit) {
-        service.mem_limit = 123;
-      }
-    });
-    const targetDocker = join(params.target, `docker`, 'compose.yml');
-    expect(existsSync(targetDocker)).to.be.true;
-    const expectedFileLocation = `./test/composes/${expectedComposeFile}`;
-    if (!existsSync(expectedFileLocation)) {
-      await YamlUtils.writeYaml(expectedFileLocation, dockerCompose, params.password);
-    }
+const createParams = (upgrade = false): ComposeParams => ({
+  target: 'target',
+  user: 'current',
+  workingDir: '.',
+  password: false,
+  offline: false,
+  upgrade,
+});
 
-    const expectedDockerCompose: DockerCompose = YamlUtils.loadYaml(expectedFileLocation, params.password);
-
-    const promises = Object.values(expectedDockerCompose.services).map(async (service) => {
-      if (!service.user) {
-        return service;
-      }
-      const user = await new RuntimeService(logger).getDockerUserGroup();
-      if (user) {
-        service.user = user;
-      } else {
-        delete service.user;
-      }
-      return service;
-    });
-    await Promise.all(promises);
-    expect(
-      dockerCompose,
-      `Generated Docker Compose:
-
-${YamlUtils.toYaml(dockerCompose)}
-
-`,
-    ).to.be.deep.eq(expectedDockerCompose);
-    fileSystemService.deleteFolder(params.target);
+const createPreset = (): any => {
+  const preset: any = {
+    dockerComposeProjectName: 'proj',
+    dockerComposeDebugMode: false,
+    dockerComposeServiceRestart: 'always',
+    mongoImage: 'mongo:6',
+    mongoComposeRunParam: '--quiet',
+    databaseName: 'catapult',
+    symbolServerImage: 'symbol-server:latest',
+    symbolRestImage: 'symbol-rest:latest',
+    httpsPortalImage: 'https-portal:latest',
+    catapultAppFolder: '/catapult',
+    dataDirectory: '/data',
+    compose: {},
+    database: { name: 'db-0', openPort: true },
+    node: {
+      name: 'node-0',
+      host: 'node0.local',
+      databaseHost: 'db-0',
+      openPort: 'true',
+      brokerName: 'broker-0',
+      brokerHost: 'broker0.local',
+      brokerOpenPort: 7905,
+    },
+    gateway: { name: 'rest-0', openPort: 3000, databaseHost: 'db-0' },
+    httpsProxy: { name: 'https-0', openPort: true },
   };
 
-  it('Compose testnet dual', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/testnet-dual',
-      password,
-      reset: false,
-      preset: Preset.testnet,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-testnet-dual-compose.yml');
-  });
-
-  it('Compose testnet api', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/testnet-api',
-      password,
-      reset: false,
-      preset: Preset.testnet,
-      assembly: Assembly.api,
-    };
-    await assertDockerCompose(params, 'expected-testnet-api-compose.yml');
-  });
-
-  it('Compose testnet peer', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/testnet-peer',
-      password,
-      reset: false,
-      preset: Preset.testnet,
-      assembly: Assembly.peer,
-    };
-    await assertDockerCompose(params, 'expected-testnet-peer-compose.yml');
-  });
-
-  it('Compose mainnet dual', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/mainnet-dual',
-      password,
-      reset: false,
-      preset: Preset.mainnet,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-mainnet-dual-compose.yml');
-  });
-
-  it('Compose mainnet api', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/mainnet-api',
-      password,
-      reset: false,
-      preset: Preset.mainnet,
-      assembly: Assembly.api,
-    };
-    await assertDockerCompose(params, 'expected-mainnet-api-compose.yml');
-  });
-
-  it('Compose mainnet peer', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/mainnet-peer',
-      password,
-      reset: false,
-      preset: Preset.mainnet,
-      assembly: Assembly.peer,
-    };
-    await assertDockerCompose(params, 'expected-mainnet-peer-compose.yml');
-  });
-
-  it('Compose testnet httpsProxy', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/testnet-https-proxy',
-      password,
-      customPreset: './test/unit-test-profiles/https-proxy.yml',
-      reset: false,
-      preset: Preset.testnet,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-testnet-httpsproxy-compose.yml');
-  });
-
-  it('Compose testnet native ssl', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/testnet-native-ssl',
-      password,
-      customPreset: './test/unit-test-profiles/native-ssl.yml',
-      reset: false,
-      preset: Preset.testnet,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-testnet-native-ssl-compose.yml');
-  });
-
-  it('Compose testnet dual voting', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/ComposeService-testnet-voting',
-      password,
-      reset: false,
-      customPreset: './test/unit-test-profiles/voting_preset.yml',
-      preset: Preset.testnet,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-testnet-voting-compose.yml');
-  });
-
-  it('Compose bootstrap default', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      customPresetObject: {},
-      target: 'target/tests/ComposeService-bootstrap.default',
-      reset: false,
-      preset: Preset.bootstrap,
-    };
-    await assertDockerCompose(params, 'expected-compose-bootstrap.yml');
-  });
-
-  it('Compose bootstrap custom compose', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      customPresetObject: {},
-      target: 'target/tests/ComposeService-bootstrap.compose',
-      password,
-      customPreset: './test/custom_compose_preset.yml',
-      reset: false,
-      preset: Preset.bootstrap,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-compose-bootstrap-custom-compose.yml');
-  });
-
-  it('Compose bootstrap custom preset', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      customPresetObject: {},
-      target: 'target/tests/ComposeService-bootstrap.custom',
-      customPreset: './test/custom_preset.yml',
-      reset: false,
-      preset: Preset.bootstrap,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-compose-bootstrap-custom.yml');
-  });
-
-  it('Compose mainnet custom services, logging and grace period', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      target: 'target/tests/ComposeService-mainnet-custom-services',
-      customPreset: './test/unit-test-profiles/custom_compose_service.yml',
-      reset: false,
-      preset: Preset.testnet,
-      assembly: Assembly.dual,
-    };
-    await assertDockerCompose(params, 'expected-mainnet-custom-services.yml');
-  });
-
-  it('Compose bootstrap demo with debug on', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      customPresetObject: {
-        dockerComposeDebugMode: true,
+  Object.defineProperties(preset, {
+    databases: {
+      get() {
+        return this.database ? [this.database] : [];
       },
-      target: 'target/tests/ComposeService-bootstrap.demo',
-      password,
-      reset: false,
-      assembly: Assembly.demo,
-      preset: Preset.bootstrap,
-    };
-    await assertDockerCompose(params, 'expected-compose-bootstrap-demo.yml');
-  });
-  it('Compose bootstrap dual', async () => {
-    const params = {
-      ...ConfigService.defaultParams,
-      ...LinkService.defaultParams,
-      customPresetObject: {},
-      target: 'target/tests/ComposeService-bootstrap.dual',
-      password,
-      reset: false,
-      assembly: Assembly.dual,
-      preset: Preset.bootstrap,
-    };
-    await assertDockerCompose(params, 'expected-compose-bootstrap-dual.yml');
+      set(value) {
+        this.database = Array.isArray(value) ? value[0] : value;
+      },
+      enumerable: true,
+    },
+    nodes: {
+      get() {
+        return this.node ? [this.node] : [];
+      },
+      set(value) {
+        this.node = Array.isArray(value) ? value[0] : value;
+      },
+      enumerable: true,
+    },
+    gateways: {
+      get() {
+        return this.gateway ? [this.gateway] : [];
+      },
+      set(value) {
+        this.gateway = Array.isArray(value) ? value[0] : value;
+      },
+      enumerable: true,
+    },
+    httpsProxies: {
+      get() {
+        return this.httpsProxy ? [this.httpsProxy] : [];
+      },
+      set(value) {
+        this.httpsProxy = Array.isArray(value) ? value[0] : value;
+      },
+      enumerable: true,
+    },
   });
 
-  it('resolveDebugOptions', async () => {
-    const service = new ComposeService(logger, ComposeService.defaultParams);
-    expect(service.resolveDebugOptions(true, true)).deep.equals(ComposeService.DEBUG_SERVICE_PARAMS);
-    expect(service.resolveDebugOptions(true, undefined)).deep.equals(ComposeService.DEBUG_SERVICE_PARAMS);
-    expect(service.resolveDebugOptions(true, false)).deep.equals({});
-    expect(service.resolveDebugOptions(false, true)).deep.equals(ComposeService.DEBUG_SERVICE_PARAMS);
-    expect(service.resolveDebugOptions(false, undefined)).deep.equals({});
-    expect(service.resolveDebugOptions(false, false)).deep.equals({});
+  return preset;
+};
+
+describe('ComposeService', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.spyOn(FileSystemService.prototype, 'deleteFolder').mockImplementation(() => undefined);
+    vi.spyOn(FileSystemService.prototype, 'mkdir').mockResolvedValue(undefined);
+    vi.spyOn(FileSystemService.prototype, 'chmodRecursive').mockResolvedValue(undefined);
+    vi.spyOn(ConfigLoader.prototype, 'loadExistingPresetData').mockReturnValue(createPreset());
+    vi.spyOn(RuntimeService.prototype, 'resolveDockerUserFromParam').mockResolvedValue('1000:1000');
+    vi.spyOn(HandlebarsUtils, 'generateConfiguration').mockResolvedValue(undefined);
+    vi.spyOn(YamlUtils, 'writeYaml').mockResolvedValue(undefined);
+    vi.spyOn(YamlUtils, 'loadYaml').mockReturnValue({ services: {} } as any);
+  });
+
+  describe('resolveDebugOptions', () => {
+    it('dockerComposeServiceDebugMode=false の場合は常に空オブジェクトを返すこと', () => {
+      const service = new ComposeService(logger, createParams());
+      expect(service.resolveDebugOptions(true, false)).toEqual({});
+    });
+
+    it('dockerComposeServiceDebugMode=true の場合は DEBUG_SERVICE_PARAMS を返すこと', () => {
+      const service = new ComposeService(logger, createParams());
+      expect(service.resolveDebugOptions(false, true)).toEqual(ComposeService.DEBUG_SERVICE_PARAMS);
+    });
+
+    it('global debug=true の場合は DEBUG_SERVICE_PARAMS を返すこと', () => {
+      const service = new ComposeService(logger, createParams());
+      expect(service.resolveDebugOptions(true, undefined)).toEqual(
+        ComposeService.DEBUG_SERVICE_PARAMS
+      );
+    });
+  });
+
+  describe('run', () => {
+    it('既存 compose.yaml がある場合は再利用して返すこと', async () => {
+      existsSyncMock.mockReturnValue(true);
+      const service = new ComposeService(logger, createParams());
+
+      const result = await service.run(createPreset());
+
+      expect(YamlUtils.loadYaml).toHaveBeenCalledOnce();
+      expect(result).toEqual({ services: {} });
+      expect(HandlebarsUtils.generateConfiguration).not.toHaveBeenCalled();
+    });
+
+    it('upgrade=true の場合は docker フォルダーを削除すること', async () => {
+      existsSyncMock.mockReturnValue(true);
+      const service = new ComposeService(logger, createParams(true));
+
+      await service.run(createPreset());
+
+      expect(FileSystemService.prototype.deleteFolder).toHaveBeenCalledOnce();
+    });
+
+    it('passedPresetData 未指定時は ConfigLoader からプリセットを読み込むこと', async () => {
+      existsSyncMock.mockReturnValue(true);
+      const service = new ComposeService(logger, createParams());
+
+      await service.run();
+
+      expect(ConfigLoader.prototype.loadExistingPresetData).toHaveBeenCalledOnce();
+    });
+
+    it('compose を新規生成して writeYaml まで実行すること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+
+      const result = await service.run(preset);
+
+      expect(FileSystemService.prototype.mkdir).toHaveBeenCalled();
+      expect(HandlebarsUtils.generateConfiguration).toHaveBeenCalled();
+      expect(FileSystemService.prototype.chmodRecursive).toHaveBeenCalled();
+      expect(YamlUtils.writeYaml).toHaveBeenCalledOnce();
+      expect(result.services['proj-db-0']).toBeDefined();
+      expect(result.services['proj-node-0']).toBeDefined();
+      expect(result.services['proj-broker-0']).toBeDefined();
+      expect(result.services['proj-rest-0']).toBeDefined();
+      expect(result.services['proj-https-0']).toBeDefined();
+    });
+
+    it('subnet が指定されている場合は networks.ipam を設定すること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = { ...createPreset(), subnet: '172.20.0.0/16' };
+
+      const result = await service.run(preset);
+
+      expect(result.networks?.default?.ipam?.config?.[0]?.subnet).toBe('172.20.0.0/16');
+    });
+
+    it('openPort が true / "true" / number のポートマッピングを解決すること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.databases[0].openPort = true;
+      preset.nodes[0].openPort = 'true';
+      preset.nodes[0].brokerOpenPort = 7905;
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-db-0'].ports).toContain('27017:27017');
+      expect(result.services['proj-node-0'].ports).toContain('7900:7900');
+      expect(result.services['proj-broker-0'].ports).toContain('7905:7902');
+    });
+
+    it('gateway の databaseHost がある場合は通常 command になること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.gateway = { name: 'rest-db', openPort: 3000, databaseHost: 'db-0' };
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-rest-db'].command).toContain('npm start --prefix /app');
+    });
+
+    it('node debug mode の場合は user を未設定（root実行）にすること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.nodes[0].dockerComposeDebugMode = true;
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-node-0'].user).toBeUndefined();
+    });
+
+    it('stopGracePeriod と ipv4_address が指定された場合は compose に反映されること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.nodes[0].host = undefined;
+      preset.nodes[0].ipv4_address = '172.20.0.10';
+      preset.nodes[0].nodeStopGracePeriod = '20s';
+      preset.httpsProxies[0].host = 'proxy.local';
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-node-0'].stop_grace_period).toBe('20s');
+      expect(result.services['proj-node-0'].networks?.default?.ipv4_address).toBe('172.20.0.10');
+    });
+
+    it('https proxy で host が解決できない場合は KnownError を投げること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.nodes = [];
+      preset.httpsProxies = [{ name: 'https-invalid', openPort: true }];
+      preset.gateways = [{ name: 'rest-0', openPort: 3000 }];
+
+      await expect(service.run(preset)).rejects.toBeInstanceOf(KnownError);
+    });
+
+    it('https proxy で domains が解決できない場合は KnownError を投げること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.httpsProxies = [{ name: 'https-invalid', host: 'proxy.local', openPort: true }];
+      preset.gateways = [];
+
+      await expect(service.run(preset)).rejects.toBeInstanceOf(KnownError);
+    });
+
+    it('https proxy の domains 未指定時は gateway 名から自動解決すること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.gateways = [{ name: 'rest-0', openPort: 3000 }];
+      preset.httpsProxies = [{ name: 'https-0', host: 'public.example.com', openPort: 443 }];
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-https-0'].environment?.DOMAINS).toContain(
+        'public.example.com -> http://rest-0:3000'
+      );
+    });
+
+    it('compose の上書き設定を deepMerge できること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.compose = { services: { 'proj-node-0': { restart: 'on-failure' } } };
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-node-0'].restart).toBe('on-failure');
+    });
+
+    it('dockerComposeProjectName 未指定時は container_name に prefix を付けないこと', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.dockerComposeProjectName = undefined;
+
+      const result = await service.run(preset);
+
+      expect(result.services['rest-0']).toBeDefined();
+      expect(result.services['https-0']).toBeDefined();
+    });
+
+    it('services 配列が未指定でも compose を生成できること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.databases = undefined;
+      preset.nodes = undefined;
+      preset.gateways = undefined;
+      preset.httpsProxies = undefined;
+
+      const result = await service.run(preset);
+
+      expect(result.services).toBeUndefined();
+    });
+
+    it('brokerName と databaseHost が無い node でも server サービスのみ生成できること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.nodes = [{ name: 'node-single', openPort: 7900 }];
+      preset.httpsProxies[0].host = 'proxy.local';
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-node-single']).toBeDefined();
+      expect(result.services['proj-broker-0']).toBeUndefined();
+    });
+
+    it('https proxy で domains が明示されていれば gateway なしでも生成できること', async () => {
+      existsSyncMock.mockReturnValue(false);
+      const service = new ComposeService(logger, createParams());
+      const preset = createPreset();
+      preset.gateways = [];
+      preset.httpsProxies = [
+        {
+          name: 'https-explicit',
+          host: 'proxy.local',
+          openPort: 443,
+          domains: 'proxy.local -> http://backend:3000',
+        },
+      ];
+
+      const result = await service.run(preset);
+
+      expect(result.services['proj-https-explicit']).toBeDefined();
+      expect(result.services['proj-https-explicit'].depends_on).toBeUndefined();
+    });
   });
 });

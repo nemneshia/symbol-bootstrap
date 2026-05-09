@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Logger } from '../logger/index.js';
 
 /**
@@ -61,7 +60,7 @@ export class AsyncUtils {
     logger: Logger,
     promiseFunction: () => Promise<boolean>,
     totalPollingTime: number,
-    pollIntervalMs: number,
+    pollIntervalMs: number
   ): Promise<boolean> {
     const startTime = new Date().getMilliseconds();
     return promiseFunction().then(async (result) => {
@@ -72,9 +71,14 @@ export class AsyncUtils {
           return Promise.resolve(false);
         }
         const endTime = new Date().getMilliseconds();
-        const newPollingTime: number = Math.max(totalPollingTime - pollIntervalMs - (endTime - startTime), 0);
+        const newPollingTime: number = Math.max(
+          totalPollingTime - pollIntervalMs - (endTime - startTime),
+          0
+        );
         if (newPollingTime) {
-          logger.info(`Retrying in ${pollIntervalMs / 1000} seconds. Polling will stop in ${newPollingTime / 1000} seconds`);
+          logger.info(
+            `${pollIntervalMs / 1000} 秒後に再試行します。ポーリングはあと ${newPollingTime / 1000} 秒で終了します`
+          );
           await AsyncUtils.sleep(pollIntervalMs);
           return this.poll(logger, promiseFunction, newPollingTime, pollIntervalMs);
         } else {

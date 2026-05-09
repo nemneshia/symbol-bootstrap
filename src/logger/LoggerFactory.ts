@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { join, resolve } from 'path';
 import * as winston from 'winston';
 import { FileTransportInstance } from 'winston/lib/winston/transports/index.js';
+
 import { Constants } from '../service/index.js';
-import { Logger } from './Logger.js';
 import { LogType } from './LogType.js';
+import { Logger } from './Logger.js';
 
 export class LoggerFactory {
   public static readonly separator = ',';
@@ -27,7 +27,7 @@ export class LoggerFactory {
     format: winston.format.combine(
       winston.format.timestamp(),
       winston.format.cli(),
-      winston.format.printf((i) => `${i.timestamp} ${i.level} ${i.message}`),
+      winston.format.printf((i) => `${i.timestamp} ${i.level} ${i.message}`)
     ),
   });
 
@@ -39,7 +39,7 @@ export class LoggerFactory {
     new winston.transports.File({
       format: winston.format.combine(
         winston.format.timestamp(),
-        winston.format.printf((i) => `${i.timestamp} ${i.level} ${i.message}`),
+        winston.format.printf((i) => `${i.timestamp} ${i.level} ${i.message}`)
       ),
       options: { flags: 'w' },
       filename: resolve(fileName),
@@ -52,11 +52,14 @@ export class LoggerFactory {
         .split(LoggerFactory.separator)
         .map((l) => l.trim() as LogType)
         .filter((t) => t),
-      workingDir,
+      workingDir
     );
   }
 
-  public static getLoggerFromTypes(logTypes: LogType[], workingDir = Constants.defaultWorkingDir): Logger {
+  public static getLoggerFromTypes(
+    logTypes: LogType[],
+    workingDir = Constants.defaultWorkingDir
+  ): Logger {
     const id = logTypes.join(LoggerFactory.separator);
     if (!winston.loggers.has(id)) {
       const transports = logTypes.map((logType) => {
@@ -68,7 +71,7 @@ export class LoggerFactory {
           case LogType.Silent.toLowerCase():
             return LoggerFactory.silent;
           default:
-            throw new Error(`Unknown LogType ${logType}`);
+            throw new Error(`未対応の LogType です: ${logType}`);
         }
       });
       winston.loggers.add(id, {

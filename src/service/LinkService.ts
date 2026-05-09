@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { confirm, isCancel } from '@clack/prompts';
 
-import { confirm } from '@inquirer/prompts';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigPreset, NodeAccount } from '../model/index.js';
 import {
@@ -29,13 +29,17 @@ import { Constants } from '../utils/Constants.js';
 import { VotingKeyAccount } from '../utils/VotingUtils.js';
 import { Password } from '../utils/YamlUtils.js';
 import { AccountResolver } from './AccountResolver.js';
-import { AnnounceService, TransactionFactory, TransactionFactoryParams } from './AnnounceService.js';
+import {
+  AnnounceService,
+  TransactionFactory,
+  TransactionFactoryParams,
+} from './AnnounceService.js';
 import { BootstrapAccountResolver } from './BootstrapAccountResolver.js';
 import { ConfigLoader } from './ConfigLoader.js';
 import { RemoteNodeService } from './RemoteNodeService.js';
 
 /**
- * params necessary to announce link transactions network.
+ * ネットワークへリンク系トランザクションをアナウンスするためのパラメータ。
  */
 export type LinkParams = {
   target: string;
@@ -47,7 +51,7 @@ export type LinkParams = {
   ready?: boolean;
   customPreset?: string;
   serviceProviderPublicKey?: string;
-  removeOldLinked?: boolean; //TEST ONLY!
+  removeOldLinked?: boolean; // テスト専用
   accountResolver?: AccountResolver;
 };
 
@@ -66,6 +70,22 @@ export interface GenericNodeAccount {
   voting?: VotingKeyAccount[];
 }
 
+type LinkActionStr = 'link' | 'unlink';
+
+type DescriptorFactories = {
+  remoteTransactionFactory: (
+    keyAccount: KeyAccount,
+    action: LinkActionStr
+  ) => TransactionDescriptor;
+  vrfTransactionFactory: (keyAccount: KeyAccount, action: LinkActionStr) => TransactionDescriptor;
+  votingKeyTransactionFactory: (
+    account: VotingKeyAccount,
+    action: LinkActionStr
+  ) => TransactionDescriptor;
+};
+
+const MAX_LINKED_VOTING_KEYS = 3;
+
 export class LinkService implements TransactionFactory {
   public static readonly defaultParams: LinkParams = {
     target: Constants.defaultTargetFolder,
@@ -83,22 +103,33 @@ export class LinkService implements TransactionFactory {
     protected readonly params: LinkParams,
     private readonly cryptoPort: ICryptoPort,
     private readonly networkPort: INetworkPort,
-    private readonly transactionPort: ITransactionPort = new SymbolTransactionAdapter(),
+    private readonly transactionPort: ITransactionPort = new SymbolTransactionAdapter()
   ) {
     this.configLoader = new ConfigLoader(logger);
   }
 
-  public async run(passedPresetData?: ConfigPreset | undefined, passedAddresses?: Addresses | undefined): Promise<void> {
-    const presetData = passedPresetData ?? this.configLoader.loadExistingPresetData(this.params.target, this.params.password);
-    const addresses = passedAddresses ?? this.configLoader.loadExistingAddresses(this.params.target, this.params.password);
-    const customPreset = this.configLoader.loadCustomPreset(this.params.customPreset, this.params.password);
-    this.logger.info(`${this.params.unlink ? 'Unlinking' : 'Linking'} nodes`);
-    const accountResolver = this.params.accountResolver || new BootstrapAccountResolver(this.logger, this.cryptoPort);
+  public async run(
+    passedPresetData?: ConfigPreset | undefined,
+    passedAddresses?: Addresses | undefined
+  ): Promise<void> {
+    const presetData =
+      passedPresetData ??
+      this.configLoader.loadExistingPresetData(this.params.target, this.params.password);
+    const addresses =
+      passedAddresses ??
+      this.configLoader.loadExistingAddresses(this.params.target, this.params.password);
+    const customPreset = this.configLoader.loadCustomPreset(
+      this.params.customPreset,
+      this.params.password
+    );
+    this.logger.info(`${this.params.unlink ? 'ノードのリンク解除' : 'ノードのリンク'}を実行します`);
+    const accountResolver =
+      this.params.accountResolver || new BootstrapAccountResolver(this.logger, this.cryptoPort);
     const remoteNodeService = new RemoteNodeService(
       this.logger,
       this.configLoader.mergePresets(presetData, customPreset),
       false,
-      this.networkPort,
+      this.networkPort
     );
     await new AnnounceService(this.logger, accountResolver, remoteNodeService).announce(
       this.params.url,
@@ -110,56 +141,85 @@ export class LinkService implements TransactionFactory {
       addresses,
       this,
       'some',
-      this.params.serviceProviderPublicKey,
+      this.params.serviceProviderPublicKey
     );
   }
+
+  /**
+   * ノード設定と現在のオンチェーン状態を比較し、リンク系トランザクションを生成する。
+   */
   public async createTransactions({
     presetData,
     nodeAccount,
     mainAccountInfo,
     networkConfig,
   }: TransactionFactoryParams): Promise<TransactionDescriptor[]> {
-    const latestFinalizedBlockEpoch = networkConfig?.latestFinalizedBlockEpoch ?? presetData.lastKnownNetworkEpoch;
+    const latestFinalizedBlockEpoch =
+      networkConfig?.latestFinalizedBlockEpoch ?? presetData.lastKnownNetworkEpoch;
     const mainAccountAddress = nodeAccount.main.address;
     const nodeName = nodeAccount.name;
-    const signerPublicKey = nodeAccount.main.publicKey;
+    const factories = this.createDescriptorFactories(nodeAccount.main.publicKey);
+    const currentMainAccountKeys = this.toCurrentMainAccountKeys(mainAccountInfo);
 
-    type LinkActionStr = 'link' | 'unlink';
-    const remoteTransactionFactory = ({ publicKey }: KeyAccount, action: LinkActionStr): TransactionDescriptor =>
-      this.transactionPort.createAccountKeyLinkDescriptor(publicKey, action, signerPublicKey);
-    const vrfTransactionFactory = ({ publicKey }: KeyAccount, action: LinkActionStr): TransactionDescriptor =>
-      this.transactionPort.createVrfKeyLinkDescriptor(publicKey, action, signerPublicKey);
-    const votingKeyTransactionFactory = (account: VotingKeyAccount, action: LinkActionStr): TransactionDescriptor =>
-      this.transactionPort.createVotingKeyLinkDescriptor(account, action, signerPublicKey);
-
-    const spk = mainAccountInfo?.supplementalPublicKeys;
-
-    this.logger.info(`Creating transactions for node: ${nodeName}, ca/main account: ${mainAccountAddress}`);
-    const transactions = await new LinkTransactionGenericFactory(this.logger, this.params).createGenericTransactions(
+    this.logger.info(
+      `ノード ${nodeName}（CA/Main アカウント: ${mainAccountAddress}）のトランザクションを作成します`
+    );
+    const transactions = await new LinkTransactionGenericFactory(
+      this.logger,
+      this.params
+    ).createGenericTransactions(
       nodeName,
-      {
-        vrf: spk?.vrf ? { publicKey: spk.vrf } : undefined,
-        remote: spk?.linked ? { publicKey: spk.linked } : undefined,
-        voting: spk?.voting ? spk.voting.map((v) => ({ publicKey: v.publicKey, startEpoch: v.startEpoch, endEpoch: v.endEpoch })) : [],
-      },
+      currentMainAccountKeys,
       nodeAccount,
       latestFinalizedBlockEpoch,
-      remoteTransactionFactory,
-      vrfTransactionFactory,
-      votingKeyTransactionFactory,
+      factories.remoteTransactionFactory,
+      factories.vrfTransactionFactory,
+      factories.votingKeyTransactionFactory
     );
-    // Unlink transactions go first
-    return transactions.sort((t1, t2) => {
-      const order = (d: TransactionDescriptor) => (d.linkAction === 'unlink' ? 0 : 1);
-      return order(t1) - order(t2);
-    });
+    // Unlink を先に実行するため先頭に並べる。
+    return transactions.sort(
+      (firstTransaction, secondTransaction) =>
+        this.getActionOrder(firstTransaction) - this.getActionOrder(secondTransaction)
+    );
+  }
+
+  private createDescriptorFactories(signerPublicKey: string): DescriptorFactories {
+    return {
+      remoteTransactionFactory: ({ publicKey }: KeyAccount, action: LinkActionStr) =>
+        this.transactionPort.createAccountKeyLinkDescriptor(publicKey, action, signerPublicKey),
+      vrfTransactionFactory: ({ publicKey }: KeyAccount, action: LinkActionStr) =>
+        this.transactionPort.createVrfKeyLinkDescriptor(publicKey, action, signerPublicKey),
+      votingKeyTransactionFactory: (account: VotingKeyAccount, action: LinkActionStr) =>
+        this.transactionPort.createVotingKeyLinkDescriptor(account, action, signerPublicKey),
+    };
+  }
+
+  private toCurrentMainAccountKeys(mainAccountInfo?: AccountInfoDto): GenericNodeAccount {
+    const supplementalPublicKeys = mainAccountInfo?.supplementalPublicKeys;
+    return {
+      vrf: supplementalPublicKeys?.vrf ? { publicKey: supplementalPublicKeys.vrf } : undefined,
+      remote: supplementalPublicKeys?.linked
+        ? { publicKey: supplementalPublicKeys.linked }
+        : undefined,
+      voting: supplementalPublicKeys?.voting
+        ? supplementalPublicKeys.voting.map((votingKey) => ({
+            publicKey: votingKey.publicKey,
+            startEpoch: votingKey.startEpoch,
+            endEpoch: votingKey.endEpoch,
+          }))
+        : [],
+    };
+  }
+
+  private getActionOrder(descriptor: TransactionDescriptor): number {
+    return descriptor.linkAction === 'unlink' ? 0 : 1;
   }
 }
 
 export class LinkTransactionGenericFactory {
   constructor(
     private readonly logger: Logger,
-    private readonly params: { unlink: boolean; ready?: boolean; removeOldLinked?: boolean },
+    private readonly params: { unlink: boolean; ready?: boolean; removeOldLinked?: boolean }
   ) {}
 
   public async createGenericTransactions<AccountKL, VRFKL, VotingKL>(
@@ -169,10 +229,47 @@ export class LinkTransactionGenericFactory {
     latestFinalizedBlockEpoch: number,
     remoteTransactionFactory: (keyAccount: KeyAccount, action: 'link' | 'unlink') => AccountKL,
     vrfTransactionFactory: (keyAccount: KeyAccount, action: 'link' | 'unlink') => VRFKL,
-    votingKeyTransactionFactory: (account: VotingKeyAccount, action: 'link' | 'unlink') => VotingKL,
+    votingKeyTransactionFactory: (account: VotingKeyAccount, action: 'link' | 'unlink') => VotingKL
   ): Promise<(AccountKL | VRFKL | VotingKL)[]> {
     const transactions: (AccountKL | VRFKL | VotingKL)[] = [];
     const print = (account: { publicKey: string }) => `public key ${account.publicKey}`;
+    transactions.push(
+      ...(await this.createKeyLinkTransactions(
+        nodeName,
+        currentMainAccountKeys,
+        nodeAccount,
+        remoteTransactionFactory,
+        vrfTransactionFactory,
+        print
+      ))
+    );
+
+    const votingPrint = (account: VotingKeyAccount) =>
+      `public key ${account.publicKey}, start epoch ${account.startEpoch}, end epoch ${account.endEpoch}`;
+    transactions.push(
+      ...(await this.createVotingTransactions(
+        nodeName,
+        currentMainAccountKeys.voting || [],
+        nodeAccount.voting || [],
+        latestFinalizedBlockEpoch,
+        votingKeyTransactionFactory,
+        votingPrint
+      ))
+    );
+
+    return transactions;
+  }
+
+  private async createKeyLinkTransactions<AccountKL, VRFKL>(
+    nodeName: string,
+    currentMainAccountKeys: GenericNodeAccount,
+    nodeAccount: GenericNodeAccount,
+    remoteTransactionFactory: (keyAccount: KeyAccount, action: 'link' | 'unlink') => AccountKL,
+    vrfTransactionFactory: (keyAccount: KeyAccount, action: 'link' | 'unlink') => VRFKL,
+    print: (account: { publicKey: string }) => string
+  ): Promise<(AccountKL | VRFKL)[]> {
+    const transactions: (AccountKL | VRFKL)[] = [];
+
     if (nodeAccount.remote) {
       transactions.push(
         ...(await this.addTransaction(
@@ -181,41 +278,52 @@ export class LinkTransactionGenericFactory {
           nodeName,
           'Remote',
           nodeAccount.remote,
-          print,
-        )),
+          print
+        ))
       );
     }
 
     if (nodeAccount.vrf) {
       transactions.push(
-        ...(await this.addTransaction(currentMainAccountKeys.vrf, vrfTransactionFactory, nodeName, 'VRF', nodeAccount.vrf, print)),
+        ...(await this.addTransaction(
+          currentMainAccountKeys.vrf,
+          vrfTransactionFactory,
+          nodeName,
+          'VRF',
+          nodeAccount.vrf,
+          print
+        ))
       );
     }
-    const votingPrint = (account: VotingKeyAccount) =>
-      `public key ${account.publicKey}, start epoch ${account.startEpoch}, end epoch ${account.endEpoch}`;
-    if (this.params.unlink) {
-      transactions.push(
-        ...(await this.addVotingKeyUnlinkTransactions(
-          currentMainAccountKeys?.voting || [],
-          nodeAccount.voting || [],
-          nodeName,
-          votingKeyTransactionFactory,
-          votingPrint,
-        )),
-      );
-    } else {
-      transactions.push(
-        ...(await this.addVotingKeyLinkTransactions(
-          currentMainAccountKeys?.voting || [],
-          nodeAccount.voting || [],
-          nodeName,
-          latestFinalizedBlockEpoch,
-          votingKeyTransactionFactory,
-          votingPrint,
-        )),
-      );
-    }
+
     return transactions;
+  }
+
+  private async createVotingTransactions<T>(
+    nodeName: string,
+    linkedVotingKeyAccounts: VotingKeyAccount[],
+    votingKeyFiles: VotingKeyAccount[],
+    latestFinalizedBlockEpoch: number,
+    votingKeyTransactionFactory: (account: VotingKeyAccount, action: 'link' | 'unlink') => T,
+    print: (account: VotingKeyAccount) => string
+  ): Promise<T[]> {
+    if (this.params.unlink) {
+      return this.addVotingKeyUnlinkTransactions(
+        linkedVotingKeyAccounts,
+        votingKeyFiles,
+        nodeName,
+        votingKeyTransactionFactory,
+        print
+      );
+    }
+    return this.addVotingKeyLinkTransactions(
+      linkedVotingKeyAccounts,
+      votingKeyFiles,
+      nodeName,
+      latestFinalizedBlockEpoch,
+      votingKeyTransactionFactory,
+      print
+    );
   }
 
   public async addVotingKeyLinkTransactions<T>(
@@ -224,57 +332,59 @@ export class LinkTransactionGenericFactory {
     nodeName: string,
     lastKnownNetworkEpoch: number,
     transactionFactory: (transaction: VotingKeyAccount, action: 'link' | 'unlink') => T,
-    print: (account: VotingKeyAccount) => string,
+    print: (account: VotingKeyAccount) => string
   ): Promise<T[]> {
     const transactions: T[] = [];
     const accountName = 'Voting';
     let remainingVotingKeys: VotingKeyAccount[] = linkedVotingKeyAccounts;
+
     for (const alreadyLinkedAccount of linkedVotingKeyAccounts) {
-      if (alreadyLinkedAccount.endEpoch < lastKnownNetworkEpoch && (await this.confirmUnlink(accountName, alreadyLinkedAccount, print))) {
+      if (
+        alreadyLinkedAccount.endEpoch < lastKnownNetworkEpoch &&
+        (await this.confirmUnlink(accountName, alreadyLinkedAccount, print))
+      ) {
         const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
-        this.logger.info(
-          `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
-        );
-        remainingVotingKeys = remainingVotingKeys.filter((a) => a != alreadyLinkedAccount);
+        this.logUnlinkTransaction(nodeName, accountName, print(alreadyLinkedAccount));
+        remainingVotingKeys = this.removeVotingKey(remainingVotingKeys, alreadyLinkedAccount);
         transactions.push(unlinkTransaction);
       }
     }
+
     const activeVotingKeyFiles = votingKeyFiles.filter((a) => a.endEpoch >= lastKnownNetworkEpoch);
     for (const accountTobeLinked of activeVotingKeyFiles) {
       const alreadyLinkedAccount = remainingVotingKeys.find((a) =>
-        LinkTransactionGenericFactory.overlapsVotingAccounts(accountTobeLinked, a),
+        LinkTransactionGenericFactory.overlapsVotingAccounts(accountTobeLinked, a)
       );
-      const isAlreadyLinkedSameAccount =
-        alreadyLinkedAccount?.publicKey.toUpperCase() === accountTobeLinked.publicKey.toUpperCase() &&
-        alreadyLinkedAccount?.startEpoch === accountTobeLinked.startEpoch &&
-        alreadyLinkedAccount?.endEpoch === accountTobeLinked.endEpoch;
+      const isAlreadyLinkedSameAccount = this.isSameVotingAccount(
+        alreadyLinkedAccount,
+        accountTobeLinked
+      );
 
       let addTransaction = !isAlreadyLinkedSameAccount;
       if (alreadyLinkedAccount && !isAlreadyLinkedSameAccount) {
         this.logger.warn(
-          `Node ${nodeName} is already linked to ${accountName} ${print(
-            alreadyLinkedAccount,
-          )} which is different from the configured ${print(accountTobeLinked)}.`,
+          `ノード ${nodeName} は既に ${accountName} ${print(
+            alreadyLinkedAccount
+          )} にリンクされていますが、設定値 ${print(accountTobeLinked)} と一致しません。`
         );
         if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
           const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
-          this.logger.info(
-            `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
-          );
-          remainingVotingKeys = remainingVotingKeys.filter((a) => a != alreadyLinkedAccount);
+          this.logUnlinkTransaction(nodeName, accountName, print(alreadyLinkedAccount));
+          remainingVotingKeys = this.removeVotingKey(remainingVotingKeys, alreadyLinkedAccount);
           transactions.push(unlinkTransaction);
         } else {
           addTransaction = false;
         }
       }
 
-      if (remainingVotingKeys.length < 3 && addTransaction) {
+      if (remainingVotingKeys.length < MAX_LINKED_VOTING_KEYS && addTransaction) {
         const transaction = transactionFactory(accountTobeLinked, 'link');
-        this.logger.info(`Creating Link ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`);
+        this.logLinkTransaction(nodeName, accountName, print(accountTobeLinked));
         transactions.push(transaction);
         remainingVotingKeys.push(accountTobeLinked);
       }
     }
+
     return transactions;
   }
 
@@ -283,27 +393,26 @@ export class LinkTransactionGenericFactory {
     votingKeyFiles: VotingKeyAccount[],
     nodeName: string,
     transactionFactory: (transaction: VotingKeyAccount, action: 'link' | 'unlink') => T,
-    print: (account: VotingKeyAccount) => string,
+    print: (account: VotingKeyAccount) => string
   ): Promise<T[]> {
     const transactions: T[] = [];
     const accountName = 'Voting';
     let remainingVotingKeys: VotingKeyAccount[] = linkedVotingKeyAccounts;
+
     for (const accountTobeLinked of votingKeyFiles) {
       const alreadyLinkedAccount = remainingVotingKeys.find((a) =>
-        LinkTransactionGenericFactory.overlapsVotingAccounts(accountTobeLinked, a),
+        LinkTransactionGenericFactory.overlapsVotingAccounts(accountTobeLinked, a)
       );
-      const isAlreadyLinkedSameAccount =
-        alreadyLinkedAccount?.publicKey.toUpperCase() === accountTobeLinked.publicKey.toUpperCase() &&
-        alreadyLinkedAccount?.startEpoch === accountTobeLinked.startEpoch &&
-        alreadyLinkedAccount?.endEpoch === accountTobeLinked.endEpoch;
+      const isAlreadyLinkedSameAccount = this.isSameVotingAccount(
+        alreadyLinkedAccount,
+        accountTobeLinked
+      );
 
       if (alreadyLinkedAccount && isAlreadyLinkedSameAccount) {
         if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
           const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
-          this.logger.info(
-            `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
-          );
-          remainingVotingKeys = remainingVotingKeys.filter((a) => a != alreadyLinkedAccount);
+          this.logUnlinkTransaction(nodeName, accountName, print(alreadyLinkedAccount));
+          remainingVotingKeys = this.removeVotingKey(remainingVotingKeys, alreadyLinkedAccount);
           transactions.push(unlinkTransaction);
         }
       }
@@ -315,85 +424,164 @@ export class LinkTransactionGenericFactory {
     return x.endEpoch >= y.startEpoch && x.startEpoch <= y.endEpoch;
   }
 
+  private isSameVotingAccount(
+    firstAccount: VotingKeyAccount | undefined,
+    secondAccount: VotingKeyAccount
+  ): boolean {
+    return (
+      firstAccount?.publicKey.toUpperCase() === secondAccount.publicKey.toUpperCase() &&
+      firstAccount?.startEpoch === secondAccount.startEpoch &&
+      firstAccount?.endEpoch === secondAccount.endEpoch
+    );
+  }
+
+  private isSameKeyAccount<A extends KeyAccount>(
+    firstAccount: A | undefined,
+    secondAccount: A
+  ): boolean {
+    return secondAccount.publicKey.toUpperCase() === firstAccount?.publicKey.toUpperCase();
+  }
+
   private async addTransaction<A extends KeyAccount, T>(
     alreadyLinkedAccount: A | undefined,
     transactionFactory: (transaction: A, action: 'link' | 'unlink') => T,
     nodeName: string,
     accountName: string,
     accountTobeLinked: A,
-    print: (account: A) => string,
+    print: (account: A) => string
+  ): Promise<T[]> {
+    return this.params.unlink
+      ? this.createUnlinkTransactions(
+          alreadyLinkedAccount,
+          transactionFactory,
+          nodeName,
+          accountName,
+          accountTobeLinked,
+          print
+        )
+      : this.createLinkTransactions(
+          alreadyLinkedAccount,
+          transactionFactory,
+          nodeName,
+          accountName,
+          accountTobeLinked,
+          print
+        );
+  }
+
+  private async createUnlinkTransactions<A extends KeyAccount, T>(
+    alreadyLinkedAccount: A | undefined,
+    transactionFactory: (transaction: A, action: 'link' | 'unlink') => T,
+    nodeName: string,
+    accountName: string,
+    accountTobeLinked: A,
+    print: (account: A) => string
   ): Promise<T[]> {
     const transactions: T[] = [];
-    const isAlreadyLinkedSameAccount = accountTobeLinked.publicKey.toUpperCase() === alreadyLinkedAccount?.publicKey.toUpperCase();
-    if (this.params.unlink) {
-      if (alreadyLinkedAccount) {
-        if (isAlreadyLinkedSameAccount) {
-          const transaction = transactionFactory(accountTobeLinked, 'unlink');
-          this.logger.info(
-            `Creating Unlink ${accountName} Transaction for node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`,
-          );
-          transactions.push(transaction);
-        } else {
-          this.logger.warn(
-            `Node ${nodeName} is linked to a different ${accountName} ${print(alreadyLinkedAccount)} and not the configured ${print(
-              accountTobeLinked,
-            )}.`,
-          );
+    if (!alreadyLinkedAccount) {
+      this.logger.info(
+        `ノード ${nodeName} は ${accountName} ${print(accountTobeLinked)} にリンクされていません。`
+      );
+      return transactions;
+    }
 
-          if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
-            const transaction = transactionFactory(alreadyLinkedAccount, 'unlink');
-            this.logger.info(
-              `Creating Unlink ${accountName} Transaction  for node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
-            );
-            transactions.push(transaction);
-          }
-        }
-      } else {
-        this.logger.info(`Node ${nodeName} is not linked to ${accountName} ${print(accountTobeLinked)}.`);
-      }
-    } else {
-      if (alreadyLinkedAccount) {
-        if (isAlreadyLinkedSameAccount) {
-          this.logger.info(`Node ${nodeName} is already linked to ${accountName} ${print(alreadyLinkedAccount)}.`);
-        } else {
-          this.logger.warn(
-            `Node ${nodeName} is already linked to ${accountName} ${print(
-              alreadyLinkedAccount,
-            )} which is different from the configured ${print(accountTobeLinked)}.`,
-          );
+    if (this.isSameKeyAccount(alreadyLinkedAccount, accountTobeLinked)) {
+      const transaction = transactionFactory(accountTobeLinked, 'unlink');
+      this.logger.info(
+        `ノード ${nodeName} の ${accountName} ${print(accountTobeLinked)} に対する Unlink トランザクションを作成します。`
+      );
+      transactions.push(transaction);
+      return transactions;
+    }
 
-          if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
-            const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
-            this.logger.info(
-              `Creating Unlink ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(alreadyLinkedAccount)}.`,
-            );
-            transactions.push(unlinkTransaction);
-
-            const linkTransaction = transactionFactory(accountTobeLinked, 'link');
-            this.logger.info(
-              `Creating Link ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`,
-            );
-            transactions.push(linkTransaction);
-          }
-        }
-      } else {
-        const transaction = transactionFactory(accountTobeLinked, 'link');
-        this.logger.info(`Creating Link ${accountName} Transaction from Node ${nodeName} to ${accountName} ${print(accountTobeLinked)}.`);
-        transactions.push(transaction);
-      }
+    this.logger.warn(
+      `ノード ${nodeName} は ${accountName} ${print(alreadyLinkedAccount)} にリンクされていますが、設定値 ${print(
+        accountTobeLinked
+      )} とは異なります。`
+    );
+    if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
+      const transaction = transactionFactory(alreadyLinkedAccount, 'unlink');
+      this.logger.info(
+        `ノード ${nodeName} の ${accountName} ${print(alreadyLinkedAccount)} に対する Unlink トランザクションを作成します。`
+      );
+      transactions.push(transaction);
     }
     return transactions;
   }
 
-  private async confirmUnlink<T>(accountName: string, alreadyLinkedAccount: T, print: (account: T) => string): Promise<boolean> {
-    if (this.params.removeOldLinked === undefined) {
-      return (
-        this.params.ready ||
-        (await confirm({
-          message: `Do you want to unlink the old ${accountName} ${print(alreadyLinkedAccount)}?`,
-          default: false,
-        }))
+  private async createLinkTransactions<A extends KeyAccount, T>(
+    alreadyLinkedAccount: A | undefined,
+    transactionFactory: (transaction: A, action: 'link' | 'unlink') => T,
+    nodeName: string,
+    accountName: string,
+    accountTobeLinked: A,
+    print: (account: A) => string
+  ): Promise<T[]> {
+    const transactions: T[] = [];
+    if (!alreadyLinkedAccount) {
+      const transaction = transactionFactory(accountTobeLinked, 'link');
+      this.logLinkTransaction(nodeName, accountName, print(accountTobeLinked));
+      transactions.push(transaction);
+      return transactions;
+    }
+
+    if (this.isSameKeyAccount(alreadyLinkedAccount, accountTobeLinked)) {
+      this.logger.info(
+        `ノード ${nodeName} は既に ${accountName} ${print(alreadyLinkedAccount)} にリンク済みです。`
       );
+      return transactions;
+    }
+
+    this.logger.warn(
+      `ノード ${nodeName} は既に ${accountName} ${print(
+        alreadyLinkedAccount
+      )} にリンクされていますが、設定値 ${print(accountTobeLinked)} と一致しません。`
+    );
+    if (await this.confirmUnlink(accountName, alreadyLinkedAccount, print)) {
+      const unlinkTransaction = transactionFactory(alreadyLinkedAccount, 'unlink');
+      this.logUnlinkTransaction(nodeName, accountName, print(alreadyLinkedAccount));
+      transactions.push(unlinkTransaction);
+
+      const linkTransaction = transactionFactory(accountTobeLinked, 'link');
+      this.logLinkTransaction(nodeName, accountName, print(accountTobeLinked));
+      transactions.push(linkTransaction);
+    }
+    return transactions;
+  }
+
+  private removeVotingKey(
+    source: VotingKeyAccount[],
+    votingKey: VotingKeyAccount
+  ): VotingKeyAccount[] {
+    return source.filter((account) => account !== votingKey);
+  }
+
+  private logLinkTransaction(nodeName: string, accountName: string, detail: string): void {
+    this.logger.info(
+      `ノード ${nodeName} から ${accountName} ${detail} への Link トランザクションを作成します。`
+    );
+  }
+
+  private logUnlinkTransaction(nodeName: string, accountName: string, detail: string): void {
+    this.logger.info(
+      `ノード ${nodeName} から ${accountName} ${detail} への Unlink トランザクションを作成します。`
+    );
+  }
+
+  private async confirmUnlink<T>(
+    accountName: string,
+    alreadyLinkedAccount: T,
+    print: (account: T) => string
+  ): Promise<boolean> {
+    if (this.params.removeOldLinked === undefined) {
+      if (this.params.ready) {
+        return true;
+      }
+      const response = await confirm({
+        message: `既存の ${accountName} ${print(alreadyLinkedAccount)} を unlink しますか？`,
+        initialValue: false,
+      });
+      return isCancel(response) ? false : response;
     }
     return this.params.removeOldLinked;
   }

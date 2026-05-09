@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
-import { CommandUtils, FileSystemService } from '../service/index.js';
+import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class Clean extends Command {
-  static description = 'It removes the target folder deleting the generated configuration and data';
+  static description = '対象フォルダを削除し、生成済みの設定とデータを消去します。';
 
   static examples = [`$ symbol-bootstrap clean`];
 
@@ -33,6 +33,6 @@ export default class Clean extends Command {
     const { flags } = await this.parse(Clean);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
-    new FileSystemService(logger).deleteFolder(flags.target);
+    new BootstrapService(logger).clean(flags);
   }
 }

@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command, Flags } from '@oclif/core';
-import { LoggerFactory, LogType } from '../logger/index.js';
+
+import { LogType, LoggerFactory } from '../logger/index.js';
 import { AnnounceService, BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class ModifyMultisig extends Command {
-  static description = `Create or modify a multisig account`;
+  static description = `multisig アカウントを作成または変更します。`;
 
   static examples = [
     `$ symbol-bootstrap modifyMultisig`,
@@ -31,22 +31,22 @@ export default class ModifyMultisig extends Command {
     target: CommandUtils.targetFlag,
     minRemovalDelta: Flags.integer({
       description:
-        'Delta of signatures needed to remove a cosignatory. ' +
-        '0 means no change, a positive(+) number means increment and a negative(-) number means decrement to the actual value.',
+        '連署者を解除するために必要な署名数の差分を指定します。' +
+        '0 は変更なし、正の値（+）は増加、負の値（-）は現在値から減少を意味します。',
       char: 'r',
     }),
     minApprovalDelta: Flags.integer({
       description:
-        'Delta of signatures needed to approve a transaction. ' +
-        '0 means no change, a positive(+) number means increment and a negative(-) number means decrement to the actual value.',
+        'トランザクション承認に必要な署名数の差分を指定します。' +
+        '0 は変更なし、正の値（+）は増加、負の値（-）は現在値から減少を意味します。',
       char: 'a',
     }),
     addressAdditions: Flags.string({
-      description: 'Cosignatory accounts addresses to be added (separated by a comma).',
+      description: '追加する連署者アカウントのアドレスを指定します（カンマ区切り）。',
       char: 'A',
     }),
     addressDeletions: Flags.string({
-      description: 'Cosignatory accounts addresses to be removed (separated by a comma).',
+      description: '削除する連署者アカウントのアドレスを指定します（カンマ区切り）。',
       char: 'D',
     }),
     ...AnnounceService.flags,
@@ -55,14 +55,14 @@ export default class ModifyMultisig extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(ModifyMultisig);
-    const logger = LoggerFactory.getLogger(flags.logger);
     CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
     flags.password = await CommandUtils.resolvePassword(
       logger,
       flags.password,
       flags.noPassword,
       CommandUtils.passwordPromptDefaultMessage,
-      true,
+      true
     );
     return new BootstrapService(logger).modifyMultisig(flags);
   }

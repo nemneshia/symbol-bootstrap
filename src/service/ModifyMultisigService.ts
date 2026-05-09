@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { isCancel, text } from '@clack/prompts';
 
-import { input, number } from '@inquirer/prompts';
 import { Logger } from '../logger/index.js';
 import { Addresses, ConfigPreset } from '../model/index.js';
 import {
@@ -32,13 +32,17 @@ import { Constants } from '../utils/Constants.js';
 import { TransactionUtils } from '../utils/TransactionUtils.js';
 import { Password } from '../utils/YamlUtils.js';
 import { AccountResolver } from './AccountResolver.js';
-import { AnnounceService, TransactionFactory, TransactionFactoryParams } from './AnnounceService.js';
+import {
+  AnnounceService,
+  TransactionFactory,
+  TransactionFactoryParams,
+} from './AnnounceService.js';
 import { BootstrapAccountResolver } from './BootstrapAccountResolver.js';
 import { ConfigLoader } from './ConfigLoader.js';
 import { RemoteNodeService } from './RemoteNodeService.js';
 
 /**
- * params necessary to announce multisig account modification transaction to network.
+ * ネットワークへマルチシグ変更トランザクションをアナウンスするためのパラメータ。
  */
 export type ModifyMultisigParams = {
   target: string;
@@ -54,6 +58,12 @@ export type ModifyMultisigParams = {
   addressDeletions?: string;
   serviceProviderPublicKey?: string;
   accountResolver?: AccountResolver;
+};
+
+type MultisigNextState = {
+  newMinApproval: number;
+  newMinRemoval: number;
+  newCosignatoryNumber: number;
 };
 
 export class ModifyMultisigService implements TransactionFactory {
@@ -72,21 +82,32 @@ export class ModifyMultisigService implements TransactionFactory {
     protected readonly params: ModifyMultisigParams,
     private readonly cryptoPort: ICryptoPort = new SymbolCryptoAdapter(),
     private readonly networkPort: INetworkPort = new SymbolNetworkAdapter(),
-    private readonly transactionPort: ITransactionPort = new SymbolTransactionAdapter(),
+    private readonly transactionPort: ITransactionPort = new SymbolTransactionAdapter()
   ) {
     this.configLoader = new ConfigLoader(logger);
   }
 
-  public async run(passedPresetData?: ConfigPreset | undefined, passedAddresses?: Addresses | undefined): Promise<void> {
-    const presetData = passedPresetData ?? this.configLoader.loadExistingPresetData(this.params.target, this.params.password);
-    const addresses = passedAddresses ?? this.configLoader.loadExistingAddresses(this.params.target, this.params.password);
-    const customPreset = this.configLoader.loadCustomPreset(this.params.customPreset, this.params.password);
-    const accountResolver = this.params.accountResolver || new BootstrapAccountResolver(this.logger, this.cryptoPort);
+  public async run(
+    passedPresetData?: ConfigPreset | undefined,
+    passedAddresses?: Addresses | undefined
+  ): Promise<void> {
+    const presetData =
+      passedPresetData ??
+      this.configLoader.loadExistingPresetData(this.params.target, this.params.password);
+    const addresses =
+      passedAddresses ??
+      this.configLoader.loadExistingAddresses(this.params.target, this.params.password);
+    const customPreset = this.configLoader.loadCustomPreset(
+      this.params.customPreset,
+      this.params.password
+    );
+    const accountResolver =
+      this.params.accountResolver || new BootstrapAccountResolver(this.logger, this.cryptoPort);
     const remoteNodeService = new RemoteNodeService(
       this.logger,
       this.configLoader.mergePresets(presetData, customPreset),
       false,
-      this.networkPort,
+      this.networkPort
     );
     await new AnnounceService(this.logger, accountResolver, remoteNodeService).announce(
       this.params.url,
@@ -98,15 +119,25 @@ export class ModifyMultisigService implements TransactionFactory {
       addresses,
       this,
       'some',
-      this.params.serviceProviderPublicKey,
+      this.params.serviceProviderPublicKey
     );
   }
 
-  public async createTransactions({ presetData, mainAccount, networkConfig }: TransactionFactoryParams): Promise<TransactionDescriptor[]> {
+  public async createTransactions({
+    presetData,
+    mainAccount,
+    networkConfig,
+  }: TransactionFactoryParams): Promise<TransactionDescriptor[]> {
     const networkType = presetData.networkType;
 
-    const addressAdditions = await this.resolveAddressAdditions(networkType, this.params.addressAdditions);
-    const addressDeletions = await this.resolveAddressDeletions(networkType, this.params.addressDeletions);
+    const addressAdditions = await this.resolveAddressAdditions(
+      networkType,
+      this.params.addressAdditions
+    );
+    const addressDeletions = await this.resolveAddressDeletions(
+      networkType,
+      this.params.addressDeletions
+    );
     const minApprovalDelta = await this.resolveMinApprovalDelta(this.params.minApprovalDelta);
     const minRemovalDelta = await this.resolveMinRemovalDelta(this.params.minRemovalDelta);
 
@@ -115,13 +146,23 @@ export class ModifyMultisigService implements TransactionFactory {
       this.logger,
       presetData,
       this.params.useKnownRestGateways ? undefined : url,
-      this.networkPort,
+      this.networkPort
     );
-    const multisigInfo = await TransactionUtils.getMultisigInfo(this.networkPort, bestUrl, mainAccount.address);
-    this.validateParams(addressAdditions, addressDeletions, minRemovalDelta, minApprovalDelta, multisigInfo);
+    const multisigInfo = await TransactionUtils.getMultisigInfo(
+      this.networkPort,
+      bestUrl,
+      mainAccount.address
+    );
+    this.validateParams(
+      addressAdditions,
+      addressDeletions,
+      minRemovalDelta,
+      minApprovalDelta,
+      multisigInfo
+    );
 
     this.logger.info(
-      `Creating multisig account modification transaction [addressAdditions: "${addressAdditions.join(' , ')}", addressDeletions: "${addressDeletions.join(' , ')}", minApprovalDelta: ${minApprovalDelta}, minRemovalDelta: ${minRemovalDelta}]`,
+      `マルチシグアカウント変更トランザクションを作成します [addressAdditions: "${addressAdditions.join(' , ')}", addressDeletions: "${addressDeletions.join(' , ')}", minApprovalDelta: ${minApprovalDelta}, minRemovalDelta: ${minRemovalDelta}]`
     );
 
     return [
@@ -130,68 +171,87 @@ export class ModifyMultisigService implements TransactionFactory {
         addressDeletions,
         minApprovalDelta,
         minRemovalDelta,
-        mainAccount.publicKey,
+        mainAccount.publicKey
       ),
     ];
   }
 
   public async resolveMinRemovalDelta(delta?: number): Promise<number> {
-    return this.resolveDelta('minRemovalDelta', 'Minimum removal delta:', delta);
+    return this.resolveDelta('最小削除承認数の差分:', delta);
   }
 
   public async resolveMinApprovalDelta(delta?: number): Promise<number> {
-    return this.resolveDelta('minApprovalDelta', 'Minimum approval delta:', delta);
+    return this.resolveDelta('最小承認数の差分:', delta);
   }
 
-  public async resolveDelta(name: string, message: string, delta?: number): Promise<number> {
-    return delta !== undefined
-      ? delta
-      : (await number({
-          message,
-          default: 0,
-        }))!;
+  public async resolveDelta(message: string, delta?: number): Promise<number> {
+    if (delta !== undefined) {
+      return delta;
+    }
+
+    const response = await text({
+      message,
+      defaultValue: '0',
+      validate: this.toPromptValidation((input) => {
+        if (input === undefined || input.trim() === '') {
+          return '数値を入力してください。';
+        }
+        return Number.isNaN(Number.parseInt(input, 10)) ? '整数を入力してください。' : true;
+      }),
+    });
+
+    return isCancel(response) ? 0 : Number.parseInt(response, 10);
   }
 
-  public async resolveAddressAdditions(networkType: NetworkType, cosigners?: string): Promise<string[]> {
+  public async resolveAddressAdditions(
+    networkType: NetworkType,
+    cosigners?: string
+  ): Promise<string[]> {
     return this.resolveCosigners(
       networkType,
-      'addressAdditions',
-      'Enter the cosignatory addresses to add (separated by a comma) <Press enter to skip>:',
-      cosigners,
+      '追加するコサイナーアドレスを入力してください（カンマ区切り、Enter でスキップ）:',
+      cosigners
     );
   }
 
-  public async resolveAddressDeletions(networkType: NetworkType, cosigners?: string): Promise<string[]> {
+  public async resolveAddressDeletions(
+    networkType: NetworkType,
+    cosigners?: string
+  ): Promise<string[]> {
     return this.resolveCosigners(
       networkType,
-      'addressDeletions',
-      'Enter the cosignatory addresses to remove (separated by a comma) <Press enter to skip>:',
-      cosigners,
+      '削除するコサイナーアドレスを入力してください（カンマ区切り、Enter でスキップ）:',
+      cosigners
     );
   }
 
-  public async resolveCosigners(networkType: NetworkType, name: string, message: string, cosigners?: string): Promise<string[]> {
-    const resolution = cosigners !== undefined ? cosigners : await input({ message });
+  public async resolveCosigners(
+    networkType: NetworkType,
+    message: string,
+    cosigners?: string
+  ): Promise<string[]> {
+    // API 互換のため引数は維持しつつ、現状の実装では networkType は未使用。
+    void networkType;
+    const response = cosigners !== undefined ? cosigners : await text({ message });
+    if (isCancel(response)) {
+      return [];
+    }
+    const resolution = response;
     if (!resolution) {
       return [];
     }
-    const cosignatoryAddresses = resolution.split(',');
-    return this.toAddresses(networkType, cosignatoryAddresses);
+    return this.toAddresses(resolution.split(','));
   }
 
-  private toAddresses(networkType: NetworkType, addresses?: string[]): string[] {
-    return (
-      addresses?.map((addressString) => {
-        return this.toAddress(addressString.trim(), networkType);
-      }) || []
-    );
+  private toAddresses(addresses?: string[]): string[] {
+    return addresses?.map((addressString) => this.toAddress(addressString.trim())) || [];
   }
 
-  private toAddress(addressString: string, _networkType: NetworkType): string {
-    // Basic Symbol address validation: base32 characters, length 39
+  private toAddress(addressString: string): string {
+    // Symbol アドレス基本検証: base32 文字かつ長さ 39
     const isValid = /^[A-Z2-7]{39}$/.test(addressString.replace(/-/g, ''));
     if (!isValid) {
-      throw new Error(`Address ${addressString} is not valid!`);
+      throw new Error(`アドレス ${addressString} は不正です。`);
     }
     return addressString;
   }
@@ -201,53 +261,112 @@ export class ModifyMultisigService implements TransactionFactory {
     addressDeletions?: string[],
     minRemovalDelta?: number,
     minApprovalDelta?: number,
-    currentMultisigInfo?: MultisigInfoDto,
+    currentMultisigInfo?: MultisigInfoDto
   ): void {
-    // calculate new min approval
-    const newMinApproval = currentMultisigInfo ? currentMultisigInfo.minApproval + (minApprovalDelta || 0) : minApprovalDelta || 0;
+    const nextState = this.calculateNextState(
+      addressAdditions,
+      addressDeletions,
+      minRemovalDelta,
+      minApprovalDelta,
+      currentMultisigInfo
+    );
 
-    // calculate new min removal
-    const newMinRemoval = currentMultisigInfo ? currentMultisigInfo.minRemoval + (minRemovalDelta || 0) : minRemovalDelta || 0;
+    this.validateCosignersToAdd(addressAdditions, currentMultisigInfo);
+    this.validateCosignersToRemove(addressDeletions, currentMultisigInfo);
+    this.validateMinApproval(nextState.newCosignatoryNumber, nextState.newMinApproval);
+    this.validateMinRemoval(nextState.newCosignatoryNumber, nextState.newMinRemoval);
+    this.validateNonZeroThresholds(nextState);
+  }
 
-    // calculate the delta of added cosigners
-    const numberOfAddedCosigners = (addressAdditions?.length || 0) - (addressDeletions?.length || 0);
+  private validateNonZeroThresholds(nextState: MultisigNextState): void {
+    if (
+      nextState.newCosignatoryNumber > 0 &&
+      (nextState.newMinApproval === 0 || nextState.newMinRemoval === 0)
+    ) {
+      throw new Error(
+        `コサイナーが ${nextState.newCosignatoryNumber} 件いる状態で、最小承認数または最小削除承認数を 0 には設定できません。`
+      );
+    }
+  }
 
+  private calculateNextState(
+    addressAdditions?: string[],
+    addressDeletions?: string[],
+    minRemovalDelta?: number,
+    minApprovalDelta?: number,
+    currentMultisigInfo?: MultisigInfoDto
+  ): MultisigNextState {
+    const newMinApproval = currentMultisigInfo
+      ? currentMultisigInfo.minApproval + (minApprovalDelta || 0)
+      : minApprovalDelta || 0;
+    const newMinRemoval = currentMultisigInfo
+      ? currentMultisigInfo.minRemoval + (minRemovalDelta || 0)
+      : minRemovalDelta || 0;
+    const numberOfAddedCosigners =
+      (addressAdditions?.length || 0) - (addressDeletions?.length || 0);
     const newCosignatoryNumber = currentMultisigInfo
       ? currentMultisigInfo.cosignatoryAddresses.length + numberOfAddedCosigners
       : numberOfAddedCosigners;
 
+    return { newMinApproval, newMinRemoval, newCosignatoryNumber };
+  }
+
+  private validateCosignersToAdd(
+    addressAdditions: string[] | undefined,
+    currentMultisigInfo: MultisigInfoDto | undefined
+  ): void {
     for (const addressToAdd of addressAdditions || []) {
-      if (currentMultisigInfo?.cosignatoryAddresses.some((ca: string) => ca && ca === addressToAdd)) {
-        throw new Error(`Cannot add cosignatory! ${addressToAdd} is already a cosignatory!`);
+      if (currentMultisigInfo?.cosignatoryAddresses.some((ca: string) => ca === addressToAdd)) {
+        throw new Error(`コサイナーを追加できません。${addressToAdd} は既にコサイナーです。`);
       }
     }
+  }
 
+  private validateCosignersToRemove(
+    addressDeletions: string[] | undefined,
+    currentMultisigInfo: MultisigInfoDto | undefined
+  ): void {
     for (const addressToRemove of addressDeletions || []) {
-      if (!currentMultisigInfo?.cosignatoryAddresses.some((ca: string) => ca && ca === addressToRemove)) {
-        throw new Error(`Cannot remove cosignatory! ${addressToRemove} is not an actual cosignatory!`);
+      if (!currentMultisigInfo?.cosignatoryAddresses.some((ca: string) => ca === addressToRemove)) {
+        throw new Error(
+          `コサイナーを削除できません。${addressToRemove} は現行コサイナーではありません。`
+        );
       }
     }
+  }
 
+  private validateMinApproval(newCosignatoryNumber: number, newMinApproval: number): void {
     if (newCosignatoryNumber < newMinApproval) {
       throw new Error(
-        `There are ${
+        `最小承認数に対してコサイナーが ${
           newMinApproval - newCosignatoryNumber
-        } more required cosignatories than available cosignatories for min. approval. Please add cosignatories or reduce the min. approval delta.`,
+        } 件不足しています。コサイナーを追加するか、最小承認数の差分を下げてください。`
       );
     }
+  }
 
+  private validateMinRemoval(newCosignatoryNumber: number, newMinRemoval: number): void {
     if (newCosignatoryNumber < newMinRemoval) {
       throw new Error(
-        `There are ${
+        `最小削除承認数に対してコサイナーが ${
           newMinRemoval - newCosignatoryNumber
-        }  more required cosignatories than available cosignatories for min removal. Please add cosignatories or reduce the min. removal delta.`,
+        } 件不足しています。コサイナーを追加するか、最小削除承認数の差分を下げてください。`
       );
     }
+  }
 
-    if (newCosignatoryNumber > 0 && (newMinApproval == 0 || newMinRemoval == 0)) {
-      throw new Error(
-        `Minimum approval and/or minimum removal cannot be set to 0 while there are ${newCosignatoryNumber} cosignatories in your list.`,
-      );
-    }
+  private toPromptValidation(
+    validator: (input: string | undefined) => boolean | string
+  ): (input: string | undefined) => string | undefined {
+    return (input: string | undefined) => {
+      const result = validator(input);
+      if (result === true) {
+        return undefined;
+      }
+      if (typeof result === 'string') {
+        return result;
+      }
+      return '入力値が不正です。';
+    };
   }
 }

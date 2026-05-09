@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command, Flags } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils, ComposeService, Constants } from '../service/index.js';
 
 export default class Compose extends Command {
-  static description = 'It generates the `compose.yml` file from the configured network.';
+  static description = '設定済みネットワークから `compose.yaml` を生成します。';
 
   static examples = [`$ symbol-bootstrap compose`];
 
@@ -29,13 +29,14 @@ export default class Compose extends Command {
     password: CommandUtils.passwordFlag,
     noPassword: CommandUtils.noPasswordFlag,
     upgrade: Flags.boolean({
-      description: 'It regenerates the docker compose and utility files from the <target>/docker folder',
+      description:
+        '<target>/docker フォルダの docker compose ファイルとユーティリティファイルを再生成します。',
       default: ComposeService.defaultParams.upgrade,
     }),
     offline: CommandUtils.offlineFlag,
     user: Flags.string({
       char: 'u',
-      description: `User used to run the services in the compose.yml file. "${Constants.CURRENT_USER}" means the current user.`,
+      description: `compose.yaml のサービス実行に使用するユーザーを指定します。"${Constants.CURRENT_USER}" は現在のユーザーを意味します。`,
       default: 'current',
     }),
     logger: CommandUtils.getLoggerFlag(...System),
@@ -44,14 +45,13 @@ export default class Compose extends Command {
   public async run(): Promise<void> {
     const { flags } = await this.parse(Compose);
     CommandUtils.showBanner();
-
     const logger = LoggerFactory.getLogger(flags.logger);
     flags.password = await CommandUtils.resolvePassword(
       logger,
       flags.password,
       flags.noPassword,
       CommandUtils.passwordPromptDefaultMessage,
-      true,
+      true
     );
     const workingDir = Constants.defaultWorkingDir;
     await new BootstrapService(logger).compose({ ...flags, workingDir });

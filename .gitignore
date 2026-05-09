@@ -22,3 +22,4 @@ coverage
 custom-preset.yml
 tsconfig.tsbuildinfo
 /.yarn
+/.codex

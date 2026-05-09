@@ -13,82 +13,75 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command, Flags } from '@oclif/core';
-import { existsSync } from 'fs';
-import { dirname } from 'path';
-import { LoggerFactory, LogType } from '../logger/index.js';
-import { CommandUtils, FileSystemService, KnownError, YamlUtils } from '../service/index.js';
+
+import { LogType, LoggerFactory } from '../logger/index.js';
+import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class Decrypt extends Command {
-  static description = `It decrypts a yml file using the provided password. The source file can be a custom preset file, a preset.yml file or an addresses.yml.
+  static description = `指定したパスワードで yml ファイルを復号します。対象は custom preset、preset.yaml、addresses.yaml です。
 
-The main use case of this command is to verify private keys in encrypted files after encrypting a custom preset or running a bootstrap command with a provided --password.`;
+主な用途は、custom preset の暗号化後や --password 付きで bootstrap コマンドを実行した後に、暗号化ファイル内の秘密鍵を確認することです。`;
 
   static examples = [
     `
-$ symbol-bootstrap start --password 1234 --preset testnet --assembly dual --customPreset decrypted-custom-preset.yml --detached
-$ symbol-bootstrap decrypt --password 1234 --source target/addresses.yml --destination plain-addresses.yml
-$ symbol-bootstrap decrypt --password 1234 --source encrypted-custom-preset.yml --destination plain-custom-preset.yml
-$ cat plain-addresses.yml
-$ cat plain-custom-preset.yml
-$ rm plain-addresses.yml
-$ rm plain-custom-preset.yml
+$ symbol-bootstrap start --password 1234 --preset testnet --assembly dual --customPreset decrypted-custom-preset.yaml --detached
+$ symbol-bootstrap decrypt --password 1234 --source target/addresses.yaml --destination plain-addresses.yaml
+$ symbol-bootstrap decrypt --password 1234 --source encrypted-custom-preset.yaml --destination plain-custom-preset.yaml
+$ cat plain-addresses.yaml
+$ cat plain-custom-preset.yaml
+$ rm plain-addresses.yaml
+$ rm plain-custom-preset.yaml
         `,
 
     `
-$ symbol-bootstrap start --preset testnet --assembly dual --customPreset decrypted-custom-preset.yml --detached
-> password prompt
-$ symbol-bootstrap decrypt --source target/addresses.yml --destination plain-addresses.yml
-> password prompt (enter the same password)
-$ symbol-bootstrap decrypt --source encrypted-custom-preset.yml --destination plain-custom-preset.yml
-> password prompt (enter the same password)
-$ cat plain-addresses.yml
-$ cat plain-custom-preset.yml
-$ rm plain-addresses.yml
-$ rm plain-custom-preset.yml`,
+$ symbol-bootstrap start --preset testnet --assembly dual --customPreset decrypted-custom-preset.yaml --detached
+> パスワード入力
+$ symbol-bootstrap decrypt --source target/addresses.yaml --destination plain-addresses.yaml
+> パスワード入力（同じパスワードを入力）
+$ symbol-bootstrap decrypt --source encrypted-custom-preset.yaml --destination plain-custom-preset.yaml
+> パスワード入力（同じパスワードを入力）
+$ cat plain-addresses.yaml
+$ cat plain-custom-preset.yaml
+$ rm plain-addresses.yaml
+$ rm plain-custom-preset.yaml`,
     `
-$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap decrypt --source target/addresses.yml --destination plain-addresses.yml
+$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap decrypt --source target/addresses.yaml --destination plain-addresses.yaml
 `,
   ];
 
   static flags = {
     help: CommandUtils.helpFlag,
     source: Flags.string({
-      description: `The source encrypted yml file to be decrypted.`,
+      description: `復号する元の暗号化済み yml ファイルを指定します。`,
       required: true,
     }),
     destination: Flags.string({
-      description: `The destination decrypted file to create. The destination file must not exist.`,
+      description: `作成する復号済みファイルの出力先を指定します。出力先ファイルは未作成である必要があります。`,
       required: true,
     }),
     password: CommandUtils.getPasswordFlag(
-      `The password to use to decrypt the source file into the destination file. Bootstrap prompts for a password by default, can be provided in the command line (--password=XXXX) or disabled in the command line (--noPassword).`,
+      `入力ファイルを復号して出力ファイルを作成するためのパスワードを指定します。デフォルトでは対話的に入力を求めますが、コマンドライン（--password=XXXX）で指定するか、--noPassword で無効化できます。`
     ),
     logger: CommandUtils.getLoggerFlag(LogType.Console),
   };
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Decrypt);
-
-    if (!existsSync(flags.source)) {
-      throw new KnownError(`Source file ${flags.source} does not exist!`);
-    }
-    if (existsSync(flags.destination)) {
-      throw new KnownError(`Destination file ${flags.destination} already exists!`);
-    }
+    CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
     const password = await CommandUtils.resolvePassword(
       logger,
       flags.password,
       false,
-      `Enter the password to use to decrypt the source file into the destination file. Keep this password in a secure place!`,
-      false,
+      `入力ファイルを復号して出力ファイルを作成するパスワードを入力してください。安全な場所に保管してください。`,
+      false
     );
-    const data = await YamlUtils.loadYaml(flags.source, password);
-    await new FileSystemService(logger).mkdir(dirname(flags.destination));
-    await YamlUtils.writeYaml(flags.destination, data, '');
-    const decryptMessage = `Decrypted file ${flags.destination} has been created! Any private keys on this file are now in plain text. Remember to remove the file!`;
+    const decryptMessage = await new BootstrapService(logger).decryptFile({
+      source: flags.source,
+      destination: flags.destination,
+      password,
+    });
     logger.info(decryptMessage);
     process.stdout.write(decryptMessage + '\n');
   }

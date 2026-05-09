@@ -1,4 +1,18 @@
 assembly: dual
 preset: testnet
-nodes:
-  - host: localhost
+node:
+  host: luca.harvestasya.com
+  friendlyName: luca node
+  voting: true
+  # openPort: 7950
+  # trustedHosts: 127.0.0.1, 172.200.0.25
+  # localNetworks: 127.0.0.1, 172.200.0.25
+
+# gateway:
+#   openPort: 3060
+#   ipv4_address: 172.200.0.25
+
+# dockerComposeProjectName: testnet
+# subnet: 172.200.0.0/24
+# nodePort: 7950
+# apiNodePort: 7950

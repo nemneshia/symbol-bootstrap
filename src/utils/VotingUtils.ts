@@ -15,9 +15,10 @@
  */
 import * as noble from '@noble/ed25519';
 import { sha512 } from '@noble/hashes/sha2.js';
-import { existsSync, lstatSync, readdirSync, readFileSync } from 'fs';
-import { join } from 'path';
-import nacl from 'tweetnacl';
+
+import { existsSync, lstatSync, readFileSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+
 import { ICryptoPort } from '../sdk/index.js';
 
 (noble as any).hashes.sha512 = sha512;
@@ -44,7 +45,7 @@ export type VotingKeyFile = VotingKeyAccount & { filename: string };
 
 /**
  * 投票キーファイルの生成・読み込みを担当するユーティリティクラス。
- * noble と TweetNaCl の 2 つの暗号化実装を提供する。
+ * @noble/ed25519 を利用した暗号化実装を提供する。
  */
 export class VotingUtils {
   public static nobleImplementation: CryptoImplementation = {
@@ -58,26 +59,24 @@ export class VotingUtils {
     },
   };
 
+  /**
+   * 互換性維持用の別名実装。
+   * 旧 TweetNaCl 実装名を利用していた呼び出し側の破壊的変更を避けるために残している。
+   */
   public static tweetNaClImplementation: CryptoImplementation = {
-    name: 'TweetNaCl',
-    createKeyPairFromPrivateKey: async (privateKey: Uint8Array): Promise<KeyPair> => {
-      const { publicKey } = nacl.sign.keyPair.fromSeed(privateKey);
-      return { privateKey, publicKey };
-    },
-
-    sign: async (keyPair: KeyPair, data: Uint8Array): Promise<Uint8Array> => {
-      const secretKey = new Uint8Array(64);
-      secretKey.set(keyPair.privateKey);
-      secretKey.set(keyPair.publicKey, 32);
-      return nacl.sign.detached(data, secretKey);
-    },
+    name: 'Noble (Legacy Alias)',
+    createKeyPairFromPrivateKey: VotingUtils.nobleImplementation.createKeyPairFromPrivateKey,
+    sign: VotingUtils.nobleImplementation.sign,
   };
 
-  public static implementations = [VotingUtils.nobleImplementation, VotingUtils.tweetNaClImplementation];
+  public static implementations = [
+    VotingUtils.nobleImplementation,
+    VotingUtils.tweetNaClImplementation,
+  ];
 
   constructor(
     private readonly implementation: CryptoImplementation = VotingUtils.nobleImplementation,
-    private readonly cryptoPort: ICryptoPort,
+    private readonly cryptoPort: ICryptoPort
   ) {}
   public insert(result: Uint8Array, value: Uint8Array, index: number): number {
     result.set(value, index);
@@ -88,13 +87,15 @@ export class VotingUtils {
     secret: string,
     votingKeyStartEpoch: number,
     votingKeyEndEpoch: number,
-    unitTestPrivateKeys: Uint8Array[] | undefined = undefined,
+    unitTestPrivateKeys: Uint8Array[] | undefined = undefined
   ): Promise<Uint8Array> {
     const items = votingKeyEndEpoch - votingKeyStartEpoch + 1;
     const headerSize = 64 + 16;
     const itemSize = 32 + 64;
     const totalSize = headerSize + items * itemSize;
-    const rootPrivateKey = await this.implementation.createKeyPairFromPrivateKey(this.cryptoPort.hexToUint8(secret));
+    const rootPrivateKey = await this.implementation.createKeyPairFromPrivateKey(
+      this.cryptoPort.hexToUint8(secret)
+    );
     const result = new Uint8Array(totalSize);
     //start-epoch (8b),
     let index = 0;
@@ -122,9 +123,11 @@ export class VotingUtils {
     // each key is:
     for (let i = 0; i < items; i++) {
       // random PRIVATE key (32b)
-      const randomPrivateKey = unitTestPrivateKeys ? unitTestPrivateKeys[i] : this.cryptoPort.randomBytes(32);
-      if (randomPrivateKey.length != 32) {
-        throw new Error(`Invalid private key size ${randomPrivateKey.length}!`);
+      const randomPrivateKey = unitTestPrivateKeys
+        ? unitTestPrivateKeys[i]
+        : this.cryptoPort.randomBytes(32);
+      if (randomPrivateKey.length !== 32) {
+        throw new Error(`秘密鍵サイズが不正です: ${randomPrivateKey.length}`);
       }
       const randomKeyPar = await this.implementation.createKeyPairFromPrivateKey(randomPrivateKey);
       index = this.insert(result, randomPrivateKey, index);
@@ -136,7 +139,10 @@ export class VotingUtils {
       //
       //   i.e. say your start-epoch = 2, end-epoch = 42
       const identifier = this.cryptoPort.numberToUint8Array(votingKeyEndEpoch - i, 8);
-      const signature = await this.implementation.sign(rootPrivateKey, Uint8Array.from([...randomKeyPar.publicKey, ...identifier]));
+      const signature = await this.implementation.sign(
+        rootPrivateKey,
+        Uint8Array.from([...randomKeyPar.publicKey, ...identifier])
+      );
       index = this.insert(result, signature, index);
     }
     //
@@ -163,8 +169,10 @@ export class VotingUtils {
     const itemSize = 32 + 64;
     const totalSize = headerSize + items * itemSize;
 
-    if (file.length != totalSize) {
-      throw new Error(`Unexpected voting key file. Expected ${totalSize} but got ${file.length}`);
+    if (file.length !== totalSize) {
+      throw new Error(
+        `投票キーファイル形式が不正です。期待値 ${totalSize} に対して実際は ${file.length} です。`
+      );
     }
     return {
       publicKey: votingPublicKey,
@@ -180,7 +188,11 @@ export class VotingUtils {
     return readdirSync(folder)
       .map((filename: string) => {
         const currentPath = join(folder, filename);
-        if (lstatSync(currentPath).isFile() && filename.startsWith('private_key_tree') && filename.endsWith('.dat')) {
+        if (
+          lstatSync(currentPath).isFile() &&
+          filename.startsWith('private_key_tree') &&
+          filename.endsWith('.dat')
+        ) {
           return { ...this.readVotingFile(readFileSync(currentPath)), filename };
         } else {
           return undefined;

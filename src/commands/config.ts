@@ -13,21 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command, Flags } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
 import { SymbolCryptoAdapter } from '../sdk/index.js';
-import { Assembly, BootstrapAccountResolver, BootstrapService, CommandUtils, ConfigService, Constants, Preset } from '../service/index.js';
+import {
+  Assembly,
+  BootstrapAccountResolver,
+  BootstrapService,
+  CommandUtils,
+  ConfigService,
+  Constants,
+  Preset,
+} from '../service/index.js';
 
 export default class Config extends Command {
-  static description = 'Command used to set up the configuration files and the nemesis block for the current network';
+  static description = '現在のネットワーク向けに設定ファイルとネメシスブロックを生成します。';
 
   static examples = [
-    `$ symbol-bootstrap config -p bootstrap`,
     `$ symbol-bootstrap config -p testnet -a dual --password 1234`,
-    `$ symbol-bootstrap config -p mainnet -a peer -c custom-preset.yml`,
-    `$ symbol-bootstrap config -p mainnet -a my-custom-assembly.yml -c custom-preset.yml`,
-    `$ symbol-bootstrap config -p my-custom-network.yml -a dual -c custom-preset.yml`,
+    `$ symbol-bootstrap config -p testnet -a api -c custom-preset.yaml`,
+    `$ symbol-bootstrap config -p mainnet -a peer -c custom-preset.yaml`,
+    `$ symbol-bootstrap config -p mainnet -a my-custom-assembly.yaml -c custom-preset.yaml`,
+    `$ symbol-bootstrap config -p custom-network.yaml -a dual -c custom-preset.yaml`,
     `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap config -p testnet -a dual`,
   ];
 
@@ -38,35 +46,35 @@ export default class Config extends Command {
     noPassword: CommandUtils.noPasswordFlag,
     preset: Flags.string({
       char: 'p',
-      description: `The network preset. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: ${Object.keys(
-        Preset,
-      ).join(', ')}, my-custom-network.yml (advanced, only for custom networks).`,
+      description: `ネットワークプリセットを指定します。カスタムプリセットまたは CLI パラメータから指定できます。未指定の場合は target/preset.yaml から解決されます。指定可能な値: ${Object.keys(
+        Preset
+      ).join(', ')}, custom-network.yaml（上級者向け、カスタムネットワーク専用）。`,
     }),
     assembly: Flags.string({
       char: 'a',
-      description: `The assembly that defines the node(s) layout. It can be provided via custom preset or cli parameter. If not provided, the value is resolved from the target/preset.yml file. Options are: ${Object.keys(
-        Assembly,
-      ).join(', ')}, my-custom-assembly.yml (advanced).`,
+      description: `ノード構成を定義するアセンブリを指定します。カスタムプリセットまたは CLI パラメータから指定できます。未指定の場合は target/preset.yaml から解決されます。指定可能な値: ${Object.keys(
+        Assembly
+      ).join(', ')}, custom-assembly.yaml（上級者向け）。`,
     }),
     customPreset: Flags.string({
       char: 'c',
-      description: `External preset file. Values in this file will override the provided presets.`,
+      description: `外部プリセットファイルを指定します。このファイルの値は指定済みプリセットを上書きします。`,
     }),
     reset: Flags.boolean({
       char: 'r',
-      description: 'It resets the configuration generating a new one.',
+      description: '設定をリセットして新しく生成します。',
       default: ConfigService.defaultParams.reset,
     }),
 
     upgrade: Flags.boolean({
-      description: `It regenerates the configuration reusing the previous keys. Use this flag when upgrading the version of bootstrap to keep your node up to date without dropping the local data. Backup the target folder before upgrading.`,
+      description: `既存の鍵を再利用して設定を再生成します。ローカルデータを削除せずに bootstrap のバージョンを上げる場合に使用してください。アップグレード前に target フォルダをバックアップすることを推奨します。`,
       default: ConfigService.defaultParams.reset,
     }),
     offline: CommandUtils.offlineFlag,
 
     user: Flags.string({
       char: 'u',
-      description: `User used to run docker images when creating configuration files like certificates or nemesis block. "${Constants.CURRENT_USER}" means the current user.`,
+      description: `証明書やネメシスブロックなどの設定ファイル生成時に Docker イメージを実行するユーザーを指定します。"${Constants.CURRENT_USER}" は現在のユーザーを意味します。`,
       default: Constants.CURRENT_USER,
     }),
     logger: CommandUtils.getLoggerFlag(...System),
@@ -74,14 +82,14 @@ export default class Config extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(Config);
-    const logger = LoggerFactory.getLogger(flags.logger);
     CommandUtils.showBanner();
+    const logger = LoggerFactory.getLogger(flags.logger);
     flags.password = await CommandUtils.resolvePassword(
       logger,
       flags.password,
       flags.noPassword,
       CommandUtils.passwordPromptDefaultMessage,
-      true,
+      true
     );
     const workingDir = Constants.defaultWorkingDir;
     const accountResolver = new BootstrapAccountResolver(logger, new SymbolCryptoAdapter());

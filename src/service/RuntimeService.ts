@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import { exec as callbackExec, spawn } from 'node:child_process';
+import { promisify } from 'node:util';
 
-import { exec as callbackExec, spawn } from 'child_process';
-import * as util from 'util';
 import { Logger } from '../logger/index.js';
-
 import { Utils } from '../utils/Utils.js';
-const exec = util.promisify(callbackExec);
+
+const exec = promisify(callbackExec);
 
 export interface SpawnParams {
   command: string;
@@ -40,7 +40,8 @@ export interface RunImageUsingExecParams {
 }
 
 /**
- * Service in charge of running OS commands. Commands could be executed directly on the OS or via docker containers.
+ * OS コマンド実行を担当するサービス。
+ * コマンドをホスト OS 上で直接実行することも、Docker コンテナ経由で実行することもできる。
  */
 export class RuntimeService {
   private static readonly pulledImages: string[] = [];
@@ -48,14 +49,37 @@ export class RuntimeService {
   public static readonly CURRENT_USER = 'current';
   constructor(private readonly logger: Logger) {}
 
-  public exec(runCommand: string, ignoreErrors?: boolean): Promise<{ stdout: string; stderr: string }> {
-    this.logger.debug(`Exec command: ${runCommand}`);
-    return exec(runCommand).catch((error) => {
-      if (ignoreErrors) return { stdout: error.stdout, stderr: error.stderr };
-      throw error;
-    });
+  /**
+   * シェルコマンドを `exec` で実行する。
+   *
+   * @param runCommand 実行するコマンド文字列
+   * @param ignoreErrors `true` の場合はエラー時も stdout/stderr を返す
+   * @returns 実行結果の stdout/stderr
+   */
+  public exec(
+    runCommand: string,
+    ignoreErrors?: boolean
+  ): Promise<{ stdout: string; stderr: string }> {
+    this.logger.debug(`実行コマンド: ${runCommand}`);
+    return exec(runCommand)
+      .then((result: any) => {
+        if (typeof result === 'string') {
+          return { stdout: result, stderr: '' };
+        }
+        return result;
+      })
+      .catch((error) => {
+        if (ignoreErrors) return { stdout: error.stdout, stderr: error.stderr };
+        throw error;
+      });
   }
 
+  /**
+   * Docker イメージを `docker run` + `exec` で実行する。
+   *
+   * @param params 実行パラメータ
+   * @returns 実行結果の stdout/stderr
+   */
   public runImageUsingExec({
     catapultAppFolder,
     image,
@@ -65,30 +89,62 @@ export class RuntimeService {
     binds,
     ignoreErrors,
   }: RunImageUsingExecParams): Promise<{ stdout: string; stderr: string }> {
-    const volumes = binds.map((b) => `-v ${b}`).join(' ');
-    const userParam = userId ? `-u ${userId}` : '';
-    const workdirParam = workdir ? `--workdir=${workdir}` : '';
-    const environmentParam = catapultAppFolder ? `--env LD_LIBRARY_PATH=${catapultAppFolder}/lib:${catapultAppFolder}/deps` : '';
-    const commandLine = cmds.map((a) => `"${a}"`).join(' ');
-    const runCommand = `docker run --rm ${userParam} ${workdirParam} ${environmentParam} ${volumes} ${image} ${commandLine}`;
-    this.logger.info(Utils.secureString(`Running image using Exec: ${image} ${cmds.join(' ')}`));
+    const runCommand = this.createDockerRunCommand({
+      catapultAppFolder,
+      image,
+      userId,
+      workdir,
+      cmds,
+      binds,
+    });
+    this.logger.info(Utils.secureString(`Exec でイメージを実行します: ${image} ${cmds.join(' ')}`));
     return this.exec(runCommand, ignoreErrors);
   }
 
-  public async spawn({ command, args, useLogger, logPrefix = '', shell }: SpawnParams): Promise<string> {
+  /**
+   * `docker run` のコマンド文字列を組み立てる。
+   *
+   * @param params Docker 実行パラメータ
+   * @returns 実行可能な `docker run` コマンド
+   */
+  private createDockerRunCommand({
+    catapultAppFolder,
+    image,
+    userId,
+    workdir,
+    cmds,
+    binds,
+  }: Omit<RunImageUsingExecParams, 'ignoreErrors'>): string {
+    const volumes = binds.map((b) => `-v ${b}`).join(' ');
+    const userParam = userId ? `-u ${userId}` : '';
+    const workdirParam = workdir ? `--workdir=${workdir}` : '';
+    const environmentParam = catapultAppFolder
+      ? `--env LD_LIBRARY_PATH=${catapultAppFolder}/lib:${catapultAppFolder}/deps`
+      : '';
+    const commandLine = cmds.map((a) => `"${a}"`).join(' ');
+    return `docker run --rm ${userParam} ${workdirParam} ${environmentParam} ${volumes} ${image} ${commandLine}`
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * 子プロセスを `spawn` で実行し、出力をログへ中継する。
+   *
+   * @param params spawn 実行パラメータ
+   * @returns 収集したログ文字列（`useLogger=false` の場合は固定メッセージ）
+   */
+  public async spawn({
+    command,
+    args,
+    useLogger,
+    logPrefix = '',
+    shell,
+  }: SpawnParams): Promise<string> {
     const cmd = spawn(command, args, { shell: shell });
     return new Promise<string>((resolve, reject) => {
-      this.logger.info(`Spawn command: ${command} ${args.join(' ')}`);
-      let logText = useLogger ? '' : 'Check console for output....';
-      const log = (data: string, isError: boolean) => {
-        if (useLogger) {
-          logText = logText + `${data}\n`;
-          if (isError) this.logger.warn(Utils.secureString(logPrefix + data));
-          else this.logger.info(Utils.secureString(logPrefix + data));
-        } else {
-          console.log(logPrefix + data);
-        }
-      };
+      this.logger.info(`spawn コマンド: ${command} ${args.join(' ')}`);
+      const state = this.createSpawnLogState(useLogger, logPrefix);
+      const log = (data: string, isError: boolean) => this.logSpawnOutput(state, data, isError);
 
       cmd.stdout.on('data', (data) => {
         log(`${data}`.trim(), false);
@@ -102,44 +158,78 @@ export class RuntimeService {
         log(`${error.message}`.trim(), true);
       });
 
-      cmd.on('exit', (code, signal) => {
-        if (code) {
-          log(`Process exited with code ${code} and signal ${signal}`, true);
-          reject(new Error(`Process exited with code ${code}\n${logText}`));
-        } else {
-          resolve(logText);
-        }
-      });
-
       cmd.on('close', (code) => {
         if (code) {
           log(`Process closed with code ${code}`, true);
-          reject(new Error(`Process closed with code ${code}\n${logText}`));
+          reject(new Error(`Process closed with code ${code}\n${state.logText}`));
         } else {
-          resolve(logText);
+          resolve(state.logText);
         }
       });
 
       process.on('SIGINT', () => {
-        resolve(logText);
+        resolve(state.logText);
       });
     });
   }
+
+  /** spawn 実行時のログ保持状態を生成する。 */
+  private createSpawnLogState(
+    useLogger: boolean,
+    logPrefix: string
+  ): { useLogger: boolean; logPrefix: string; logText: string } {
+    return {
+      useLogger,
+      logPrefix,
+      logText: useLogger ? '' : 'Check console for output....',
+    };
+  }
+
+  /** spawn 出力を logger または console に中継し、必要に応じてログ蓄積する。 */
+  private logSpawnOutput(
+    state: { useLogger: boolean; logPrefix: string; logText: string },
+    data: string,
+    isError: boolean
+  ): void {
+    if (state.useLogger) {
+      state.logText += `${data}\n`;
+      if (isError) this.logger.warn(Utils.secureString(state.logPrefix + data));
+      else this.logger.info(Utils.secureString(state.logPrefix + data));
+      return;
+    }
+    console.log(state.logPrefix + data);
+  }
+
+  /**
+   * Docker イメージを pull する。
+   * 一度 pull したイメージはプロセス内キャッシュにより再 pull をスキップする。
+   *
+   * @param image pull 対象イメージ
+   */
   public async pullImage(image: string): Promise<void> {
     Utils.validateIsDefined(image, 'Image must be provided');
-    if (RuntimeService.pulledImages.indexOf(image) > -1) {
+    if (RuntimeService.pulledImages.includes(image)) {
       return;
     }
     try {
-      this.logger.info(`Pulling image ${image}`);
-      const stdout = await this.spawn({ command: 'docker', args: ['pull', image], useLogger: true, logPrefix: `${image} ` });
+      this.logger.info(`イメージを pull します: ${image}`);
+      const stdout = await this.spawn({
+        command: 'docker',
+        args: ['pull', image],
+        useLogger: true,
+        logPrefix: `${image} `,
+      });
       const outputLines = stdout.toString().split('\n');
-      this.logger.info(`Image pulled: ${outputLines[outputLines.length - 2]}`);
+      this.logger.info(`イメージの pull が完了しました: ${outputLines[outputLines.length - 2]}`);
       RuntimeService.pulledImages.push(image);
     } catch {
-      this.logger.warn(`Image ${image} could not be pulled!`);
+      this.logger.warn(`イメージ ${image} を pull できませんでした。`);
     }
   }
+  /**
+   * Docker コンテナ実行時の `uid:gid` を解決する。
+   * Windows では root 実行を返し、それ以外では現在プロセスの uid/gid を返す。
+   */
   public async getDockerUserGroup(): Promise<string | undefined> {
     const isWin = Utils.isWindows();
     if (isWin) {
@@ -150,22 +240,28 @@ export class RuntimeService {
       return RuntimeService.dockerUserId;
     }
     try {
-      const userId = process && typeof process.getuid === 'function' ? process.getuid() : undefined;
-      const groupId = process && typeof process.getgid === 'function' ? process.getgid() : undefined;
+      const userId = process.getuid!();
+      const groupId = process.getgid!();
       const user = `${userId}:${groupId}`;
-      this.logger.info(`User for docker resolved: ${user}`);
+      this.logger.info(`docker 用ユーザーを解決しました: ${user}`);
       if (userId === 0) {
-        this.logger.error('YOU ARE RUNNING BOOTSTRAP AS ROOT!!!! THIS IS NOT RECOMMENDED!!!');
+        this.logger.error('Bootstrap を root で実行しています。非推奨です。');
       }
       RuntimeService.dockerUserId = user;
       return user;
     } catch (e) {
-      this.logger.info(`User for docker could not be resolved: ${e}`);
+      this.logger.info(`docker 用ユーザーを解決できませんでした: ${e}`);
       return undefined;
     }
   }
 
-  public async resolveDockerUserFromParam(paramUser: string | undefined): Promise<string | undefined> {
+  /**
+   * CLI で指定された Docker 実行ユーザー引数を解決する。
+   * `current` の場合は実行環境の `uid:gid` に展開する。
+   */
+  public async resolveDockerUserFromParam(
+    paramUser: string | undefined
+  ): Promise<string | undefined> {
     if (!paramUser || paramUser.trim() === '') {
       return undefined;
     }

@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Command, Flags } from '@oclif/core';
+
 import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils, RunService } from '../service/index.js';
-import HealthCheck from './healthCheck.js';
+import CheckHealth from './checkHealth.js';
 
 export default class Run extends Command {
   static description =
-    'It boots the network via docker using the generated `compose.yml` file and configuration. The config and compose methods/commands need to be called before this method. This is just a wrapper for the `docker compose up` bash call.';
+    '生成済みの `compose.yaml` と設定を使って、docker でネットワークを起動します。事前に config と compose を実行してください。このコマンドは `docker compose up` のラッパーです。';
 
   static examples = [`$ symbol-bootstrap run`];
 
@@ -31,34 +31,37 @@ export default class Run extends Command {
     detached: Flags.boolean({
       char: 'd',
       description:
-        'If provided, docker compose will run with -d (--detached) and this command will wait unit server is running before returning',
+        '指定すると docker compose を -d（--detached）で実行し、サーバー起動を確認してから終了します。',
     }),
 
-    healthCheck: Flags.boolean({
-      description: HealthCheck.description,
+    checkHealth: Flags.boolean({
+      description: CheckHealth.description,
     }),
 
     resetData: Flags.boolean({
-      description: 'It reset the database and node data but keeps the generated configuration, keys, voting tree files and block 1',
+      description:
+        'データベースとノードデータを初期化します。生成済みの設定、鍵、投票ツリーファイル、block 1 は保持します。',
     }),
 
     pullImages: Flags.boolean({
-      description: 'It pulls the images from DockerHub when running the configuration. It only affects alpha/dev docker images.',
+      description:
+        '起動時に DockerHub からイメージを取得します。alpha/dev の docker イメージにのみ影響します。',
       default: RunService.defaultParams.pullImages,
     }),
 
     args: Flags.string({
       multiple: true,
-      description: 'Add extra arguments to the docker compose up command. Check out https://docs.docker.com/compose/reference/up.',
+      description:
+        'docker compose up に追加引数を渡します。詳細は https://docs.docker.com/compose/reference/up を参照してください。',
     }),
 
     build: Flags.boolean({
       char: 'b',
-      description: 'If provided, docker compose will run with -b (--build)',
+      description: '指定すると docker compose を --build 付きで実行します。',
     }),
 
     timeout: Flags.integer({
-      description: 'If running in detached mode, how long before timing out (in milliseconds)',
+      description: 'detached モード実行時のタイムアウト時間（ミリ秒）を指定します。',
       default: RunService.defaultParams.timeout,
     }),
     logger: CommandUtils.getLoggerFlag(...System),

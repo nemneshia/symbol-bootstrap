@@ -14,9 +14,7 @@ const version = packageJson.version;
  */
 export class Constants {
   public static readonly defaultTargetFolder = 'target';
-  public static readonly targetNodesFolder = 'nodes';
-  public static readonly targetGatewaysFolder = 'gateways';
-  public static readonly targetDatabasesFolder = 'databases';
+  public static readonly targetDatabasesFolder = 'database';
   public static readonly targetNemesisFolder = 'nemesis';
 
   public static readonly defaultWorkingDir = '.';
@@ -33,7 +31,7 @@ export class Constants {
   public static resolveRootFolder(): string {
     const rootFolder = resolve(__dirname, '../..');
     if (!existsSync(join(rootFolder, 'presets', 'shared.yaml'))) {
-      throw new Error(`Root Folder ${rootFolder} does not look right!`);
+      throw new Error(`Root Folder ${rootFolder} の構成が不正です。`);
     }
     return rootFolder;
   }

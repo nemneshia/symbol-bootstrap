@@ -13,19 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 import { Addresses, ConfigPreset, CustomPreset } from '../model/index.js';
 import { Password } from '../utils/YamlUtils.js';
 import { AccountResolver } from './AccountResolver.js';
 import { VotingParams } from './VotingService.js';
-// KeyName を AccountResolver から再エクスポートして後方互換性を維持する
-export { KeyName } from './AccountResolver.js';
 
 /**
- * Bootstrap が対応する定義済みプリセットの列挙型。
+ * 利用可能な定義済みプリセットの列挙型。
  */
 export enum Preset {
-  bootstrap = 'bootstrap',
   testnet = 'testnet',
   mainnet = 'mainnet',
 }
@@ -37,15 +33,13 @@ export enum Assembly {
   dual = 'dual',
   peer = 'peer',
   api = 'api',
-  demo = 'demo',
 }
 
 /**
  * プリセットごとのデフォルトアセンブリ設定。
+ * 現在は明示指定を必須にしているため既定値は持たない。
  */
-export const defaultAssembly: Record<string, string> = {
-  [Preset.bootstrap]: Assembly.dual,
-};
+export const defaultAssembly: Record<string, string> = {};
 
 /**
  * ConfigService の実行パラメーターのインターフェース。

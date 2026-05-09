@@ -7,7 +7,8 @@ new_certs_dir = ./new_certs
 database = index.txt
 serial = serial.dat
 private_key = ca.key.pem
-certificate = ca.cert.pem
+certificate = ca.crt.pem
+copy_extensions = copy
 policy = policy_catapult
 
 [policy_catapult]
@@ -16,17 +17,20 @@ commonName = supplied
 [req]
 prompt = no
 distinguished_name = dn
-x509_extensions = x509_v3_ca
+x509_extensions = x509_v3
 
 [dn]
-CN = {{{name}}}-account
+CN = {{{name}}} Internal CA
 
-[x509_v3_ca]
-basicConstraints = critical,CA:TRUE
+[x509_v3]
+basicConstraints = critical,CA:TRUE,pathlen:0
+keyUsage = critical,keyCertSign,cRLSign
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid:always,issuer
 
 [x509_v3_node]
-basicConstraints = CA:FALSE
+basicConstraints = critical,CA:FALSE
+keyUsage = critical,digitalSignature
+extendedKeyUsage = serverAuth,clientAuth
 subjectKeyIdentifier = hash
 authorityKeyIdentifier = keyid,issuer
