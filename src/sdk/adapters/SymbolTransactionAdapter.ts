@@ -406,12 +406,12 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     const txsHash = SymbolFacade.hashEmbeddedTransactions(embeddedTxs);
 
     const aggregateTx = facade.transactionFactory.create({
-      type: 'aggregate_complete_transaction_v2',
+      type: 'aggregate_complete_transaction_v3',
       signerPublicKey: keyPair.publicKey,
       deadline,
       transactionsHash: txsHash,
       transactions: embeddedTxs,
-    }) as models.AggregateCompleteTransactionV2;
+    }) as models.AggregateCompleteTransactionV3;
 
     // Set fee
     const cosignatureCount = cosignerPrivateKeys.length;
@@ -473,12 +473,12 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     const txsHash = SymbolFacade.hashEmbeddedTransactions(embeddedTxs);
 
     const bondedTx = facade.transactionFactory.create({
-      type: 'aggregate_bonded_transaction_v2',
+      type: 'aggregate_bonded_transaction_v3',
       signerPublicKey: keyPair.publicKey,
       deadline,
       transactionsHash: txsHash,
       transactions: embeddedTxs,
-    }) as models.AggregateBondedTransactionV2;
+    }) as models.AggregateBondedTransactionV3;
 
     const cosignatureCount = cosignerPrivateKeys.length;
     const bondedSize = bondedTx.size + cosignatureCount * new models.Cosignature().size;
