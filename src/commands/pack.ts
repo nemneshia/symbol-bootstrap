@@ -28,6 +28,9 @@ import Compose from './compose.js';
 import Config from './config.js';
 
 export default class Pack extends Command {
+  // TODO: 今は使用しないが、将来的に CLI のコマンド一覧から隠すために hidden を true にする
+  static hidden = true;
+
   static description =
     'ノード設定を生成し、最終ノード環境へアップロード可能な ZIP ファイルとしてパッケージ化します。';
 
