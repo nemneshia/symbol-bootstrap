@@ -16,7 +16,7 @@
 import { Command, Flags } from '@oclif/core';
 
 import { LogType, LoggerFactory } from '../logger/index.js';
-import { AnnounceService, BootstrapService, CommandUtils } from '../service/index.js';
+import { AnnounceService, BootstrapService, CommandUtils, KnownError } from '../service/index.js';
 
 export default class ModifyMultisig extends Command {
   static description = `multisig アカウントを作成または変更します。`;
@@ -64,6 +64,17 @@ export default class ModifyMultisig extends Command {
       CommandUtils.passwordPromptDefaultMessage,
       true
     );
-    return new BootstrapService(logger).modifyMultisig(flags);
+    try {
+      return await new BootstrapService(logger).modifyMultisig(flags);
+    } catch (error) {
+      if (
+        error instanceof KnownError &&
+        error.message.includes('秘密鍵入力をキャンセルしました。')
+      ) {
+        logger.info('マルチシグ変更処理をキャンセルしました。');
+        return;
+      }
+      throw error;
+    }
   }
 }

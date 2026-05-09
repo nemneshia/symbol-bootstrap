@@ -131,4 +131,50 @@ describe('BootstrapAccountResolver', () => {
     expect(passwordMock).toHaveBeenCalledTimes(3);
     expect(cryptoPort.createAccountFromPrivateKey).toHaveBeenCalledTimes(2);
   });
+
+  it('秘密鍵入力をキャンセルした場合は KnownError を投げること', async () => {
+    passwordMock.mockResolvedValueOnce('cancel');
+
+    const { BootstrapAccountResolver } =
+      await import('../../src/service/BootstrapAccountResolver.js');
+    const resolver = new BootstrapAccountResolver(LoggerFactory.getLogger(LogType.Silent), {
+      getAddressFromPublicKey: vi.fn().mockReturnValue('TADDRESS'),
+      createAccountFromPrivateKey: vi.fn(),
+    } as any);
+
+    await expect(
+      resolver.resolveAccount(
+        NetworkType.TEST_NET,
+        { publicKey: 'A'.repeat(64) } as any,
+        KeyName.Main,
+        'api-node',
+        '操作',
+        undefined
+      )
+    ).rejects.toThrow('秘密鍵入力をキャンセルしました。');
+  });
+
+  it('空入力は再入力を促し、キャンセルとは区別されること', async () => {
+    passwordMock.mockResolvedValueOnce('').mockResolvedValueOnce('cancel');
+
+    const { BootstrapAccountResolver } =
+      await import('../../src/service/BootstrapAccountResolver.js');
+    const resolver = new BootstrapAccountResolver(LoggerFactory.getLogger(LogType.Silent), {
+      getAddressFromPublicKey: vi.fn().mockReturnValue('TADDRESS'),
+      createAccountFromPrivateKey: vi.fn(),
+    } as any);
+
+    await expect(
+      resolver.resolveAccount(
+        NetworkType.TEST_NET,
+        { publicKey: 'A'.repeat(64) } as any,
+        KeyName.Main,
+        'api-node',
+        '操作',
+        undefined
+      )
+    ).rejects.toThrow('秘密鍵入力をキャンセルしました。');
+
+    expect(passwordMock).toHaveBeenCalledTimes(2);
+  });
 });

@@ -16,7 +16,13 @@
 import { Command, Flags } from '@oclif/core';
 
 import { LogType, LoggerFactory } from '../logger/index.js';
-import { AnnounceService, BootstrapService, CommandUtils, LinkService } from '../service/index.js';
+import {
+  AnnounceService,
+  BootstrapService,
+  CommandUtils,
+  KnownError,
+  LinkService,
+} from '../service/index.js';
 
 export default class Link extends Command {
   static description = `各ノードの 'Peer' または 'Voting' ロールに対して、VRF と Voting Link トランザクションをネットワークへアナウンスします。既存ネットワークへのノード登録を完了するためのコマンドです。`;
@@ -49,6 +55,17 @@ export default class Link extends Command {
       CommandUtils.passwordPromptDefaultMessage,
       true
     );
-    return new BootstrapService(logger).link(flags);
+    try {
+      return await new BootstrapService(logger).link(flags);
+    } catch (error) {
+      if (
+        error instanceof KnownError &&
+        error.message.includes('秘密鍵入力をキャンセルしました。')
+      ) {
+        logger.info('リンク処理をキャンセルしました。');
+        return;
+      }
+      throw error;
+    }
   }
 }

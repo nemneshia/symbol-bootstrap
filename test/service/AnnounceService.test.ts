@@ -618,7 +618,7 @@ describe('AnnounceService', () => {
 
   it('promptAccounts は空入力時に再入力案内を出すこと', async () => {
     const fixture = createFixture();
-    passwordMock.mockResolvedValueOnce('cancel').mockResolvedValueOnce('GOOD_KEY');
+    passwordMock.mockResolvedValueOnce('').mockResolvedValueOnce('GOOD_KEY');
     fixture.cryptoPort.createAccountFromPrivateKey.mockReturnValue({
       privateKey: 'GOOD_KEY',
       publicKey: 'GOOD_KEY',
@@ -629,6 +629,17 @@ describe('AnnounceService', () => {
 
     expect(result).toHaveLength(1);
     expect(fixture.logger.info).toHaveBeenCalledWith('秘密鍵を入力してください....');
+  });
+
+  it('promptAccounts はキャンセル時に入力処理を終了すること', async () => {
+    const fixture = createFixture();
+    passwordMock.mockResolvedValueOnce('cancel');
+
+    const result = await (fixture.service as any).promptAccounts(152, ['ADDR_GOOD_KEY'], 1);
+
+    expect(result).toHaveLength(0);
+    expect(fixture.cryptoPort.createAccountFromPrivateKey).not.toHaveBeenCalled();
+    expect(fixture.logger.info).toHaveBeenCalledWith('秘密鍵入力をキャンセルしました。');
   });
 
   it('getMultisigBestCosigner はコサイナー未入力なら undefined を返すこと', async () => {

@@ -545,6 +545,10 @@ export class AnnounceService {
     validator: (input: string | undefined) => boolean | string
   ): (input: string | undefined) => string | undefined {
     return (input: string | undefined) => {
+      // Cancel シンボルの場合はバリデーション前に undefined を返す
+      if (isCancel(input)) {
+        return undefined;
+      }
       const result = validator(input);
       if (result === true) {
         return undefined;
@@ -603,6 +607,10 @@ export class AnnounceService {
       const privateKey = await this.promptSecret(
         `次のいずれかのアドレス ${expectedDescription} に対応する 64 桁 HEX 秘密鍵を入力してください。必要なコサイナー ${minApproval} 件のうち、現在 ${providedAccounts.length} 件入力済みです。`
       );
+      if (privateKey === undefined) {
+        this.logger.info('秘密鍵入力をキャンセルしました。');
+        return providedAccounts;
+      }
       if (!privateKey) {
         this.logger.info('秘密鍵を入力してください....');
       } else {

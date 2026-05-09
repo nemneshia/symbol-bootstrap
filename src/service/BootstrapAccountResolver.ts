@@ -81,6 +81,9 @@ export class BootstrapAccountResolver implements AccountResolver {
         nodeDescription,
         keyName
       );
+      if (privateKey === null) {
+        throw new KnownError('秘密鍵入力をキャンセルしました。');
+      }
       if (!privateKey) {
         this.logger.info('秘密鍵を入力してください。');
         continue;
@@ -107,14 +110,14 @@ export class BootstrapAccountResolver implements AccountResolver {
     publicKey: string,
     nodeDescription: string,
     keyName: KeyName
-  ): Promise<string | undefined> {
+  ): Promise<string | undefined | null> {
     const response = await password({
       message: `アドレス: ${address} / 公開鍵: ${publicKey} の ${nodeDescription}${keyName} アカウントに対応する 64 桁 HEX 秘密鍵を入力してください:`,
       mask: '*',
       validate: this.toPromptValidation((input) => CommandUtils.isValidPrivateKey(input ?? '')),
     });
     if (isCancel(response)) {
-      return undefined;
+      return null;
     }
     return response === '' ? undefined : response.toUpperCase();
   }
@@ -123,6 +126,10 @@ export class BootstrapAccountResolver implements AccountResolver {
     validator: (input: string | undefined) => boolean | string
   ): (input: string | undefined) => string | undefined {
     return (input: string | undefined) => {
+      // Cancel シンボルの場合はバリデーション前に undefined を返す
+      if (isCancel(input)) {
+        return undefined;
+      }
       const result = validator(input);
       if (result === true) {
         return undefined;

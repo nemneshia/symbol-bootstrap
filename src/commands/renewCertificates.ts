@@ -16,7 +16,7 @@
 import { Command, Flags } from '@oclif/core';
 
 import { LoggerFactory, System } from '../logger/index.js';
-import { BootstrapService, CommandUtils, Constants } from '../service/index.js';
+import { BootstrapService, CommandUtils, Constants, KnownError } from '../service/index.js';
 
 export default class RenewCertificates extends Command {
   static description = `ノードの SSL 証明書を更新します。node.csr.pem は再生成しますが、既存の秘密鍵は再利用します。
@@ -65,13 +65,25 @@ export default class RenewCertificates extends Command {
       true
     );
     const target = flags.target;
-    const certificateUpgraded = await new BootstrapService(logger).renewCertificates({
-      target,
-      password,
-      customPreset: flags.customPreset,
-      user: flags.user,
-      force: flags.force,
-    });
+    let certificateUpgraded: boolean;
+    try {
+      certificateUpgraded = await new BootstrapService(logger).renewCertificates({
+        target,
+        password,
+        customPreset: flags.customPreset,
+        user: flags.user,
+        force: flags.force,
+      });
+    } catch (error) {
+      if (
+        error instanceof KnownError &&
+        error.message.includes('秘密鍵入力をキャンセルしました。')
+      ) {
+        logger.info('証明書更新をキャンセルしました。');
+        return;
+      }
+      throw error;
+    }
     if (certificateUpgraded) {
       logger.warn('');
       logger.warn('Bootstrap が新しい SSL 証明書を作成しました。ログを確認してください。');
