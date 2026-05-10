@@ -182,7 +182,7 @@ export class RemoteNodeService {
         const order = 'random';
         const nodes = await this.getNodes(
           nodewatchUrl,
-          this.getNodewatchLimit(this.presetData.statisticsServiceRestLimit),
+          this.getNodewatchLimit(this.presetData.nodewatchRestLimit),
           order
         );
         urls.push(...nodes.map((n) => n.endpoint).filter((url): url is string => !!url));
@@ -228,7 +228,7 @@ export class RemoteNodeService {
         const order = 'random';
         const nodes = await this.getNodes(
           nodewatchUrl,
-          this.getNodewatchLimit(this.presetData.statisticsServicePeerLimit),
+          this.getNodewatchLimit(this.presetData.nodewatchPeerLimit),
           order
         );
 

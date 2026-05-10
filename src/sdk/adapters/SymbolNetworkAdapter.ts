@@ -4,7 +4,7 @@ import {
   MultisigRoutesApi,
   NodeRoutesApi,
   NodeStatusEnum,
-} from 'symbol-openapi-typescript-fetch-client';
+} from '@nemnesia/symbol-openapi-typescript-fetch-client';
 
 import { INetworkPort } from '../ports/INetworkPort.js';
 import { ChainInfoDto, MultisigInfoDto, NodeHealthDto, NodeInfoDto } from '../types/Network.js';
@@ -43,7 +43,7 @@ export class SymbolNetworkAdapter implements INetworkPort {
 
   async getMultisigInfo(url: string, address: string): Promise<MultisigInfoDto | undefined> {
     try {
-      const info = await new MultisigRoutesApi(cfg(url)).getAccountMultisig(address);
+      const info = await new MultisigRoutesApi(cfg(url)).getAccountMultisig({ address });
       const multisig = info.multisig;
       if (!multisig.minApproval && !multisig.minRemoval) {
         return undefined;

@@ -6,7 +6,7 @@ import {
   NetworkRoutesApi,
   NodeRoutesApi,
   TransactionRoutesApi,
-} from 'symbol-openapi-typescript-fetch-client';
+} from '@nemnesia/symbol-openapi-typescript-fetch-client';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import {
   KeyPair,
@@ -164,7 +164,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     // Divisibility: fetch from mosaic info
     let currencyDivisibility = 6; // default
     try {
-      const mosaicInfo = await mosaicApi.getMosaic(currencyMosaicId);
+      const mosaicInfo = await mosaicApi.getMosaic({ mosaicId: currencyMosaicId });
       currencyDivisibility = mosaicInfo.mosaic?.divisibility ?? 6;
     } catch {
       // ignore – use default
@@ -185,7 +185,7 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     const cfg = buildConfig(url);
     const accountApi = new AccountRoutesApi(cfg);
     try {
-      const resp = await accountApi.getAccountInfo(address);
+      const resp = await accountApi.getAccountInfo({ accountId: address });
       const accountDto = resp.account;
       const spk = accountDto.supplementalPublicKeys;
       return {
@@ -578,13 +578,13 @@ export class SymbolTransactionAdapter implements ITransactionPort {
     const cfg = buildConfig(url);
     const txApi = new TransactionRoutesApi(cfg);
     const hexPayload = utils.uint8ToHex(tx.serialize());
-    await txApi.announceTransaction({ payload: hexPayload });
+    await txApi.announceTransaction({ transactionPayload: { payload: hexPayload } });
   }
 
   private async _announcePartial(url: string, tx: models.Transaction): Promise<void> {
     const cfg = buildConfig(url);
     const txApi = new TransactionRoutesApi(cfg);
     const hexPayload = utils.uint8ToHex(tx.serialize());
-    await txApi.announcePartialTransaction({ payload: hexPayload });
+    await txApi.announcePartialTransaction({ transactionPayload: { payload: hexPayload } });
   }
 }

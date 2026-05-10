@@ -11,6 +11,9 @@ importers:
       '@clack/prompts':
         specifier: ^1.3.0
         version: 1.3.0
+      '@nemnesia/symbol-openapi-typescript-fetch-client':
+        specifier: ^1.0.1
+        version: 1.0.1
       '@noble/ed25519':
         specifier: ^3.0.0
         version: 3.1.0
@@ -50,15 +53,9 @@ importers:
       shx:
         specifier: ^0.4.0
         version: 0.4.0
-      symbol-openapi-typescript-fetch-client:
-        specifier: ^1.0.3
-        version: 1.0.3
       symbol-sdk:
         specifier: ^3.3.1
         version: 3.3.1(bitcore-lib@10.10.7)
-      symbol-statistics-service-typescript-fetch-client:
-        specifier: ^1.1.5
-        version: 1.1.5
       tslib:
         specifier: ^2.8.1
         version: 2.8.1
@@ -922,6 +919,10 @@ packages:
     peerDependencies:
       '@emnapi/core': ^1.7.1
       '@emnapi/runtime': ^1.7.1
+
+  '@nemnesia/symbol-openapi-typescript-fetch-client@1.0.1':
+    resolution: {integrity: sha512-3yLcj3vrwSKjTiwiUb15Enly/M10ioE6Bc/sSyqZ/o6vDbF4DPIPXaN3s3kOlxNV3h+R9Lc6qKdS0ONdmOxRBQ==}
+    engines: {node: '>=20.0.0'}
 
   '@noble/ed25519@3.1.0':
     resolution: {integrity: sha512-pfcObRY3CtvwfaG9Mt5XqZdKmAQppl37tHUeuBhDUbiwJBCVY4/A4lbMvb1xKhMDx96AqAqZpMWuBX1HulhX4g==}
@@ -3134,14 +3135,8 @@ packages:
   symbol-crypto-wasm-node@0.1.1:
     resolution: {integrity: sha512-gASOhy8+uITSZh5bCYKve5GFtQQ2yQjTFqYNRO4Wq5mH29Ai+3TyKTAq9wZ6bwQfgm7j8U4aqmwFn9WdsXU4eQ==}
 
-  symbol-openapi-typescript-fetch-client@1.0.3:
-    resolution: {integrity: sha512-Md3/wkYLWTeJ/o99kXajW5dDs7Ok7AWfGRGDThb2bpC53KVxwnMl2ho/KUPT2Y+CeuIB62+Hgp9NtJLvgXYzHw==}
-
   symbol-sdk@3.3.1:
     resolution: {integrity: sha512-kXl8MG/5nIe0V4BHYd4+SYcWhoovQBpFETXyNvo4Q2CPzSzqeDM0eil2W2CKURNG9hkzM+PvGs4Nzz2gIYZAwQ==}
-
-  symbol-statistics-service-typescript-fetch-client@1.1.5:
-    resolution: {integrity: sha512-hcVD9jq+S2kZCYaXTDglU43y3Dn5K6W3O45Y/pMAfiuYDCdVaHczAPDE/ZKGo0kZXy69e1sn/riAzfDfn8yFBw==}
 
   tar-stream@3.2.0:
     resolution: {integrity: sha512-ojzvCvVaNp6aOTFmG7jaRD0meowIAuPc3cMMhSgKiVWws1GyHbGd/xvnyuRKcKlMpt3qvxx6r0hreCNITP9hIg==}
@@ -4448,6 +4443,8 @@ snapshots:
       '@emnapi/runtime': 1.10.0
       '@tybys/wasm-util': 0.10.2
     optional: true
+
+  '@nemnesia/symbol-openapi-typescript-fetch-client@1.0.1': {}
 
   '@noble/ed25519@3.1.0': {}
 
@@ -6905,8 +6902,6 @@ snapshots:
   symbol-crypto-wasm-node@0.1.1:
     optional: true
 
-  symbol-openapi-typescript-fetch-client@1.0.3: {}
-
   symbol-sdk@3.3.1(bitcore-lib@10.10.7):
     dependencies:
       '@noble/hashes': 2.2.0
@@ -6917,8 +6912,6 @@ snapshots:
       symbol-crypto-wasm-node: 0.1.1
     transitivePeerDependencies:
       - bitcore-lib
-
-  symbol-statistics-service-typescript-fetch-client@1.1.5: {}
 
   tar-stream@3.2.0:
     dependencies:
