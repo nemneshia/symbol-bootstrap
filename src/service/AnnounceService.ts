@@ -114,12 +114,12 @@ export class AnnounceService {
       required: false,
     }),
     customPreset: Flags.string({
-      description: `このコマンドは暗号化された addresses.yaml から main の秘密鍵を解決します。main の秘密鍵が custom preset にのみ保存されている場合は、このパラメータで指定してください。未指定の場合は必要時に入力を求めることがあります。`,
+      description: `このコマンドは暗号化された addresses.yaml から main の秘密鍵を解決します。
+      main の秘密鍵が custom preset にのみ保存されている場合は、このパラメータで指定してください。未指定の場合は必要時に入力を求めることがあります。`,
       required: false,
     }),
-    serviceProviderPublicKey: Flags.string({
-      description:
-        'サービスプロバイダーアカウントの公開鍵を指定します。トランザクション送信者（サービスプロバイダー）が main アカウント秘密鍵の保有者と異なる場合に使用します。',
+    signerPublicKey: Flags.string({
+      description: `署名アカウントの公開鍵を指定します。main アカウントがマルチシグの場合に使用します。`,
     }),
   };
 
@@ -136,7 +136,7 @@ export class AnnounceService {
     addresses: Addresses,
     transactionFactory: TransactionFactory,
     tokenAmount = 'some',
-    serviceProviderPublicKey?: string
+    signerPublicKey?: string
   ): Promise<void> {
     AnnounceService.onProcessListener();
 
@@ -166,7 +166,7 @@ export class AnnounceService {
       nodeAccount,
       networkConfig,
       transactionFactory,
-      serviceProviderPublicKey,
+      signerPublicKey,
     });
     if (!prepared) return;
 
@@ -191,15 +191,15 @@ export class AnnounceService {
       'mainAccount' | 'serviceProviderAccount' | 'announcerAccount' | 'descriptors' | 'confirmFn'
     > & {
       transactionFactory: TransactionFactory;
-      serviceProviderPublicKey?: string;
+      signerPublicKey?: string;
     }
   ): Promise<AnnounceExecutionContext | undefined> {
     const mainAccount = this.toPublicAccountInfo(
       context.nodeAccount.main.publicKey,
       context.presetData.networkType
     );
-    const serviceProviderAccount = context.serviceProviderPublicKey
-      ? this.toPublicAccountInfo(context.serviceProviderPublicKey, context.presetData.networkType)
+    const serviceProviderAccount = context.signerPublicKey
+      ? this.toPublicAccountInfo(context.signerPublicKey, context.presetData.networkType)
       : undefined;
 
     if (serviceProviderAccount) {

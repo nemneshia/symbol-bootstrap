@@ -91,7 +91,7 @@ describe('VotingKeysUpdateService', () => {
     const service = new VotingKeysUpdateService(logger as any);
 
     await expect(service.run({ target: 'target', user: 'user' })).rejects.toThrow(
-      'addresses の index 0 に node が存在しません。'
+      'addresses に node が存在しません。'
     );
   });
 

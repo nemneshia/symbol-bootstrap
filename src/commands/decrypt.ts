@@ -19,9 +19,9 @@ import { LogType, LoggerFactory } from '../logger/index.js';
 import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class Decrypt extends Command {
-  static description = `指定したパスワードで yml ファイルを復号します。対象は custom preset、preset.yaml、addresses.yaml です。
-
-主な用途は、custom preset の暗号化後や --password 付きで bootstrap コマンドを実行した後に、暗号化ファイル内の秘密鍵を確認することです。`;
+  static description = `指定したパスワードで yaml ファイルを復号します。
+    対象は custom preset、preset.yaml、addresses.yaml です。
+    主な用途は、custom preset の暗号化後や --password 付きで bootstrap コマンドを実行した後に、暗号化ファイル内の秘密鍵を確認することです。`;
 
   static examples = [
     `
@@ -53,15 +53,18 @@ $ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap decrypt --source target/address
   static flags = {
     help: CommandUtils.helpFlag,
     source: Flags.string({
-      description: `復号する元の暗号化済み yml ファイルを指定します。`,
+      char: 's',
+      description: `復号する元の暗号化済み yaml ファイルを指定します。`,
       required: true,
     }),
     destination: Flags.string({
+      char: 'd',
       description: `作成する復号済みファイルの出力先を指定します。出力先ファイルは未作成である必要があります。`,
       required: true,
     }),
     password: CommandUtils.getPasswordFlag(
-      `入力ファイルを復号して出力ファイルを作成するためのパスワードを指定します。デフォルトでは対話的に入力を求めますが、コマンドライン（--password=XXXX）で指定するか、--noPassword で無効化できます。`
+      `入力ファイルを復号して出力ファイルを作成するためのパスワードを指定します。
+      デフォルトでは対話的に入力を求めますが、コマンドライン（--password=XXXX）で指定するか、--noPassword で無効化できます。`
     ),
     logger: CommandUtils.getLoggerFlag(LogType.Console),
   };

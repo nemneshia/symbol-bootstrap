@@ -25,11 +25,14 @@ import {
 } from '../service/index.js';
 
 export default class Link extends Command {
-  static description = `各ノードの 'Peer' または 'Voting' ロールに対して、VRF と Voting Link トランザクションをネットワークへアナウンスします。既存ネットワークへのノード登録を完了するためのコマンドです。`;
+  static description = `'Peer' または 'Voting' ロールに対して、VRF と Voting Link トランザクションをネットワークへアナウンスします。
+  既存ネットワークへのノード登録を完了するためのコマンドです。`;
 
   static examples = [
-    `$ symbol-bootstrap link`,
-    `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap link --unlink --useKnownRestGateways`,
+    `
+$ symbol-bootstrap link
+$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap link --unlink
+`,
   ];
 
   static flags = {

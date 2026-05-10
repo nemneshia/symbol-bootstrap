@@ -19,8 +19,8 @@ import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class Stop extends Command {
-  static description =
-    '実行中の docker compose ネットワークを停止します（symbol-bootstrap を --detached で起動した場合）。このコマンドは `docker compose down` のラッパーです。';
+  static description = `実行中の docker compose ネットワークを停止します(symbol-bootstrap を --detached で起動した場合)。
+  このコマンドは \`docker compose down\` のラッパーです。`;
   static examples = [`$ symbol-bootstrap stop`];
 
   static flags = {

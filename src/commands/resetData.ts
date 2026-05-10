@@ -19,7 +19,8 @@ import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class ResetData extends Command {
-  static description = 'データを削除します。生成済みの設定、証明書、鍵、block 1 は保持します。';
+  static description =
+    'データを削除します。生成済みの設定、証明書、各種キー、ネメシスブロックは保持します。';
 
   static examples = [`$ symbol-bootstrap resetData`];
 

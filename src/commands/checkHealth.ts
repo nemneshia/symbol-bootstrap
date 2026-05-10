@@ -19,15 +19,11 @@ import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils } from '../service/index.js';
 
 export default class CheckHealth extends Command {
-  static description = `docker compose で作成したサービスが正常に稼働しているか確認します。
-
-このコマンドでは次を確認します:
-- docker コンテナが起動しているか。
-- サービスの公開ポートが待ち受けているか。
-- REST Gateway の /node/health が OK か。
-
-ヘルスチェック処理は 'repeat' とカスタム 'openPort' サービスにも対応しています。
-    `;
+  static description = `\`docker compose\` で作成したサービスが正常に稼働しているか確認します。
+    このコマンドでは次を確認します:
+      - docker コンテナが起動しているか。
+      - サービスの公開ポートが待ち受けているか。
+      - REST Gateway の /node/health が OK か。`;
 
   static examples = [`$ symbol-bootstrap checkHealth`];
 

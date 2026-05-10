@@ -18,18 +18,14 @@ import { Command, Flags } from '@oclif/core';
 import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils, Constants } from '../service/index.js';
 
-export default class UpdateVotingKeys extends Command {
+export default class UpdateVotingKey extends Command {
   static description = `必要に応じて、Voting キーを含む投票ファイルを更新します。
-
 現在の投票ファイルの終了 epoch がネットワークの現在 epoch に近い場合、このコマンドは既存ファイルを引き継ぐ新しい 'private_key_treeX.dat' を作成します。
-
 デフォルトでは、現在のファイルが最終月に入ると Bootstrap が新しい投票ファイルを作成します。現在 epoch はネットワークから解決されますが、\`finalizationEpoch\` で明示指定もできます。
-
 新しい投票ファイルが作成された場合、Bootstrap は \`link\` コマンドの再実行を案内します。
-
 `;
 
-  static examples = [`$ symbol-bootstrap updateVotingKeys`];
+  static examples = [`$ symbol-bootstrap updateVotingKey`];
 
   static flags = {
     help: CommandUtils.helpFlag,
@@ -40,13 +36,15 @@ export default class UpdateVotingKeys extends Command {
       default: Constants.CURRENT_USER,
     }),
     finalizationEpoch: Flags.integer({
-      description: `ネットワークの finalization epoch を指定します。/chain/info REST エンドポイントから取得できます。未指定の場合は Bootstrap が解決した既知の epoch を使用します。`,
+      char: 'f',
+      description: `ネットワークの finalization epoch を指定します。/chain/info REST エンドポイントから取得できます。
+      未指定の場合は Bootstrap が解決した既知の epoch を使用します。`,
     }),
     logger: CommandUtils.getLoggerFlag(...System),
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(UpdateVotingKeys);
+    const { flags } = await this.parse(UpdateVotingKey);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
     const votingKeyUpgrade = await new BootstrapService(logger).updateVotingKeys({

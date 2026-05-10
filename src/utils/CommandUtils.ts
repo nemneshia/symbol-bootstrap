@@ -27,7 +27,9 @@ import { Password } from './YamlUtils.js';
  */
 export class CommandUtils {
   /** パスワードプロンプトのデフォルトメッセージ */
-  public static passwordPromptDefaultMessage = `custom presets、addresses.yaml、preset.yaml の暗号化/復号に使うパスワードを入力してください。パスワードを設定すると秘密鍵は暗号化されます。安全な場所に保管してください。`;
+  public static passwordPromptDefaultMessage = `custom presets、addresses.yaml、preset.yaml の暗号化/復号に使うパスワードを入力してください。
+  \tパスワードを設定すると秘密鍵は暗号化されます。
+  \t安全な場所に保管してください。`;
   public static helpFlag = Flags.help({
     char: 'h',
     description: 'このコマンドのヘルプを表示します。',
@@ -40,7 +42,8 @@ export class CommandUtils {
   });
 
   public static passwordFlag = CommandUtils.getPasswordFlag(
-    `addresses.yaml や preset.yaml などのプリセットファイル内の秘密鍵を暗号化/復号するパスワードを指定します。デフォルトでは対話的に入力を求めますが、コマンドライン（--password=XXXX）で指定するか、--noPassword で無効化できます。`
+    `\`addresses.yaml\` や \`preset.yaml\` などのプリセットファイル内の秘密鍵を暗号化/復号するパスワードを指定します。
+    デフォルトでは対話的に入力を求めますが、コマンドライン（--password=XXXX）で指定するか、--noPassword で無効化できます。`
   );
 
   public static noPasswordFlag = Flags.boolean({
@@ -55,6 +58,7 @@ export class CommandUtils {
   });
 
   public static yesFlag = Flags.boolean({
+    char: 'y',
     description: '確認プロンプトを表示せずに実行します。',
     default: false,
   });
@@ -159,9 +163,9 @@ export class CommandUtils {
   public static getLoggerFlag(...defaultLogTypes: LogType[]) {
     const options = Object.keys(LogType).map((v) => v as LogType);
     return Flags.string({
-      description: `このコマンドで使用するロガーを指定します。指定可能な値: ${options.join(LoggerFactory.separator)}。'${
-        LoggerFactory.separator
-      }' で区切ると複数指定できます。`,
+      char: 'l',
+      description: `このコマンドで使用するロガーを指定します。
+        (指定可能な値: ${options.join(LoggerFactory.separator)} '${LoggerFactory.separator}' で区切ると複数指定できます)`,
       default: defaultLogTypes.join(LoggerFactory.separator),
     });
   }

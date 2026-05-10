@@ -20,8 +20,8 @@ import { BootstrapService, CommandUtils, RunService } from '../service/index.js'
 import CheckHealth from './checkHealth.js';
 
 export default class Run extends Command {
-  static description =
-    '生成済みの `compose.yaml` と設定を使って、docker でネットワークを起動します。事前に config と compose を実行してください。このコマンドは `docker compose up` のラッパーです。';
+  static description = `生成済みの \`compose.yaml\` と設定を使って、docker でネットワークを起動します。
+    事前に config と compose を実行してください。このコマンドは \`docker compose up\` のラッパーです。`;
 
   static examples = [`$ symbol-bootstrap run`];
 
@@ -41,7 +41,7 @@ export default class Run extends Command {
 
     resetData: Flags.boolean({
       description:
-        'データベースとノードデータを初期化します。生成済みの設定、鍵、投票ツリーファイル、block 1 は保持します。',
+        'データを削除します。生成済みの設定、証明書、各種キー、ネメシスブロックは保持します。',
     }),
 
     pullImages: Flags.boolean({

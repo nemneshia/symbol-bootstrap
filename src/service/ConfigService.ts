@@ -258,7 +258,7 @@ export class ConfigService {
    *
    * @param presetData プレフィックスを適用するプリセットデータ（破壊的変更）
    */
-  private applyContainerNamePrefixes(presetData: ConfigPreset): void {
+  public applyContainerNamePrefixes(presetData: ConfigPreset): void {
     const prefix = presetData.dockerComposeProjectName
       ? `${presetData.dockerComposeProjectName}-`
       : '';

@@ -30,12 +30,14 @@ export default class Config extends Command {
   static description = '現在のネットワーク向けに設定ファイルとネメシスブロックを生成します。';
 
   static examples = [
-    `$ symbol-bootstrap config -p testnet -a dual --password 1234`,
-    `$ symbol-bootstrap config -p testnet -a api -c custom-preset.yaml`,
-    `$ symbol-bootstrap config -p mainnet -a peer -c custom-preset.yaml`,
-    `$ symbol-bootstrap config -p mainnet -a my-custom-assembly.yaml -c custom-preset.yaml`,
-    `$ symbol-bootstrap config -p custom-network.yaml -a dual -c custom-preset.yaml`,
-    `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap config -p testnet -a dual`,
+    `
+$ symbol-bootstrap config -p testnet -a dual --password 1234
+$ symbol-bootstrap config -p testnet -a api -c custom-preset.yaml
+$ symbol-bootstrap config -p mainnet -a peer -c custom-preset.yaml
+$ symbol-bootstrap config -p mainnet -a my-custom-assembly.yaml -c custom-preset.yaml
+$ symbol-bootstrap config -p custom-network.yaml -a dual -c custom-preset.yaml
+$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap config -p testnet -a dual
+    `,
   ];
 
   static flags = {
@@ -45,15 +47,15 @@ export default class Config extends Command {
     noPassword: CommandUtils.noPasswordFlag,
     preset: Flags.string({
       char: 'p',
-      description: `ネットワークプリセットを指定します。カスタムプリセットまたは CLI パラメータから指定できます。未指定の場合は target/preset.yaml から解決されます。指定可能な値: ${Object.keys(
-        Preset
-      ).join(', ')}, custom-network.yaml（上級者向け、カスタムネットワーク専用）。`,
+      description: `ネットワークプリセットを指定します。
+      カスタムプリセットまたは CLI パラメータから指定できます。未指定の場合は  \`target/preset.yaml\` から解決されます。
+      指定可能な値: ${Object.keys(Preset).join(', ')}, custom-network.yaml（上級者向け、カスタムネットワーク専用）。`,
     }),
     assembly: Flags.string({
       char: 'a',
-      description: `ノード構成を定義するアセンブリを指定します。カスタムプリセットまたは CLI パラメータから指定できます。未指定の場合は target/preset.yaml から解決されます。指定可能な値: ${Object.keys(
-        Assembly
-      ).join(', ')}, custom-assembly.yaml（上級者向け）。`,
+      description: `ノード構成を定義するアセンブリを指定します。
+      カスタムプリセットまたは CLI パラメータから指定できます。未指定の場合は \`target/preset.yaml\` から解決されます。
+      指定可能な値: ${Object.keys(Assembly).join(', ')}, custom-assembly.yaml（上級者向け）。`,
     }),
     customPreset: Flags.string({
       char: 'c',
@@ -66,14 +68,17 @@ export default class Config extends Command {
     }),
 
     upgrade: Flags.boolean({
-      description: `既存の鍵を再利用して設定を再生成します。ローカルデータを削除せずに bootstrap のバージョンを上げる場合に使用してください。アップグレード前に target フォルダをバックアップすることを推奨します。`,
+      description: `既存の鍵を再利用して設定を再生成します。
+      ローカルデータを削除せずに bootstrap のバージョンを上げる場合に使用してください。
+      アップグレード前に \`target\` フォルダをバックアップすることを推奨します。`,
       default: ConfigService.defaultParams.reset,
     }),
     offline: CommandUtils.offlineFlag,
 
     user: Flags.string({
       char: 'u',
-      description: `証明書やネメシスブロックなどの設定ファイル生成時に Docker イメージを実行するユーザーを指定します。"${Constants.CURRENT_USER}" は現在のユーザーを意味します。`,
+      description: `証明書やネメシスブロックなどの設定ファイル生成時に Docker イメージを実行するユーザーを指定します。
+      \`${Constants.CURRENT_USER}\` は現在のユーザーを意味します。`,
       default: Constants.CURRENT_USER,
     }),
     logger: CommandUtils.getLoggerFlag(...System),

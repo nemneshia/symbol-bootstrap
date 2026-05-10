@@ -1,4 +1,4 @@
-import { Command } from '@oclif/core';
+import { Command, Config } from '@oclif/core';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { KnownError } from '../../src/errors/KnownError.js';
@@ -28,9 +28,9 @@ describe('RenewCertificates command', () => {
       new KnownError('秘密鍵入力をキャンセルしました。')
     );
 
-    const { default: RenewCertificates } = await import('../../src/commands/renewCertificates.js');
+    const { default: RenewCert } = await import('../../src/commands/renewCert.js');
 
-    await expect(new RenewCertificates().run()).resolves.toBeUndefined();
+    await expect(new RenewCert([], {} as Config).run()).resolves.toBeUndefined();
   });
 
   it('キャンセル以外のエラーは再送出すること', async () => {
@@ -51,8 +51,8 @@ describe('RenewCertificates command', () => {
       new Error('unexpected')
     );
 
-    const { default: RenewCertificates } = await import('../../src/commands/renewCertificates.js');
+    const { default: RenewCert } = await import('../../src/commands/renewCert.js');
 
-    await expect(new RenewCertificates().run()).rejects.toThrow('unexpected');
+    await expect(new RenewCert([], {} as Config).run()).rejects.toThrow('unexpected');
   });
 });

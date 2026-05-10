@@ -18,17 +18,14 @@ import { Command, Flags } from '@oclif/core';
 import { LoggerFactory, System } from '../logger/index.js';
 import { BootstrapService, CommandUtils, Constants, KnownError } from '../service/index.js';
 
-export default class RenewCertificates extends Command {
+export default class RenewCert extends Command {
   static description = `ノードの SSL 証明書を更新します。node.csr.pem は再生成しますが、既存の秘密鍵は再利用します。
-
 証明書は有効期限が近い場合（30 日以内）にのみ再生成されます。期限に関係なく更新したい場合は --force を指定してください。
-
 このコマンドはノード秘密鍵自体は変更しません（現時点）。秘密鍵を変更するには harvesters.dat の移行とノードキーの再リンクが必要です。
-
 実行前に target フォルダをバックアップすることを推奨します。
 `;
 
-  static examples = [`$ symbol-bootstrap renewCertificates`];
+  static examples = [`$ symbol-bootstrap renewCert`];
 
   static flags = {
     help: CommandUtils.helpFlag,
@@ -37,7 +34,9 @@ export default class RenewCertificates extends Command {
     noPassword: CommandUtils.noPasswordFlag,
     customPreset: Flags.string({
       char: 'c',
-      description: `このコマンドは暗号化された addresses.yaml から main/transport の秘密鍵を解決します。main/transport の秘密鍵が custom preset にのみ保存されている場合は、このパラメータで指定してください。未指定の場合は必要時に入力を求めることがあります。`,
+      description: `このコマンドは暗号化された addresses.yaml から main/transport の秘密鍵を解決します。
+      main/transport の秘密鍵が custom preset にのみ保存されている場合は、このパラメータで指定してください。
+      未指定の場合は必要時に入力を求めることがあります。`,
       required: false,
     }),
     user: Flags.string({
@@ -54,7 +53,7 @@ export default class RenewCertificates extends Command {
   };
 
   public async run(): Promise<void> {
-    const { flags } = await this.parse(RenewCertificates);
+    const { flags } = await this.parse(RenewCert);
     CommandUtils.showBanner();
     const logger = LoggerFactory.getLogger(flags.logger);
     const password = await CommandUtils.resolvePassword(

@@ -19,6 +19,9 @@ import { LogType, LoggerFactory } from '../logger/index.js';
 import { AnnounceService, BootstrapService, CommandUtils, KnownError } from '../service/index.js';
 
 export default class ModifyMultisig extends Command {
+  // TODO: 今は使用しないが、将来的に CLI のコマンド一覧から隠すために hidden を true にする
+  static hidden = true;
+
   static description = `multisig アカウントを作成または変更します。`;
 
   static examples = [

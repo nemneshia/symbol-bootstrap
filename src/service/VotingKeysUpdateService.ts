@@ -45,7 +45,7 @@ export class VotingKeysUpdateService {
 
     const nodeAccount = context.addresses.node;
     if (!nodeAccount) {
-      throw new Error(`addresses の index 0 に node が存在しません。`);
+      throw new Error(`addresses に node が存在しません。`);
     }
 
     const finalizationEpoch = await this.resolveFinalizationEpoch(

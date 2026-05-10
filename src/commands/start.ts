@@ -31,13 +31,15 @@ export default class Start extends Command {
   static description = 'config・compose・run を 1 コマンドでまとめて実行します。';
 
   static examples = [
-    `$ symbol-bootstrap start -p testnet -a dual`,
-    `$ symbol-bootstrap start -p testnet -a api -c custom-preset.yaml`,
-    `$ symbol-bootstrap start -p mainnet -a peer -c custom-preset.yaml`,
-    `$ symbol-bootstrap start -p testnet -a dual --password 1234`,
-    `$ symbol-bootstrap start -p mainnet -a my-custom-assembly.yaml -c custom-preset.yaml`,
-    `$ symbol-bootstrap start -p my-custom-network.yaml -a dual -c custom-preset.yaml`,
-    `$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap start -p testnet -a dual`,
+    `
+$ symbol-bootstrap start -p testnet -a dual
+$ symbol-bootstrap start -p testnet -a api -c custom-preset.yaml
+$ symbol-bootstrap start -p mainnet -a peer -c custom-preset.yaml
+$ symbol-bootstrap start -p testnet -a dual --password 1234
+$ symbol-bootstrap start -p mainnet -a my-custom-assembly.yaml -c custom-preset.yaml
+$ symbol-bootstrap start -p my-custom-network.yaml -a dual -c custom-preset.yaml
+$ echo "$MY_ENV_VAR_PASSWORD" | symbol-bootstrap start -p testnet -a dual
+`,
   ];
 
   static flags = { ...Compose.flags, ...Run.flags, ...Clean.flags, ...Config.flags };
