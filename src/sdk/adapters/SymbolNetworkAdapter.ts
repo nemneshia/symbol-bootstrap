@@ -4,7 +4,7 @@ import {
   MultisigRoutesApi,
   NodeRoutesApi,
   NodeStatusEnum,
-} from '@nemnesia/symbol-openapi-typescript-fetch-client';
+} from 'symbol-openapi-typescript-fetch-client';
 
 import { INetworkPort } from '../ports/INetworkPort.js';
 import { ChainInfoDto, MultisigInfoDto, NodeHealthDto, NodeInfoDto } from '../types/Network.js';

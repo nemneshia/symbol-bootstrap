@@ -6,7 +6,7 @@ import {
   NetworkRoutesApi,
   NodeRoutesApi,
   TransactionRoutesApi,
-} from '@nemnesia/symbol-openapi-typescript-fetch-client';
+} from 'symbol-openapi-typescript-fetch-client';
 import { Hash256, PrivateKey, PublicKey, utils } from 'symbol-sdk';
 import {
   KeyPair,

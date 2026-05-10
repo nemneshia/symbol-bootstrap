@@ -6,6 +6,7 @@
     "outDir": "lib",
     "rootDir": "./src",
     "strict": true,
+    "importHelpers": true,
     "target": "es2022",
     "moduleResolution": "NodeNext",
     "types": [
