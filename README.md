@@ -1,255 +1,311 @@
 # symbol-bootstrap
 
-This is a fork from [@fboucquez/symbol-bootstrap](https://github.com/fboucquez/symbol-bootstrap) and [@symbol/symbol-bootstrap](https://github.com/symbol/symbol-bootstrap).
+このプロジェクトは [@fboucquez/symbol-bootstrap](https://github.com/fboucquez/symbol-bootstrap) と [@symbol/symbol-bootstrap](https://github.com/symbol/symbol-bootstrap) からのフォークです。
 
-Symbol CLI tool that allows you creating, configuring and running [Symbol](https://docs.symbolplatform.com/) blockchain complete networks or nodes to be sync with existing networks.
+[@nemneshia/symbol-bootstrap](https://github.com/nemneshia/symbol-bootstrap) は、Symbol ブロックチェーンネットワークの構築・設定・運用を行うための CLI ツールです。
 
-<!-- [![oclif](https://img.shields.io/badge/cli-oclif-brightgreen.svg)](https://oclif.io)
-[![Version](https://img.shields.io/npm/v/symbol-bootstrap.svg)](https://npmjs.org/package/symbol-bootstrap)
-[![Downloads/week](https://img.shields.io/npm/dw/symbol-bootstrap.svg)](https://npmjs.org/package/symbol-bootstrap)
-[![License](https://img.shields.io/npm/l/symbol-bootstrap.svg)](https://github.com/fboucquez/symbol-bootstrap/blob/master/package.json)
-[![Build](https://github.com/fboucquez/symbol-bootstrap/actions/workflows/build.yml/badge.svg)](https://github.com/fboucquez/symbol-bootstrap/actions/workflows/build.yml)
-[![Coverage Status](https://coveralls.io/repos/github/fboucquez/symbol-bootstrap/badge.svg?branch=dev)](https://coveralls.io/github/fboucquez/symbol-bootstrap?branch=dev)
-[![Api Doc](https://img.shields.io/badge/api-doc-blue.svg)](https://fboucquez.github.io/symbol-bootstrap/) -->
+このツールを使うことで、既存の Symbol ネットワーク（Mainnet、Testnet）に参加するノードの構築、あるいはプライベート Symbol ネットワークの構築・起動・保守を簡単に行えます。
 
-<!-- toc -->
+## 特徴
 
-- [symbol-bootstrap](#symbol-bootstrap)
-- [Command Topics](#command-topics)
-<!-- tocstop -->
+- **スタンドアロン CLI**：repo をクローンせずに、npm からインストールして使用可能
+- **One-liner コマンド**：`symbol-bootstrap start` で設定、イメージ生成、Docker 起動を一度に実行
+- **プリセット・カスタマイズ対応**：Network、Assembly、Custom Preset を組み合わせてノード構成を柔軟に定義
+- **パスワード・秘密鍵管理**：暗号化ファイル対応（`encrypt` / `decrypt`）
+- **Docker Compose 自動生成**：設定から docker-compose.yml を自動生成
+- **Node.js SDK統合**：キー生成、署名、VRF、投票ファイル生成などを TS SDK で実行
+- **充実した運用コマンド**：停止、ヘルスチェック、リセット、証明書更新、投票キー更新など
 
-## Key features
+## 動作要件
 
-- It's an installable cli tool. It's not a repo you need to clone and compile.
-- It provides a one liner command for testnet/mainnet node creation and upgrades.
-- It provides a one liner command for local test network creation and upgrades.
-- It includes a wizard for easy node and accounts creation.
-- It includes a comprehensive list of commands for node administration.
-- The configuration is parametrized via CLI commands and presets instead of by changing properties files.
-- The tools code is unique for any type of network, new networks or nodes in a network. It doesn't need to be copied and pasted in different projects or assemblies.
-- The config command runs on the host machine, not via docker making it easier to debug or tune
-- It uses the TS SDK for key generation, vrf transactions, voting files, and address generation instead of using catapult-tools (nemgen is still used to generate the nemesis block).
-- Easier to maintain, the properties files are reused for all nodes, assemblies and network types.
-- Network setup (how many database, nodes, rest gateways to run) is defined in presets, users can provide their own ones.
-- Docker-compose yaml files are generated based on the network setup/preset instead of being manually created/upgraded.
-- The created network (config, nemesis and docker-compose) can be zipped and distributed for other host machines to run it.
-- The used docker images versions can be changed via configuration/preset.
-- It uses the [oclif](https://oclif.io) framework. New commands are easy to add and document.
-- It can be used for [e2e testing](docs/e2eTesting.md).
-- It works on Linux, Mac and Windows x86-64 arch.
+- **Node.js 20.0.0 以上**
+- **Docker 20.10.13 以上**
+- **Docker Compose 2.0.0 以上**
 
-## Concepts
-
-### Preset
-
-Yaml files that define the configuration and layout of the network and nodes. It defines how many nodes, database, rest gateways, the modes, keys, etc.
-
-Presets are defined at 4 levels from general to specific:
-
-- Shared: Default configurations for all the networks.
-- Network: It defines the configuration of a given network.
-- Assembly: It defines a modification of a network selecting the services that the node will run.
-- Custom: A user provided yml file (`--customPreset` param) that could override some or all properties in the out-of-the-box presets.
-
-Properties in each file override the previous values (by object deep merge).
-
-#### Network Presets
-
-- [`mainnet`](presets/mainnet/network.yml): Used to create nodes connected to Symbol's Mainnet network. The [nemesis block](presets/mainnet/seed/00000) is copied over.
-- [`testnet`](presets/testnet/network.yml): Used to create nodes connected to Symbol's Testnet network. The [nemesis block](presets/testnet/seed/00000) is copied over.
-
-#### Assemblies
-
-- [`peer`](presets/assemblies/assembly-peer.yml): A standard peer-only node that contains 1 peer node.
-- [`api`](presets/assemblies/assembly-api.yml): A standard API node that contains 1 Mongo database, 1 API node, 1 REST gateway, and 1 broker.
-- [`dual`](presets/assemblies/assembly-dual.yml): A standard dual node that contains 1 Mongo database, 1 API node, 1 REST gateway, 1 broker, and 1 peer node.
-- [`multinode`](presets/assemblies/assembly-multinode.yml): A special assembly that contains 1 API node and 2 peer-only nodes. This assembly is for testing, it showcases how a private network with 3 nodes runs.
-- [`services`](presets/assemblies/assembly-services.yml): A special docker compose that includes the Explorer, Faucet and HTTPS proxy. This is an easy and quick way of running Symbol services when creating a new network. Note that the services are not HA, it's not for production environments.
-
-#### Custom preset
-
-It's the way you can tune the network without modifying the code. It's a yml file (`--customPreset` param) that could override some or all properties in the out-of-the-box presets.
-
-Custom presets give Symbol Bootstrap its versatility. Check out the custom preset [guides](docs/presetGuides.md)!
-
-### Target
-
-The folder where the generated config, docker files and data are stored.
-
-The folder structure is:
-
-- `./preset.yml`: The final generated preset.yml that it's used to configure bootstrap, the nodes, docker, etc.
-- `./addresses.yml`: Randomly generated data that wasn't provided in the preset. e.g.: SSL keys, nodes' keys, nemesis accounts, generation hash seed, etc.
-- `./nodes`: It holds the configuration, data and logs for all the defined node instances.
-- `./gateways`: It holds the configuration and logs for all the defined node rest gateways.
-- `./nemesis`: The folder used to hold the nemesis block. Block 1 data is generated via `nemgen` tool for new networks. For existing network, it is copied over.
-- `./databases`: The location where the mongo data is stored for the different database instances.
-- `./docker`: The generated docker-compose.yml, mongo init scripts and server basic bash scripts.
-- `./explorers`: The generated explorer configuration.
-- `./reports`: The location of the generated reports.
-
-Note: **The target folder should not be manually modified**. This tool may override any file in the target folder when doing upgrades. Any custom configuration should be provided via a custom preset. Check out the custom preset [guides](docs/presetGuides.md)!
-
-## Requirements
-
-- Node 18.0.0+
-- Docker 20.10.13+
-- Docker Compose 2.0.0+
-
-Check your user can run docker without sudo:
+Docker をユーザー権限で実行できることを確認してください：
 
 ```shell
 docker run hello-world
 ```
 
-If you see an error like:
+もし下記のエラーが表示される場合：
 
 ```plaintext
 Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock
 ```
 
-Please follow this [guide](https://www.digitalocean.com/community/questions/how-to-fix-docker-got-permission-denied-while-trying-to-connect-to-the-docker-daemon-socket).
-
-## Installation
-
-It's recommended to run the commands from en empty working dir.
-
-The network configuration, data and docker files will be created inside the target folder ('./target') by default.
+以下の手順で Docker グループにユーザーを追加してください：
 
 ```shell
-mkdir my-networks
-cd my-networks
+sudo usermod -aG docker $USER
+newgrp docker
 ```
 
-Once in the working dir:
+## インストール
 
-<!-- usage -->
+### グローバルインストール（推奨）
 
-```sh-session
-$ npm install -g @nemneshia/symbol-bootstrap
-$ symbol-bootstrap COMMAND
-running command...
-$ symbol-bootstrap (--version)
-@nemneshia/symbol-bootstrap/2.0.8 linux-x64 node-v24.12.0
-$ symbol-bootstrap --help [COMMAND]
-USAGE
-  $ symbol-bootstrap COMMAND
-...
+```shell
+npm install -g @nemneshia/symbol-bootstrap
 ```
 
-<!-- usagestop -->
+CLI は `symbol-bootstrap` または `sb` で呼び出せます：
 
-Validate your environment by running:
+```shell
+symbol-bootstrap --version
+sb --help
+```
+
+### ローカルインストール
+
+プロジェクトディレクトリで開発する場合：
+
+```shell
+pnpm install
+pnpm run build
+```
+
+## クイックスタート
+
+### 1. 環境確認
 
 ```shell
 symbol-bootstrap verify
 ```
 
-The general usage would be:
+### 2. ノード初期化
+
+作業用ディレクトリを作成して移動してください。設定、データ、Docker ファイルは `./target` フォルダに生成されます：
 
 ```shell
-symbol-bootstrap config -p testnet -a dual
+mkdir my-node
+cd my-node
+```
+
+### 3. ノード起動（推奨）
+
+最も簡単な方法は `start` コマンド：
+
+```shell
+symbol-bootstrap start -p testnet -a dual -c custom_preset.yaml
+```
+
+- `-p testnet`：Network preset（`testnet` または `mainnet`）
+- `-a dual`：Assembly（`peer`、`api`、`dual`）
+- `-c custom_preset.yaml`：カスタム設定ファイル（オプション）
+
+パスワード入力を求められます。対話的に入力するか、以下のオプションを使用できます：
+
+```shell
+# パスワード指定
+symbol-bootstrap start -p testnet -a dual --password mypassword
+
+# パスワードなし（暗号化しない）
+symbol-bootstrap start -p testnet -a dual --noPassword
+
+# 標準入力からパスワード読み込み
+echo "mypassword" | symbol-bootstrap start -p testnet -a dual
+```
+
+### 4. 分割実行
+
+より細かい制御が必要な場合、以下を順に実行します：
+
+```shell
+# ステップ 1：設定ファイル生成
+symbol-bootstrap config -p testnet -a dual -c custom_preset.yaml
+
+# ステップ 2：docker-compose.yml 生成
 symbol-bootstrap compose
+
+# ステップ 3：Docker 起動
 symbol-bootstrap run
 ```
 
-You can aggregate all these commands with this one liner:
+### 5. ノード停止
+
+```shell
+symbol-bootstrap stop
+```
+
+### 6. ヘルスチェック
+
+```shell
+symbol-bootstrap checkHealth
+```
+
+## 概念
+
+### Network Preset
+
+ネットワーク全体の構成を定義する Yaml ファイル：
+
+- **`mainnet`**：Symbol Mainnet に参加するノード用
+- **`testnet`**：Symbol Testnet に参加するノード用
+
+### Assembly
+
+ノードに含める機能やコンポーネントを定義：
+
+| Assembly | 構成                                                  | 用途           |
+| -------- | ----------------------------------------------------- | -------------- |
+| `peer`   | Peer ノード + Light REST Gateway                      | ピア専用ノード |
+| `api`    | DB + API ノード + REST Gateway + Broker               | API サーバー用 |
+| `dual`   | DB + API ノード + REST Gateway + Broker + Peer ノード | 兼用ノード     |
+
+### Custom Preset
+
+ユーザー定義の Yaml ファイル（`-c` / `--customPreset`）で、Network Preset や Assembly の設定を上書き。ルート直下の [custom_preset.yaml](custom_preset.yaml) に実際の例があります：
+
+```yaml
+# custom_preset.yaml の例
+assembly: dual
+preset: testnet
+
+# パスワード入力モード
+privateKeySecurityMode: PROMPT_MAIN_TRANSPORT
+
+# ノード設定
+node:
+  host: my-node.example.com
+  friendlyName: my-peer
+  voting: false
+
+# 委任ハーベスタ設定
+maxUnlockedAccounts: 100
+delegatePrioritizationPolicy: Importance
+beneficiaryAddress: TBQLP7SU7WMUK3XYMIJZPWIT2HJ3PTVJPWFJNJQ
+```
+
+### Target フォルダ構成
+
+自動生成される `./target` フォルダには以下が含まれます：
+
+```
+target/
+├── preset.yml              # 最終生成設定（Network + Assembly + Custom の統合）
+├── addresses.yml           # 生成された秘密鍵、SSL キーなど
+├── node/                   # ノード設定・データ・ログ
+├── gateway/                # REST Gateway 設定・ログ
+├── nemesis/                # Genesis ブロック
+├── database/               # MongoDB データ
+└── docker/                 # docker-compose.yml など
+```
+
+**⚠️ 注意**：Target フォルダは自動生成され、アップグレード時に上書きされます。カスタム設定は必ずカスタム Preset ファイルで行ってください。
+
+## パスワード・秘密鍵管理
+
+### パスワード入力方法
+
+デフォルトではパスワード入力を求められます：
+
+```shell
+# 対話的に入力
+symbol-bootstrap config -p testnet -a dual
+
+# コマンドラインで指定
+symbol-bootstrap config -p testnet -a dual --password mypassword
+
+# 標準入力から読み込み
+echo "mypassword" | symbol-bootstrap config -p testnet -a dual
+
+# パスワードなし（暗号化しない）
+symbol-bootstrap config -p testnet -a dual --noPassword
+```
+
+### 秘密鍵を含む Preset の暗号化・復号化
+
+秘密鍵を含む Custom Preset は暗号化して保管できます：
+
+```shell
+# Preset 暗号化
+symbol-bootstrap encrypt -s custom_preset.yaml -d custom_preset.encrypted.yaml
+
+# Preset 復号化
+symbol-bootstrap decrypt -s custom_preset.encrypted.yaml -d custom_preset.yaml
+```
+
+## 運用コマンド
+
+| コマンド            | 説明                                                                 |
+| ------------------- | -------------------------------------------------------------------- |
+| `verify`            | 環境要件チェック（Node.js、Docker、Docker Compose のバージョン確認） |
+| `config`            | ネットワーク設定ファイル、nemesis ブロック生成                       |
+| `compose`           | docker-compose.yml 生成                                              |
+| `run`               | Docker Compose で起動                                                |
+| `start`             | config + compose + run を一括実行                                    |
+| `stop`              | Docker Compose 停止（`docker compose down`）                         |
+| `checkHealth`       | サービス稼働状況確認                                                 |
+| `resetData`         | ノードデータをリセット（設定・キー・ブロック1は保持）                |
+| `clean`             | Target フォルダ全削除                                                |
+| `renewCertificates` | SSL 証明書更新（秘密鍵は保持）                                       |
+| `updateVotingKeys`  | 投票キーファイル更新                                                 |
+| `link`              | VRF / Voting Link トランザクション発行（ノード登録完了）             |
+| `modifyMultisig`    | マルチシグアカウント作成・変更                                       |
+| `encrypt`           | Yaml ファイル暗号化                                                  |
+| `decrypt`           | Yaml ファイル復号化                                                  |
+| `pack`              | ノード設定を zip 圧縮（別マシンへの移行用）                          |
+
+## 利用例
+
+### Testnet にノード参加（Dual Assembly）
 
 ```shell
 symbol-bootstrap start -p testnet -a dual
 ```
 
-If you need to start fresh, you many need to sudo remove the target folder (docker volumes dirs may be created using sudo). Example:
+### Mainnet へピアノード追加
 
 ```shell
-sudo rm -rf ./target
+symbol-bootstrap start -p mainnet -a peer -c custom_preset.yaml
 ```
 
-### Examples
-
-Network presets and assemblies can be combined to generate different types of nodes. Some examples:
-
-- `$ symbol-bootstrap start -p mainnet -a dual -c customPreset.yml`
-- `$ symbol-bootstrap start -p testnet -a peer -c customPreset.yml`
-- `$ symbol-bootstrap start -p testnet -a api -c customPreset.yml`
-- `$ symbol-bootstrap start -p testnet -a services -c customServicesPreset.yml`
-
-Although some combinations can be done, they may not be really useful. Examples that are NOT useful:
-
-- `$ symbol-bootstrap start -p mainnet -a multinode`
-- `$ symbol-bootstrap start -p testnet -a multinode`
-
-A custom network preset file can also be provided. This is useful when you have your own custom Symbol network, and you want other nodes to join.
-For this case, you provide your own `networkPreset.yml` and nemesis feed folder. The node admin can then run:
-
-- `$ symbol-bootstrap start -p customNetworkPreset.yml -a dual -c customNodePreset.yml`
-- `$ symbol-bootstrap start -p customNetworkPreset.yml -a services -c customServicesPreset.yml`
-
-## Wizard
-
-If this is your first time creating a node, it's recommended to use the Wizard. Just follow the instructions:
+### API サーバー構築
 
 ```shell
-symbol-bootstrap wizard
+symbol-bootstrap start -p testnet -a api
 ```
 
-## Development
+### カスタムネットワークプリセット使用
 
-If you want to contribute to this tool, clone this repo and run:
+独自の Symbol ネットワークを構築する場合、ネットワークプリセット Yaml と nemesis ブロックを別途提供：
 
 ```shell
-npm install -g
+symbol-bootstrap start -p /path/to/custom_network.yml -a dual -c /path/to/custom_node.yaml
 ```
 
-Then, `symbol-bootstrap` runs from the source code. You can now try your features after changing the code.
+### 初期状態への戻す
 
-Pull Requests are appreciated! Please follow the contributing [guidelines](CONTRIBUTING.md).
-
-Note: cloning this repo is only for people that want to tune the tool in a way it cannot be configured. If this is your case, please provide a feature request.
-General users should install this tool like any other node module.
-
-### Code style
-
-To format the source code, verify/fix lint issues, and generate the commands docs, run:
+新しく設定し直す場合：
 
 ```shell
-npm run style:fix
+symbol-bootstrap clean
+symbol-bootstrap start -p testnet -a dual
 ```
 
-## Support
+## 開発
 
-Symbol Bootstrap is a personal project maintained on my free time.
+このリポジトリに貢献したい場合、クローンして開発環境を構築：
 
-If you like it, please consider supporting it by delegating your Symbol account to my [node](http://symbol-node-dual-1.tawa.solutions:3000/node/info):
-
-```plaintext
-name: symbol-node-dual-1.tawa.solutions
-publicKey: 6DB275B83F4839768821FF621DD90358F99A84EC61EB7DE1F6947E5B0926B9BB
+```shell
+pnpm install
+pnpm run build
+pnpm test
+pnpm run lint
+pnpm run style:fix
 ```
 
-If you don't like it, let me know by creating issues on GitHub. Pull Requests are welcome!
+開発中は以下のコマンドで実行：
 
-<!-- commands -->
+```shell
+symbol-bootstrap <command> [options]
+```
 
-# Command Topics
+### ライセンス
 
-- [`symbol-bootstrap autocomplete`](docs/autocomplete.md) - Display autocomplete installation instructions.
-- [`symbol-bootstrap clean`](docs/clean.md) - It removes the target folder deleting the generated configuration and data
-- [`symbol-bootstrap compose`](docs/compose.md) - It generates the `compose.yml` file from the configured network.
-- [`symbol-bootstrap config`](docs/config.md) - Command used to set up the configuration files and the nemesis block for the current network
-- [`symbol-bootstrap decrypt`](docs/decrypt.md) - It decrypts a yml file using the provided password. The source file can be a custom preset file, a preset.yml file or an addresses.yml.
-- [`symbol-bootstrap encrypt`](docs/encrypt.md) - It encrypts a yml file using the provided password. The source files would be a custom preset file, a preset.yml file or an addresses.yml.
-- [`symbol-bootstrap healthCheck`](docs/healthCheck.md) - It checks if the services created with docker compose are up and running.
-- [`symbol-bootstrap help`](docs/help.md) - Display help for symbol-bootstrap.
-- [`symbol-bootstrap link`](docs/link.md) - It announces VRF and Voting Link transactions to the network for each node with 'Peer' or 'Voting' roles. This command finalizes the node registration to an existing network.
-- [`symbol-bootstrap modifyMultisig`](docs/modifyMultisig.md) - Create or modify a multisig account
-- [`symbol-bootstrap pack`](docs/pack.md) - It configures and packages your node into a zip file that can be uploaded to the final node machine.
-- [`symbol-bootstrap renewCertificates`](docs/renewCertificates.md) - It renews the SSL certificates of the node regenerating the node.csr.pem files but reusing the current private keys.
-- [`symbol-bootstrap resetData`](docs/resetData.md) - It removes the data keeping the generated configuration, certificates, keys and block 1.
-- [`symbol-bootstrap run`](docs/run.md) - It boots the network via docker using the generated `compose.yml` file and configuration. The config and compose methods/commands need to be called before this method. This is just a wrapper for the `docker compose up` bash call.
-- [`symbol-bootstrap start`](docs/start.md) - Single command that aggregates config, compose and run in one line!
-- [`symbol-bootstrap stop`](docs/stop.md) - It stops the docker compose network if running (symbol-bootstrap started with --detached). This is just a wrapper for the `docker compose down` bash call.
-- [`symbol-bootstrap updateVotingKeys`](docs/updateVotingKeys.md) - It updates the voting files containing the voting keys when required.
-- [`symbol-bootstrap verify`](docs/verify.md) - It tests the installed software in the current computer reporting if there is any missing dependency, invalid version, or software related issue.
+Apache-2.0
 
-<!-- commandsstop -->
+### Issue / Pull Request
+
+バグ報告、機能要望、プルリクエストは [GitHub Issues](https://github.com/nemneshia/symbol-bootstrap/issues) でお待ちしています。
