@@ -1,18 +1,75 @@
+# アセンブリ
+# peer: ピアノード + Light Rest Gatewayを起動
+# api: APIノードを起動
+# dual: ピアノード + APIノード + Rest Gatewayを起動
 assembly: dual
+
+# ネットワークプリセット
+# mainnet: メインネットワーク
+# testnet: テストネットワーク
 preset: testnet
+
+# addresses.yamlに秘密鍵を記載しプロンプト入力をスキップするモード
+# PROMPT_ALL: 起動時に全ての秘密鍵をプロンプトで入力
+# PROMPT_MAIN: メインノードの秘密鍵のみプロンプトで入力
+# PROMPT_MAIN_TRANSPORT: メインのトランスポートノードの秘密鍵のみプロンプトで入力
+privateKeySecurityMode: PROMPT_MAIN_TRANSPORT
+
+# 受け入れる最大委任ハーベスタ数
+maxUnlockedAccounts: 100
+
+# 委任ハーベスタの優先順位付けポリシー
+# Importance: 重要度順で優先順位を付ける
+# Age: 先着順で優先順位を付ける
+delegatePrioritizationPolicy: Importance
+
+# 委任ハーベスタから徴収した手数料の受取先アドレス
+beneficiaryAddress: TBQLP7SU7WMUK3XYMIJZPWIT2HJ3PTVJPWFJNJQ
+
+# # 再同期時に比較的安定する設定
+# maxChainBytesPerSyncAttempt: 50MB
+# blockDisruptorMaxMemorySize: 1000MB
+# messageSynchronizationMaxResponseSize: 5MB
+
+# # metalデコード機能無効化
+# metal: null
+
+# ノード設定
 node:
+  # ノードホスト名またはIPアドレス
   host: luca.harvestasya.com
+  # ノード名
   friendlyName: luca node
-  voting: true
+  # 投票ノードとして起動するかどうか
+  voting: false
+  # # ノードの秘密鍵（64桁HEX）またはENCRYPTED_V2:で始まる暗号化された秘密鍵
+  # mainPrivateKey:
+  # vrfPrivateKey:
+  # remotePrivateKey:
+  # transportPrivateKey:
+  # # ピアノードの公開ポート(nodePort=apiNodePort=node.openPortである必要あり)
   # openPort: 7950
+  # # 信頼するホストのIPアドレス（カンマ区切りで複数指定可能）
   # trustedHosts: 127.0.0.1, 172.200.0.25
+  # # ローカルネットワークのIPアドレス（カンマ区切りで複数指定可能）
   # localNetworks: 127.0.0.1, 172.200.0.25
 
+# # Rest Gateway設定
 # gateway:
+#   # Rest Gatewayの公開ポート
 #   openPort: 3060
+#   # Rest GatewayコンテナのIPアドレス
 #   ipv4_address: 172.200.0.25
 
+# # Docker Composeプロジェクト名
+# # (同じマシン上で複数のプロジェクトを起動する場合にプロジェクト名を変える必要あり)
 # dockerComposeProjectName: testnet
+
+# # Dockerネットワーク設定
+# # (同じマシン上で複数のプロジェクトを起動する場合にサブネットを変える必要あり)
 # subnet: 172.200.0.0/24
+
+# # ノードの公開ポート(nodePort=apiNodePort=node.openPortである必要あり)
 # nodePort: 7950
+# # APIノードの公開ポート(nodePort=apiNodePort=node.openPortである必要あり)
 # apiNodePort: 7950
