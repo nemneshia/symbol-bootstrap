@@ -9,11 +9,12 @@ assembly: dual
 # testnet: テストネットワーク
 preset: testnet
 
-# addresses.yamlに秘密鍵を記載しプロンプト入力をスキップするモード
-# PROMPT_ALL: 起動時に全ての秘密鍵をプロンプトで入力
-# PROMPT_MAIN: メインノードの秘密鍵のみプロンプトで入力
-# PROMPT_MAIN_TRANSPORT: メインのトランスポートノードの秘密鍵のみプロンプトで入力
-privateKeySecurityMode: PROMPT_MAIN_TRANSPORT
+# addresses.yaml に秘密鍵を記載し、起動時のプロンプト入力を制御
+# PROMPT_ALL: すべての秘密鍵を起動時にプロンプトで入力する
+# PROMPT_MAIN: メインノードの秘密鍵のみ起動時にプロンプトで入力する
+# PROMPT_MAIN_TRANSPORT: メインのトランスポートノードの秘密鍵のみ起動時にプロンプトで入力する
+# ENCRYPT: すべての秘密鍵を addresses.yaml から読み込み、プロンプト入力を省略する
+privateKeySecurityMode: ENCRYPT
 
 # 受け入れる最大委任ハーベスタ数
 maxUnlockedAccounts: 100
@@ -54,6 +55,11 @@ node:
   # # ローカルネットワークのIPアドレス（カンマ区切りで複数指定可能）
   # localNetworks: 127.0.0.1, 172.200.0.25
 
+# # ノードの公開ポート(nodePort=apiNodePort=node.openPortである必要あり)
+# nodePort: 7950
+# # APIノードの公開ポート(nodePort=apiNodePort=node.openPortである必要あり)
+# apiNodePort: 7950
+
 # # Rest Gateway設定
 # gateway:
 #   # Rest Gatewayの公開ポート
@@ -68,8 +74,3 @@ node:
 # # Dockerネットワーク設定
 # # (同じマシン上で複数のプロジェクトを起動する場合にサブネットを変える必要あり)
 # subnet: 172.200.0.0/24
-
-# # ノードの公開ポート(nodePort=apiNodePort=node.openPortである必要あり)
-# nodePort: 7950
-# # APIノードの公開ポート(nodePort=apiNodePort=node.openPortである必要あり)
-# apiNodePort: 7950
