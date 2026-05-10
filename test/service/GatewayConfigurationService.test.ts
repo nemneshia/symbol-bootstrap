@@ -174,7 +174,7 @@ describe('GatewayConfigurationService', () => {
         join('target', 'my-node', 'cert'),
         join('target', 'gw', 'api-node-config', 'cert'),
         [],
-        ['node.crt.pem', 'node.key.pem', 'ca.cert.pem']
+        ['node.crt.pem', 'node.key.pem', 'ca.crt.pem']
       );
     });
   });

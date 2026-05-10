@@ -26,7 +26,7 @@ export interface ConfigAccount extends CertificatePair {
 }
 
 export interface NodeAccount {
-  // keys from ca.cert.pem file
+  // keys from ca.crt.pem file
   main: ConfigAccount;
   // keys from the node.key.pem file (required for delegate harvesting)
   transport: ConfigAccount;
