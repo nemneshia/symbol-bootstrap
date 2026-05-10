@@ -19,7 +19,8 @@ coverage
 /test/service/logs.log
 /backup-sync/
 /lib
-custom-preset.yml
 tsconfig.tsbuildinfo
 /.yarn
 /.codex
+custom-preset.yml
+custom-preset.test.yml
